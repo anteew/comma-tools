@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Small helper to explain why panda safety marks RX invalid.
-
-Run this on-device while toggling ignition. It watches the pandaStates
-stream and, whenever safetyRxChecksInvalid flips, prints how long it's
-been since each required CAN message was last seen.
-"""
+"""Trace which CAN signals cause panda safety to flag RX invalid."""
 
 from __future__ import annotations
 
@@ -32,7 +27,8 @@ class PandaSnapshot:
 
 
 def main() -> None:
-  sm = messaging.SubMaster(['pandaStates', 'can'])
+  sm = messaging.SubMaster(['pandaStates'])
+  can_sock = messaging.sub_sock('can')
 
   last_seen = {key: None for key in EXPECTED}  # type: ignore[assignment]
   prev_state: dict[int, PandaSnapshot] = {}
@@ -46,8 +42,9 @@ def main() -> None:
     sm.update(100)
     now = time.monotonic()
 
-    if sm.updated['can']:
-      for frame in sm['can'].can:
+    can_msg = messaging.recv_sock(can_sock, wait=False)
+    if can_msg is not None:
+      for frame in can_msg.can:
         key = (frame.src, frame.address)
         for bus, addr, name in EXPECTED:
           if key == (bus, addr):
