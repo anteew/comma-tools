@@ -17,6 +17,17 @@ EXPECTED = [
   (2, 0x321, "ES_DashStatus"),
 ]
 
+# Some builds don't expose PandaState.SafetyModel. Gracefully fall back to numbers.
+_SAFETY_NAME_FN = getattr(getattr(log.PandaState, "SafetyModel", None), "Name", None)
+
+def safety_name(value: int) -> str:
+  if _SAFETY_NAME_FN is not None:
+    try:
+      return _SAFETY_NAME_FN(value)
+    except Exception:
+      pass
+  return str(value)
+
 @dataclass
 class PandaSnapshot:
   safety_model: int
@@ -62,9 +73,8 @@ def main() -> None:
 
         prev = prev_state.get(idx)
         if prev is None or prev.rx_checks_invalid != current.rx_checks_invalid:
-          state = log.PandaState.SafetyModel.names.get(current.safety_model, current.safety_model)
           print("--- panda", idx)
-          print(f" safety: {state} param={current.safety_param} controlsAllowed={current.controls_allowed}")
+          print(f" safety: {safety_name(current.safety_model)} param={current.safety_param} controlsAllowed={current.controls_allowed}")
           print(f" safetyRxChecksInvalid={current.rx_checks_invalid} safetyRxInvalidCount={current.rx_invalid}")
           for bus, addr, name in EXPECTED:
             delta = format_delta(last_seen[(bus, addr, name)], now)
