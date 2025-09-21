@@ -11,6 +11,7 @@
 
 ## Recent Changes
 - Added repo/dep bootstrap + CLI options (`--repo-root`, `--deps-dir`, `--install-missing-deps`).
+- Added blinker-based marker detection with window analysis (`--marker-type/--marker-pre/--marker-post/--marker-timeout`).
 - Converted stored CAN payloads to immutable `bytes` before analysis (prevents pycapnp buffer lifetime segfaults).
 - `run_analysis` now accepts speed bounds; CLI passes `--speed-min/--speed-max` through.
 - Verified analyzer on `dcb4c2e18426be55_00000001--d6b09d8e76--0--rlog.zst` (no cruise set button activity in that segment).
@@ -31,6 +32,12 @@
 - Analyzer assumes Subaru-specific decoding; adjust `SubaruCANDecoder` if working on another platform.
 - If openpilot schema moves, ensure `LogReader` import path still resolves through the submodule mirror (`openpilot/opendbc_repo/...`).
 - When adding new dependencies, update the requirement list in `ensure_python_packages` to keep the bootstrap consistent.
+
+## Marker Windows
+- Default marker type is `'blinkers'`; use `--marker-type none` to disable.
+- Script watches for left-blinker ON followed by right-blinker ON (within timeout) to define analysis windows.
+- Window boundaries extend `--marker-pre` seconds before and `--marker-post` seconds after the markers.
+- Reports list the most active CAN addresses/bits within each window (uses all recorded frames while markers are enabled).
 
 
 ## Quick Regression Check (Fresh Cache)

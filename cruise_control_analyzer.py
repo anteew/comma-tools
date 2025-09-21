@@ -15,6 +15,7 @@ import struct
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -125,6 +126,18 @@ def load_external_modules() -> None:
     messaging = None
 
 
+@dataclass
+class MarkerConfig:
+    marker_type: str = "blinkers"
+    pre_time: float = 1.5
+    post_time: float = 1.5
+    timeout: float = 15.0
+
+    @property
+    def enabled(self) -> bool:
+        return self.marker_type != "none"
+
+
 class SubaruCANDecoder:
     """Decoder for Subaru CAN messages based on DBC specifications"""
     
@@ -133,6 +146,7 @@ class SubaruCANDecoder:
     CRUISE_STATUS_ADDR = 0x241  # 577 decimal
     ES_BRAKE_ADDR = 0x220  # 544 decimal
     BRAKE_PEDAL_ADDR = 0x139  # 313 decimal
+    DASHLIGHTS_ADDR = 0x390  # 912 decimal
     
     @staticmethod
     def decode_wheel_speeds(data: bytes) -> Optional[Dict[str, float]]:
@@ -228,16 +242,34 @@ class SubaruCANDecoder:
         except Exception as e:
             return None
 
+    @staticmethod
+    def decode_blinkers(data: bytes) -> Optional[Dict[str, bool]]:
+        """Decode blinker lamp state from Dashlights (0x390)"""
+        if len(data) < 8:
+            return None
+
+        try:
+            raw_data = int.from_bytes(data, byteorder='little')
+            return {
+                'left': bool((raw_data >> 50) & 0x1),
+                'right': bool((raw_data >> 51) & 0x1),
+            }
+        except Exception:
+            return None
+
 
 class CruiseControlAnalyzer:
-    def __init__(self, log_file: str):
+    def __init__(self, log_file: str, marker_config: Optional[MarkerConfig] = None):
         self.log_file = log_file
-        self.speed_data = []
-        self.can_data = defaultdict(list)
-        self.target_speed_events = []
-        self.candidate_addresses = {}
+        self.marker_config = marker_config or MarkerConfig()
+
+        self.speed_data: List[Dict[str, float]] = []
+        self.can_data: Dict[int, List[Dict[str, object]]] = defaultdict(list)
+        self.all_can_data: Dict[int, List[Dict[str, object]]] = defaultdict(list)
+        self.target_speed_events: List[Dict[str, float]] = []
+        self.candidate_addresses: Dict[int, Dict[str, object]] = {}
         self.decoder = SubaruCANDecoder()
-        
+
         self.target_addresses = {
             self.decoder.WHEEL_SPEEDS_ADDR: "Wheel_Speeds",
             self.decoder.CRUISE_BUTTONS_ADDR: "Cruise_Buttons", 
@@ -245,6 +277,15 @@ class CruiseControlAnalyzer:
             self.decoder.ES_BRAKE_ADDR: "ES_Brake",
             self.decoder.BRAKE_PEDAL_ADDR: "Brake_Pedal",
         }
+
+        # Marker tracking
+        self.marker_events: List[Dict[str, object]] = []
+        self.marker_windows: List[Dict[str, float]] = []
+        self.marker_window_analysis: List[Dict[str, object]] = []
+        self._prev_blinker_state = {'left': False, 'right': False}
+
+        # Cached lookups for naming
+        self.address_labels: Dict[int, str] = dict(self.target_addresses)
         
     def parse_log_file(self):
         """Parse the rlog.zst file and extract speed and CAN data"""
@@ -266,14 +307,21 @@ class CruiseControlAnalyzer:
                     for can_msg in msg.can:
                         address = can_msg.address
                         data = bytes(can_msg.dat)
-                        
+                        entry = {
+                            'timestamp': timestamp,
+                            'data': data,
+                            'bus': can_msg.src,
+                        }
+
                         if address in self.target_addresses:
-                            self.can_data[address].append({
-                                'timestamp': timestamp,
-                                'data': data,
-                                'bus': can_msg.src
-                            })
-                        
+                            self.can_data[address].append(entry)
+
+                        if self.marker_config.enabled:
+                            self.all_can_data[address].append(entry)
+
+                        if self.marker_config.marker_type == 'blinkers' and address == self.decoder.DASHLIGHTS_ADDR:
+                            self._record_blinker_event(timestamp, data)
+
                         if address == self.decoder.WHEEL_SPEEDS_ADDR:
                             speeds = self.decoder.decode_wheel_speeds(data)
                             if speeds:
@@ -439,54 +487,55 @@ class CruiseControlAnalyzer:
         
         return signal_analysis
     
+    def compute_bit_change_stats(self, messages: List[Dict[str, object]]):
+        if len(messages) < 2:
+            return None
+
+        bit_frequency: Counter[int] = Counter()
+        total_changes = 0
+
+        prev_data = messages[0]['data']
+        for msg in messages[1:]:
+            changed_bits = self.find_changed_bits(prev_data, msg['data'])
+            if changed_bits:
+                total_changes += 1
+                for bit_pos in changed_bits:
+                    bit_frequency[bit_pos] += 1
+            prev_data = msg['data']
+
+        if total_changes == 0:
+            return None
+
+        return {
+            'total_changes': total_changes,
+            'bit_frequency': bit_frequency,
+            'message_count': len(messages),
+        }
+
     def analyze_can_bit_changes(self):
         """Analyze bit-level changes in all target CAN addresses"""
         print("Analyzing bit-level changes in target CAN addresses...")
-        
+
         bit_analysis = {}
-        
+
         for address, name in self.target_addresses.items():
-            if address not in self.can_data:
+            messages = self.can_data.get(address)
+            if not messages:
                 continue
-                
-            messages = self.can_data[address]
-            if len(messages) < 2:
+
+            stats = self.compute_bit_change_stats(messages)
+            if not stats:
                 continue
-            
+
+            bit_analysis[address] = {
+                'name': name,
+                **stats,
+            }
+
             print(f"\nAnalyzing {name} (0x{address:03X}): {len(messages)} messages")
-            
-            bit_changes = []
-            prev_data = None
-            
-            for msg in messages:
-                if prev_data is not None:
-                    changed_bits = self.find_changed_bits(prev_data, msg['data'])
-                    if changed_bits:
-                        bit_changes.append({
-                            'timestamp': msg['timestamp'],
-                            'old_data': prev_data,
-                            'new_data': msg['data'],
-                            'changed_bits': changed_bits,
-                            'changed_bytes': self.find_changed_bytes(prev_data, msg['data'])
-                        })
-                prev_data = msg['data']
-            
-            if bit_changes:
-                bit_frequency = Counter()
-                for change in bit_changes:
-                    for bit_pos in change['changed_bits']:
-                        bit_frequency[bit_pos] += 1
-                
-                bit_analysis[address] = {
-                    'name': name,
-                    'total_changes': len(bit_changes),
-                    'changes': bit_changes,
-                    'bit_frequency': dict(bit_frequency.most_common(10))
-                }
-                
-                print(f"  Total bit changes: {len(bit_changes)}")
-                print(f"  Most frequently changing bits: {list(bit_frequency.most_common(5))}")
-        
+            print(f"  Total bit changes: {stats['total_changes']}")
+            print(f"  Most frequently changing bits: {list(stats['bit_frequency'].most_common(5))}")
+
         return bit_analysis
     
     def find_changed_bits(self, old_data: bytes, new_data: bytes) -> List[int]:
@@ -503,17 +552,6 @@ class CruiseControlAnalyzer:
                         changed_bits.append(bit_position)
         
         return changed_bits
-    
-    def find_changed_bytes(self, old_data: bytes, new_data: bytes) -> List[int]:
-        """Find which bytes changed between two CAN messages"""
-        changed_bytes = []
-        min_len = min(len(old_data), len(new_data))
-        
-        for i in range(min_len):
-            if old_data[i] != new_data[i]:
-                changed_bytes.append(i)
-        
-        return changed_bytes
     
     def correlate_signals_with_speed(self, signal_analysis):
         """Correlate cruise control signals with speed data"""
@@ -581,11 +619,16 @@ class CruiseControlAnalyzer:
             print(f"Average speed: {np.mean(speeds):.1f} MPH")
         
         signal_analysis = self.analyze_cruise_control_signals()
-        
+
         bit_analysis = self.analyze_can_bit_changes()
-        
+
+        marker_analysis = self.marker_window_analysis if self.marker_config.enabled else []
+
         correlations = self.correlate_signals_with_speed(signal_analysis)
-        
+
+        if self.marker_config.enabled:
+            self.report_marker_windows(marker_analysis)
+
         print(f"\nKEY FINDINGS:")
         print("-" * 50)
         
@@ -620,7 +663,7 @@ class CruiseControlAnalyzer:
         for addr, analysis in active_addresses[:5]:
             print(f"   - {analysis['name']} (0x{addr:03X}): {analysis['total_changes']} changes")
             if analysis['bit_frequency']:
-                top_bits = list(analysis['bit_frequency'].items())[:3]
+                top_bits = list(analysis['bit_frequency'].most_common(3))
                 print(f"     Most active bits: {top_bits}")
         
         print(f"\nRECOMMENDATIONS:")
@@ -643,7 +686,47 @@ class CruiseControlAnalyzer:
         print(f"\nCABANA COMMANDS:")
         print(f"cd /home/ubuntu/repos/openpilot && tools/cabana")
         print(f"# Focus on addresses: 0x{self.decoder.CRUISE_BUTTONS_ADDR:03X}, 0x{self.decoder.CRUISE_STATUS_ADDR:03X}, 0x{self.decoder.ES_BRAKE_ADDR:03X}")
-    
+
+    def report_marker_windows(self, marker_analysis: List[Dict[str, object]]) -> None:
+        print("\nMARKER WINDOWS:")
+
+        if not marker_analysis:
+            print(f"No marker windows detected using {self.marker_config.marker_type} pattern.")
+            return
+
+        for idx, item in enumerate(marker_analysis, start=1):
+            window = item['window']
+            start_time = window['start_time']
+            stop_time = window['stop_time']
+            window_start = window['window_start']
+            window_end = window['window_end']
+            partial = window.get('partial', False)
+            duration = max(0.0, stop_time - start_time)
+            window_span = max(0.0, window_end - window_start)
+
+            label = "partial " if partial else ""
+            print(f"  Marker {idx}: {label}window {window_start:.2f}s → {window_end:.2f}s (span {window_span:.2f}s)")
+            print(f"    Left blinker on at {start_time:.2f}s")
+            if not partial:
+                print(f"    Right blinker on at {stop_time:.2f}s (duration {duration:.2f}s)")
+            else:
+                print("    Right blinker marker not detected within timeout")
+
+            address_stats = item['address_stats']
+            if not address_stats:
+                print("    No notable CAN bit changes captured in this window")
+                continue
+
+            print("    Top CAN activity:")
+            for stat in address_stats[:5]:
+                addr = stat['address']
+                name = stat['name']
+                label_name = name if name != 'Unknown' else 'Unknown address'
+                print(f"      - 0x{addr:03X} ({label_name}): {stat['total_changes']} changes over {stat['message_count']} msgs")
+                top_bits = stat['bit_frequency'].most_common(3)
+                if top_bits:
+                    print(f"        Bits: {top_bits}")
+
     def plot_speed_timeline(self):
         """Create a plot showing speed over time with target events highlighted"""
         if not self.speed_data:
@@ -682,6 +765,13 @@ class CruiseControlAnalyzer:
         if not self.parse_log_file():
             return False
 
+        if self.marker_config.enabled:
+            self.marker_windows = self.detect_marker_windows()
+            self.marker_window_analysis = self.analyze_marker_windows()
+        else:
+            self.marker_windows = []
+            self.marker_window_analysis = []
+
         self.find_target_speed_events(target_speed_min, target_speed_max)
         self.generate_report()
 
@@ -689,6 +779,114 @@ class CruiseControlAnalyzer:
             self.plot_speed_timeline()
 
         return True
+
+    def _record_blinker_event(self, timestamp: float, data: bytes) -> None:
+        decoded = self.decoder.decode_blinkers(data)
+        if not decoded:
+            return
+
+        left = bool(decoded.get('left'))
+        right = bool(decoded.get('right'))
+        prev_left = self._prev_blinker_state['left']
+        prev_right = self._prev_blinker_state['right']
+
+        if left == prev_left and right == prev_right:
+            return
+
+        event = {
+            'timestamp': timestamp,
+            'left': left,
+            'right': right,
+            'left_prev': prev_left,
+            'right_prev': prev_right,
+            'left_changed': left != prev_left,
+            'right_changed': right != prev_right,
+        }
+        self.marker_events.append(event)
+        self._prev_blinker_state['left'] = left
+        self._prev_blinker_state['right'] = right
+
+    def detect_marker_windows(self) -> List[Dict[str, float]]:
+        if not self.marker_config.enabled or self.marker_config.marker_type != 'blinkers':
+            return []
+
+        windows: List[Dict[str, float]] = []
+        start_event: Optional[Dict[str, object]] = None
+
+        for event in self.marker_events:
+            ts = float(event['timestamp'])
+
+            if event.get('left_changed') and event.get('left'):
+                start_event = event
+                continue
+
+            if not start_event:
+                continue
+
+            if ts - float(start_event['timestamp']) > self.marker_config.timeout:
+                start_event = None
+                continue
+
+            if event.get('right_changed') and event.get('right'):
+                start_time = float(start_event['timestamp'])
+                stop_time = ts
+                window_start = max(0.0, start_time - self.marker_config.pre_time)
+                window_end = stop_time + self.marker_config.post_time
+                windows.append({
+                    'start_time': start_time,
+                    'stop_time': stop_time,
+                    'window_start': window_start,
+                    'window_end': window_end,
+                    'partial': False,
+                })
+                start_event = None
+
+        if start_event:
+            start_time = float(start_event['timestamp'])
+            window_start = max(0.0, start_time - self.marker_config.pre_time)
+            window_end = start_time + self.marker_config.post_time
+            windows.append({
+                'start_time': start_time,
+                'stop_time': start_time,
+                'window_start': window_start,
+                'window_end': window_end,
+                'partial': True,
+            })
+
+        return windows
+
+    def analyze_marker_windows(self) -> List[Dict[str, object]]:
+        if not self.marker_config.enabled or not self.marker_windows:
+            return []
+
+        analysis: List[Dict[str, object]] = []
+
+        source = self.all_can_data if self.marker_config.enabled else self.can_data
+
+        for window in self.marker_windows:
+            window_start = window['window_start']
+            window_end = window['window_end']
+            address_stats = []
+
+            for address, messages in source.items():
+                window_messages = [m for m in messages if window_start <= m['timestamp'] <= window_end]
+                stats = self.compute_bit_change_stats(window_messages)
+                if not stats:
+                    continue
+
+                address_stats.append({
+                    'address': address,
+                    'name': self.address_labels.get(address, 'Unknown'),
+                    **stats,
+                })
+
+            address_stats.sort(key=lambda x: x['total_changes'], reverse=True)
+            analysis.append({
+                'window': window,
+                'address_stats': address_stats,
+            })
+
+        return analysis
 
 
 def main():
@@ -704,6 +902,14 @@ def main():
                         help='Directory for local Python dependencies (default: <repo-root>/comma-depends)')
     parser.add_argument('--install-missing-deps', action='store_true',
                         help='Install missing third-party Python packages into the deps directory')
+    parser.add_argument('--marker-type', choices=['none', 'blinkers'], default='blinkers',
+                        help='Marker detection strategy (default: blinkers)')
+    parser.add_argument('--marker-pre', type=float, default=1.5,
+                        help='Seconds before marker start to include in window (default: 1.5)')
+    parser.add_argument('--marker-post', type=float, default=1.5,
+                        help='Seconds after marker stop to include in window (default: 1.5)')
+    parser.add_argument('--marker-timeout', type=float, default=15.0,
+                        help='Maximum seconds to wait between marker start and stop (default: 15)')
 
     args = parser.parse_args()
     try:
@@ -735,7 +941,17 @@ def main():
         print(f"Error: Log file not found: {args.log_file}")
         return 1
 
-    analyzer = CruiseControlAnalyzer(args.log_file)
+    if args.marker_pre < 0 or args.marker_post < 0:
+        parser.error('Marker window durations must be non-negative')
+
+    marker_config = MarkerConfig(
+        marker_type=args.marker_type,
+        pre_time=args.marker_pre,
+        post_time=args.marker_post,
+        timeout=args.marker_timeout,
+    )
+
+    analyzer = CruiseControlAnalyzer(args.log_file, marker_config=marker_config)
 
     if analyzer.run_analysis(target_speed_min=args.speed_min, target_speed_max=args.speed_max):
         print("\nAnalysis completed successfully!")
