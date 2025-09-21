@@ -7,24 +7,122 @@ This script analyzes rlog.zst files to identify CAN messages related to cruise c
 to decode wheel speeds and cruise control signals.
 """
 
-import sys
+import argparse
+import importlib
+import importlib.util
 import os
 import struct
-import matplotlib.pyplot as plt
-import numpy as np
-from collections import defaultdict, Counter
-from typing import Dict, List, Tuple, Optional
-import argparse
+import subprocess
+import sys
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
-sys.path.append('/home/ubuntu/repos/openpilot')
+np = None  # loaded at runtime
+plt = None  # loaded at runtime
+LogReader = None  # loaded at runtime
+messaging = None  # loaded at runtime
 
-try:
-    from tools.lib.logreader import LogReader
-    import cereal.messaging as messaging
-except ImportError as e:
-    print(f"Error importing openpilot modules: {e}")
-    print("Make sure you're running this from the openpilot directory with the virtual environment activated")
-    sys.exit(1)
+
+def find_repo_root(explicit: Optional[str] = None) -> Path:
+    """Locate the root directory that contains the openpilot checkout."""
+    candidates: List[Path] = []
+    if explicit:
+        candidates.append(Path(explicit).expanduser())
+
+    script_path = Path(__file__).resolve()
+    candidates.extend(script_path.parents)
+    candidates.append(Path.cwd())
+
+    seen: set[Path] = set()
+    for candidate in candidates:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if (candidate / "openpilot").exists():
+            return candidate
+
+    raise FileNotFoundError(
+        "Could not find the openpilot checkout. "
+        "Use --repo-root to point to the directory that contains both openpilot and comma-tools."
+    )
+
+
+def resolve_deps_dir(repo_root: Path, override: Optional[str]) -> Path:
+    if override:
+        deps_dir = Path(override).expanduser()
+        if not deps_dir.is_absolute():
+            deps_dir = repo_root / deps_dir
+    else:
+        deps_dir = repo_root / "comma-depends"
+    return deps_dir
+
+
+
+def prepare_environment(repo_root: Path, deps_dir: Path) -> None:
+    if not (repo_root / "openpilot").exists():
+        raise FileNotFoundError(f"openpilot checkout not found under {repo_root}")
+
+    deps_dir.mkdir(parents=True, exist_ok=True)
+
+    for path in (deps_dir, repo_root / "openpilot"):
+        path_str = str(path)
+        if path_str not in sys.path:
+            sys.path.insert(0, path_str)
+
+
+
+def ensure_python_packages(requirements: List[Tuple[str, str]], deps_dir: Path, install_missing: bool) -> None:
+    missing = [(module, package) for module, package in requirements if importlib.util.find_spec(module) is None]
+
+    if missing and install_missing:
+        cmd = [sys.executable, "-m", "pip", "install", "--target", str(deps_dir)]
+        cmd.extend(package for _, package in missing)
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(f"Failed to install packages {[pkg for _, pkg in missing]}: {exc}") from exc
+        missing = [(module, package) for module, package in missing if importlib.util.find_spec(module) is None]
+
+    if missing:
+        missing_desc = ', '.join(f"{module} (pip: {package})" for module, package in missing)
+        raise ImportError(
+            f"Missing Python packages: {missing_desc}. "
+            "Install them manually or rerun with --install-missing-deps."
+        )
+
+
+
+def ensure_cloudlog_stub():
+    import types
+    import sys as _sys
+
+    if 'openpilot.common.swaglog' in _sys.modules:
+        return
+
+    stub_module = types.ModuleType('openpilot.common.swaglog')
+
+    class _StubLogger:
+        def __getattr__(self, _name):
+            def _log(*_args, **_kwargs):
+                pass
+            return _log
+
+    stub_module.cloudlog = _StubLogger()
+    _sys.modules['openpilot.common.swaglog'] = stub_module
+
+
+def load_external_modules() -> None:
+    global np, plt, LogReader, messaging
+    ensure_cloudlog_stub()
+    import numpy as _np
+    import matplotlib.pyplot as _plt
+    from tools.lib.logreader import LogReader as _LogReader
+
+    np = _np
+    plt = _plt
+    LogReader = _LogReader
+    messaging = None
 
 
 class SubaruCANDecoder:
@@ -167,7 +265,7 @@ class CruiseControlAnalyzer:
                     
                     for can_msg in msg.can:
                         address = can_msg.address
-                        data = can_msg.dat
+                        data = bytes(can_msg.dat)
                         
                         if address in self.target_addresses:
                             self.can_data[address].append({
@@ -577,39 +675,69 @@ class CruiseControlAnalyzer:
         print(f"Speed timeline plot saved as: {plot_filename}")
         plt.close()
     
-    def run_analysis(self):
+    def run_analysis(self, target_speed_min: float = 55.0, target_speed_max: float = 56.0):
         """Run the complete analysis"""
         print("Starting Subaru cruise control analysis...")
-        
+
         if not self.parse_log_file():
             return False
-        
-        self.find_target_speed_events()
+
+        self.find_target_speed_events(target_speed_min, target_speed_max)
         self.generate_report()
-        
+
         if self.speed_data:
             self.plot_speed_timeline()
-        
+
         return True
 
 
 def main():
     parser = argparse.ArgumentParser(description='Analyze rlog.zst files for Subaru cruise control signals')
     parser.add_argument('log_file', help='Path to the rlog.zst file')
-    parser.add_argument('--speed-min', type=float, default=55.0, 
+    parser.add_argument('--speed-min', type=float, default=55.0,
                        help='Minimum target speed in MPH (default: 55.0)')
     parser.add_argument('--speed-max', type=float, default=56.0,
                        help='Maximum target speed in MPH (default: 56.0)')
-    
+    parser.add_argument('--repo-root', default=None,
+                        help='Path containing the openpilot checkout (auto-detected by default)')
+    parser.add_argument('--deps-dir', default=None,
+                        help='Directory for local Python dependencies (default: <repo-root>/comma-depends)')
+    parser.add_argument('--install-missing-deps', action='store_true',
+                        help='Install missing third-party Python packages into the deps directory')
+
     args = parser.parse_args()
-    
+    try:
+        repo_root = find_repo_root(args.repo_root)
+        deps_dir = resolve_deps_dir(repo_root, args.deps_dir)
+        prepare_environment(repo_root, deps_dir)
+    except FileNotFoundError as err:
+        parser.error(str(err))
+
+    try:
+        ensure_python_packages([
+            ('matplotlib', 'matplotlib'),
+            ('numpy', 'numpy'),
+            ('capnp', 'pycapnp'),
+            ('tqdm', 'tqdm'),
+            ('zstandard', 'zstandard'),
+            ('zmq', 'pyzmq'),
+            ('smbus2', 'smbus2'),
+        ], deps_dir, args.install_missing_deps)
+    except (ImportError, RuntimeError) as err:
+        print(f"Dependency error: {err}")
+        return 2
+
+    print('Dependencies ready; loading openpilot modules...', flush=True)
+    load_external_modules()
+    print('Openpilot modules loaded.', flush=True)
+
     if not os.path.exists(args.log_file):
         print(f"Error: Log file not found: {args.log_file}")
         return 1
-    
+
     analyzer = CruiseControlAnalyzer(args.log_file)
-    
-    if analyzer.run_analysis():
+
+    if analyzer.run_analysis(target_speed_min=args.speed_min, target_speed_max=args.speed_max):
         print("\nAnalysis completed successfully!")
         return 0
     else:
