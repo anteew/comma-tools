@@ -57,7 +57,7 @@ jobs:
     - name: Test with pytest
       run: |
         cd comma-tools
-        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml
+        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov
 
     - name: Integration test with dependency bootstrap
       run: |
@@ -72,6 +72,14 @@ jobs:
         prepare_environment(repo_root, deps_dir)
         print('✓ Environment bootstrap successful')
         "
+
+    - name: Upload HTML coverage artifact
+      if: matrix.python-version == '3.12'
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-html
+        path: comma-tools/htmlcov
+        retention-days: 7
 
     - name: Upload coverage reports
       uses: codecov/codecov-action@v3
