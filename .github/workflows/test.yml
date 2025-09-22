@@ -27,6 +27,11 @@ jobs:
         path: openpilot
         submodules: recursive
 
+    - name: Ensure openpilot submodules
+      run: |
+        cd openpilot
+        git submodule update --init --recursive
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
@@ -76,6 +81,8 @@ jobs:
         "
 
     - name: Integration tests (real log fixture)
+      env:
+        CAPNPC_IMPORT_PATH: ${{ github.workspace }}/openpilot/cereal
       run: |
         cd comma-tools
         pytest tests/integration -v -m integration
