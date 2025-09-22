@@ -99,7 +99,11 @@ comma-tools/
 - Panda device (for real-time monitoring tools)
 ## Integration tests with a real rlog.zst
 
-By default, tests run without any large external files. To exercise the analyzer with a real log:
+By default, the repo includes a known-good real log fixture stored via Git LFS:
+- Path: `tests/data/known_good.rlog.zst`
+- CI and local runs will use this fixture automatically for integration tests.
+
+Override the fixture with your own log if desired:
 
 Option A: environment variable
 ```bash
@@ -112,7 +116,8 @@ pytest tests/integration -v -m integration --real-log-file=/absolute/path/to/you
 ```
 
 Notes:
-- If no log is provided, these tests are skipped automatically.
+- If neither CLI nor env is provided and the fixture is present, tests will use the fixture. If no fixture is present, tests are skipped automatically.
+- Ensure Git LFS is installed locally to fetch the fixture (`git lfs install`).
 - To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
 
 ## License

@@ -18,6 +18,9 @@ def real_log_path(pytestconfig):
     env = os.getenv("LOG_FILE")
     value = cli or env
     if not value:
+        fixture = Path(__file__).parent / "data" / "known_good.rlog.zst"
+        if fixture.exists():
+            return fixture
         pytest.skip("No real log supplied; set env LOG_FILE or pass --real-log-file=PATH")
     p = Path(value).expanduser()
     if not p.exists():

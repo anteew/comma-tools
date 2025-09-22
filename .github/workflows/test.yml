@@ -18,6 +18,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: comma-tools
+        lfs: true
 
     - name: Checkout openpilot
       uses: actions/checkout@v4
@@ -73,13 +74,10 @@ jobs:
         print('✓ Environment bootstrap successful')
         "
 
-    - name: Real log integration tests (optional)
-      if: env.LOG_FILE != ''
+    - name: Integration tests (real log fixture)
       run: |
         cd comma-tools
-        pytest tests/integration -v -m integration --real-log-file="${{ env.LOG_FILE }}"
-      env:
-        LOG_FILE: ${{ secrets.REAL_LOG_FILE_PATH || '' }}
+        pytest tests/integration -v -m integration
 
     - name: Upload HTML coverage artifact
       if: matrix.python-version == '3.12'
