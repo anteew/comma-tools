@@ -1,0 +1,2 @@
+[console_scripts]
+cruise-control-analyzer = comma_tools.analyzers.cruise_control_analyzer:main

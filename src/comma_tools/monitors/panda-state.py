@@ -6,20 +6,24 @@ try:
 except AttributeError:
     model_name = None
 
+
 def resolve(val):
     try:
-      return model_name(val) if model_name is not None else str(val)
+        return model_name(val) if model_name is not None else str(val)
     except Exception:
-      return str(val)
+        return str(val)
 
-sm = messaging.SubMaster(['pandaStates', 'selfdriveState'])
+
+sm = messaging.SubMaster(["pandaStates", "selfdriveState"])
 
 while True:
     sm.update(100)
-    if sm.updated['pandaStates']:
-      for i, ps in enumerate(sm['pandaStates']):
-        print(f"panda{i}: model={resolve(ps.safetyModel)} "
-              f"param={ps.safetyParam} altExp={ps.alternativeExperience} "
-              f"controlsAllowed={ps.controlsAllowed} rxInvalid={ps.safetyRxChecksInvalid}")
-      print(f"selfdrive enabled={sm['selfdriveState'].enabled}")
-      print("---")
+    if sm.updated["pandaStates"]:
+        for i, ps in enumerate(sm["pandaStates"]):
+            print(
+                f"panda{i}: model={resolve(ps.safetyModel)} "
+                f"param={ps.safetyParam} altExp={ps.alternativeExperience} "
+                f"controlsAllowed={ps.controlsAllowed} rxInvalid={ps.safetyRxChecksInvalid}"
+            )
+        print(f"selfdrive enabled={sm['selfdriveState'].enabled}")
+        print("---")
