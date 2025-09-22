@@ -97,6 +97,24 @@ comma-tools/
 - Python 3.12 (project is tested on 3.9–3.12 in CI)
 - openpilot installation (for some tools)
 - Panda device (for real-time monitoring tools)
+## Integration tests with a real rlog.zst
+
+By default, tests run without any large external files. To exercise the analyzer with a real log:
+
+Option A: environment variable
+```bash
+LOG_FILE=/absolute/path/to/your.rlog.zst pytest tests/integration -v -m integration
+```
+
+Option B: pytest option
+```bash
+pytest tests/integration -v -m integration --real-log-file=/absolute/path/to/your.rlog.zst
+```
+
+Notes:
+- If no log is provided, these tests are skipped automatically.
+- To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
+
 ## License
 
 MIT License - see LICENSE file for details.

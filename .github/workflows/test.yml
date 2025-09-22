@@ -73,6 +73,14 @@ jobs:
         print('✓ Environment bootstrap successful')
         "
 
+    - name: Real log integration tests (optional)
+      if: env.LOG_FILE != ''
+      run: |
+        cd comma-tools
+        pytest tests/integration -v -m integration --real-log-file="${{ env.LOG_FILE }}"
+      env:
+        LOG_FILE: ${{ secrets.REAL_LOG_FILE_PATH || '' }}
+
     - name: Upload HTML coverage artifact
       if: matrix.python-version == '3.12'
       uses: actions/upload-artifact@v4
