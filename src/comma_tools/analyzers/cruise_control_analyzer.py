@@ -967,10 +967,6 @@ def main():
         print(f"Dependency error: {err}")
         return 2
 
-    print('Dependencies ready; loading openpilot modules...', flush=True)
-    load_external_modules()
-    print('Openpilot modules loaded.', flush=True)
-
     if not os.path.exists(args.log_file):
         print(f"Error: Log file not found: {args.log_file}")
         return 1
@@ -989,6 +985,10 @@ def main():
     except OSError as e:
         print(f"Error: Cannot read log file: {e}")
         return 1
+
+    print('Dependencies ready; loading openpilot modules...', flush=True)
+    load_external_modules()
+    print('Openpilot modules loaded.', flush=True)
 
     if args.marker_pre < 0 or args.marker_post < 0:
         parser.error('Marker window durations must be non-negative')
