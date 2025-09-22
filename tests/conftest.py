@@ -18,7 +18,7 @@ def real_log_path(pytestconfig):
     env = os.getenv("LOG_FILE")
     value = cli or env
     if not value:
-        pytest.skip("No real log supplied; set env LOG_FILE or pass --log-file=PATH")
+        pytest.skip("No real log supplied; set env LOG_FILE or pass --real-log-file=PATH")
     p = Path(value).expanduser()
     if not p.exists():
         pytest.skip(f"Real log not found at: {p}")
