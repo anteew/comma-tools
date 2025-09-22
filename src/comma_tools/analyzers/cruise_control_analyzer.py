@@ -44,8 +44,16 @@ def find_repo_root(explicit: Optional[str] = None) -> Path:
             return candidate
 
     raise FileNotFoundError(
-        "Could not find the openpilot checkout. "
-        "Use --repo-root to point to the directory that contains both openpilot and comma-tools."
+        "Could not find the openpilot checkout.\n\n"
+        "Expected directory structure:\n"
+        "  parent-directory/\n"
+        "  ├── openpilot/          # Clone from https://github.com/commaai/openpilot\n"
+        "  └── comma-tools/        # This repository\n\n"
+        "To fix this:\n"
+        "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
+        "2. Ensure both repositories are in the same parent directory\n"
+        "3. Or use --repo-root to specify the parent directory path\n\n"
+        "Example: cruise-control-analyzer logfile.zst --repo-root /path/to/parent-directory"
     )
 
 
@@ -61,8 +69,16 @@ def resolve_deps_dir(repo_root: Path, override: Optional[str]) -> Path:
 
 
 def prepare_environment(repo_root: Path, deps_dir: Path) -> None:
-    if not (repo_root / "openpilot").exists():
-        raise FileNotFoundError(f"openpilot checkout not found under {repo_root}")
+    openpilot_path = repo_root / "openpilot"
+    if not openpilot_path.exists():
+        raise FileNotFoundError(
+            f"openpilot checkout not found under {repo_root}\n\n"
+            f"Expected to find: {openpilot_path}\n\n"
+            "To fix this:\n"
+            "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
+            "2. Ensure the openpilot directory is in the correct location\n"
+            "3. Or use --repo-root to specify the correct parent directory"
+        )
 
     deps_dir.mkdir(parents=True, exist_ok=True)
 
@@ -77,19 +93,36 @@ def ensure_python_packages(requirements: List[Tuple[str, str]], deps_dir: Path, 
     missing = [(module, package) for module, package in requirements if importlib.util.find_spec(module) is None]
 
     if missing and install_missing:
-        cmd = [sys.executable, "-m", "pip", "install", "--target", str(deps_dir)]
-        cmd.extend(package for _, package in missing)
-        try:
-            subprocess.check_call(cmd)
-        except subprocess.CalledProcessError as exc:
-            raise RuntimeError(f"Failed to install packages {[pkg for _, pkg in missing]}: {exc}") from exc
+        print(f"Installing {len(missing)} missing packages to {deps_dir}...")
+        for i, (module, package) in enumerate(missing, 1):
+            print(f"  [{i}/{len(missing)}] Installing {package}...", end=" ", flush=True)
+            cmd = [sys.executable, "-m", "pip", "install", "--target", str(deps_dir), package]
+            try:
+                subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                print("✓")
+            except subprocess.CalledProcessError as exc:
+                print("✗")
+                stderr_output = exc.stderr.decode() if exc.stderr else "No error details"
+                raise RuntimeError(
+                    f"Failed to install {package}:\n{stderr_output}\n\n"
+                    "This might be due to:\n"
+                    "- Network connectivity issues\n"
+                    "- Missing system dependencies\n"
+                    "- Python version compatibility\n\n"
+                    "Try installing manually: pip install " + " ".join(pkg for _, pkg in missing)
+                ) from exc
+        
         missing = [(module, package) for module, package in missing if importlib.util.find_spec(module) is None]
 
     if missing:
         missing_desc = ', '.join(f"{module} (pip: {package})" for module, package in missing)
         raise ImportError(
-            f"Missing Python packages: {missing_desc}. "
-            "Install them manually or rerun with --install-missing-deps."
+            f"Missing Python packages: {missing_desc}\n\n"
+            "To fix this:\n"
+            "1. Install automatically: rerun with --install-missing-deps\n"
+            "2. Install manually: pip install " + " ".join(pkg for _, pkg in missing) + "\n"
+            "3. Use virtual environment if needed: python -m venv venv && source venv/bin/activate\n\n"
+            "Note: Some packages may require system dependencies (e.g., build tools, headers)"
         )
 
 
@@ -897,7 +930,8 @@ def main():
     parser.add_argument('--speed-max', type=float, default=56.0,
                        help='Maximum target speed in MPH (default: 56.0)')
     parser.add_argument('--repo-root', default=None,
-                        help='Path containing the openpilot checkout (auto-detected by default)')
+                        help='Path containing the openpilot checkout (auto-detected by default). '
+                             'Expected structure: /parent-dir/openpilot/ and /parent-dir/comma-tools/')
     parser.add_argument('--deps-dir', default=None,
                         help='Directory for local Python dependencies (default: <repo-root>/comma-depends)')
     parser.add_argument('--install-missing-deps', action='store_true',
@@ -933,13 +967,28 @@ def main():
         print(f"Dependency error: {err}")
         return 2
 
-    print('Dependencies ready; loading openpilot modules...', flush=True)
-    load_external_modules()
-    print('Openpilot modules loaded.', flush=True)
-
     if not os.path.exists(args.log_file):
         print(f"Error: Log file not found: {args.log_file}")
         return 1
+    
+    if not args.log_file.endswith('.zst'):
+        print(f"Error: Expected .zst log file, got: {args.log_file}")
+        print("This tool analyzes compressed openpilot log files (rlog.zst format)")
+        print("Typical log files are named like: rlog.zst, segment_name--0--rlog.zst")
+        return 1
+    
+    try:
+        file_size = os.path.getsize(args.log_file)
+        if file_size < 1024:  # Less than 1KB is suspicious for a log file
+            print(f"Warning: Log file seems very small ({file_size} bytes)")
+            print("This might not be a valid rlog.zst file")
+    except OSError as e:
+        print(f"Error: Cannot read log file: {e}")
+        return 1
+
+    print('Dependencies ready; loading openpilot modules...', flush=True)
+    load_external_modules()
+    print('Openpilot modules loaded.', flush=True)
 
     if args.marker_pre < 0 or args.marker_post < 0:
         parser.error('Marker window durations must be non-negative')
