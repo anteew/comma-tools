@@ -17,7 +17,7 @@ import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 np = None  # loaded at runtime
 plt = None  # loaded at runtime
@@ -242,7 +242,7 @@ class SubaruCANDecoder:
             return None
 
     @staticmethod
-    def decode_cruise_status(data: bytes) -> Optional[Dict[str, any]]:
+    def decode_cruise_status(data: bytes) -> Optional[Dict[str, Any]]:
         """Decode cruise status from address 0x241 (577)"""
         if len(data) < 8:
             return None
@@ -262,7 +262,7 @@ class SubaruCANDecoder:
             return None
 
     @staticmethod
-    def decode_es_brake(data: bytes) -> Optional[Dict[str, any]]:
+    def decode_es_brake(data: bytes) -> Optional[Dict[str, Any]]:
         """Decode ES_Brake from address 0x220 (544)"""
         if len(data) < 8:
             return None
@@ -577,7 +577,9 @@ class CruiseControlAnalyzer:
 
         prev_data = messages[0]["data"]
         for msg in messages[1:]:
-            changed_bits = self.find_changed_bits(prev_data, msg["data"])
+            prev_bytes = prev_data if isinstance(prev_data, bytes) else b""
+            msg_bytes = msg["data"] if isinstance(msg["data"], bytes) else b""
+            changed_bits = self.find_changed_bits(prev_bytes, msg_bytes)
             if changed_bits:
                 total_changes += 1
                 for bit_pos in changed_bits:
@@ -795,11 +797,13 @@ class CruiseControlAnalyzer:
 
         for idx, item in enumerate(marker_analysis, start=1):
             window = item["window"]
-            start_time = window["start_time"]
-            stop_time = window["stop_time"]
-            window_start = window["window_start"]
-            window_end = window["window_end"]
-            partial = window.get("partial", False)
+            if not isinstance(window, dict):
+                continue
+            start_time = float(window["start_time"])
+            stop_time = float(window["stop_time"])
+            window_start = float(window["window_start"])
+            window_end = float(window["window_end"])
+            partial = bool(window.get("partial", False))
             duration = max(0.0, stop_time - start_time)
             window_span = max(0.0, window_end - window_start)
 
@@ -813,15 +817,16 @@ class CruiseControlAnalyzer:
             else:
                 print("    Right blinker marker not detected within timeout")
 
-            address_stats = item["address_stats"]
+            address_stats = cast(List[Dict[str, Any]], item["address_stats"])
             if not address_stats:
                 print("    No notable CAN bit changes captured in this window")
                 continue
 
             print("    Top CAN activity:")
-            for stat in address_stats[:5]:
-                addr = stat["address"]
-                name = stat["name"]
+            stats_slice = cast(List[Dict[str, Any]], address_stats[:5])
+            for stat in stats_slice:
+                addr = int(stat.get("address", 0))
+                name = str(stat.get("name", "Unknown"))
                 label_name = name if name != "Unknown" else "Unknown address"
                 print(
                     f"      - 0x{addr:03X} ({label_name}): {stat['total_changes']} changes over {stat['message_count']} msgs"
@@ -910,7 +915,7 @@ class CruiseControlAnalyzer:
             "left_changed": left != prev_left,
             "right_changed": right != prev_right,
         }
-        self.marker_events.append(event)
+        self.marker_events.append(event)  # type: ignore[arg-type]
         self._prev_blinker_state["left"] = left
         self._prev_blinker_state["right"] = right
 
@@ -919,10 +924,14 @@ class CruiseControlAnalyzer:
             return []
 
         windows: List[Dict[str, float]] = []
-        start_event: Optional[Dict[str, object]] = None
+        start_event: Optional[Dict[str, Any]] = None
 
         for event in self.marker_events:
-            ts = float(event["timestamp"])
+            timestamp_val = event.get("timestamp")
+            if isinstance(timestamp_val, (int, float, str)):
+                ts = float(timestamp_val)
+            else:
+                ts = 0.0
 
             if event.get("left_changed") and event.get("left"):
                 start_event = event
@@ -967,23 +976,28 @@ class CruiseControlAnalyzer:
 
         return windows
 
-    def analyze_marker_windows(self) -> List[Dict[str, object]]:
+    def analyze_marker_windows(self) -> List[Dict[str, Any]]:
         if not self.marker_config.enabled or not self.marker_windows:
             return []
 
-        analysis: List[Dict[str, object]] = []
+        analysis: List[Dict[str, Any]] = []
 
         source = self.all_can_data if self.marker_config.enabled else self.can_data
 
         for window in self.marker_windows:
             window_start = window["window_start"]
             window_end = window["window_end"]
-            address_stats = []
+            address_stats: List[Dict[str, Any]] = []
 
             for address, messages in source.items():
-                window_messages = [
-                    m for m in messages if window_start <= m["timestamp"] <= window_end
-                ]
+                window_messages = []
+                for m in messages:
+                    if isinstance(m, dict) and "timestamp" in m:
+                        timestamp_val = m["timestamp"]
+                        if isinstance(timestamp_val, (int, float, str)):
+                            ts = float(timestamp_val)
+                            if window_start <= ts <= window_end:
+                                window_messages.append(m)
                 stats = self.compute_bit_change_stats(window_messages)
                 if not stats:
                     continue

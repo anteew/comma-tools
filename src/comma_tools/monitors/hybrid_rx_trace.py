@@ -43,7 +43,7 @@ def main() -> None:
     sm = messaging.SubMaster(["pandaStates"])
     can_sock = messaging.sub_sock("can")
 
-    last_seen = {key: None for key in EXPECTED}  # type: ignore[assignment]
+    last_seen: dict[tuple[int, int, str], float | None] = {key: None for key in EXPECTED}
     prev_state: dict[int, PandaSnapshot] = {}
 
     def format_delta(ts: float | None, now: float) -> str:
