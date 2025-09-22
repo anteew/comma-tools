@@ -53,7 +53,12 @@ def stub_logreader_messages():
         [
             StubCAN(
                 SubaruCANDecoder.WHEEL_SPEEDS_ADDR,
-                int_to_le_bytes64(((100 & 0x1FFF) << 12) | ((100 & 0x1FFF) << 25) | ((100 & 0x1FFF) << 38) | ((100 & 0x1FFF) << 51)),
+                int_to_le_bytes64(
+                    ((100 & 0x1FFF) << 12)
+                    | ((100 & 0x1FFF) << 25)
+                    | ((100 & 0x1FFF) << 38)
+                    | ((100 & 0x1FFF) << 51)
+                ),
             )
         ],
         0.1,

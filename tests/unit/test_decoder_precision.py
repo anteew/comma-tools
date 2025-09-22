@@ -61,7 +61,7 @@ class TestDecoderStatus:
         data = int_to_le_bytes64(raw)
         out = SubaruCANDecoder.decode_cruise_status(data)
         assert out is not None
-        expected_set_speed = (0x123 | (1 << 3) | (1 << 4))
+        expected_set_speed = 0x123 | (1 << 3) | (1 << 4)
         assert out["cruise_set_speed"] == expected_set_speed
         assert out["cruise_on"] is True
         assert out["cruise_activated"] is True
