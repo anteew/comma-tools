@@ -25,6 +25,7 @@ jobs:
       with:
         repository: commaai/openpilot
         path: openpilot
+        submodules: recursive
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4

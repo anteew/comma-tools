@@ -43,7 +43,7 @@ def test_cli_marker_blinkers_and_speed_bounds(real_log_path):
 @pytest.mark.integration
 def test_cli_custom_deps_dir_without_install(real_log_path, tmp_path):
     deps = tmp_path / "deps"
-    proc = _run([str(real_log_path), "--deps-dir", str(deps), "--install-missing-deps", "0"])
+    proc = _run([str(real_log_path), "--deps-dir", str(deps), "--install-missing-deps"])
     assert proc.returncode == 0, proc.stderr
 
 
