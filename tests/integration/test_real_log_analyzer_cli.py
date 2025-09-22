@@ -34,7 +34,9 @@ def test_cli_marker_none(real_log_path):
 
 @pytest.mark.integration
 def test_cli_marker_blinkers_and_speed_bounds(real_log_path):
-    proc = _run([str(real_log_path), "--marker-type", "blinkers", "--speed-min", "40", "--speed-max", "70"])
+    proc = _run(
+        [str(real_log_path), "--marker-type", "blinkers", "--speed-min", "40", "--speed-max", "70"]
+    )
     assert proc.returncode == 0, proc.stderr
 
 

@@ -27,7 +27,9 @@ def test_parse_and_report_with_default_options(real_log_path, capsys):
 
 @pytest.mark.integration
 def test_marker_window_pipeline_on_real_log(real_log_path):
-    analyzer = CruiseControlAnalyzer(str(real_log_path), marker_config=MarkerConfig(marker_type="blinkers"))
+    analyzer = CruiseControlAnalyzer(
+        str(real_log_path), marker_config=MarkerConfig(marker_type="blinkers")
+    )
     assert analyzer.parse_log_file() is True
     windows = analyzer.detect_marker_windows()
     assert isinstance(windows, list)
