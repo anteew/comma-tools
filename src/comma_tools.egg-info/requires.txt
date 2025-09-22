@@ -1,0 +1,14 @@
+matplotlib
+numpy
+pycapnp
+tqdm
+zstandard
+pyzmq
+smbus2
+
+[dev]
+pytest>=6.0
+pytest-cov
+black
+flake8
+mypy

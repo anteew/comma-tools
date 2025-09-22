@@ -1,0 +1,81 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+    - name: Checkout comma-tools
+      uses: actions/checkout@v4
+      with:
+        path: comma-tools
+
+    - name: Checkout openpilot
+      uses: actions/checkout@v4
+      with:
+        repository: commaai/openpilot
+        path: openpilot
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        cd comma-tools
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Lint with flake8
+      run: |
+        cd comma-tools
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+    - name: Format check with black
+      run: |
+        cd comma-tools
+        black --check src/ tests/
+
+    - name: Type check with mypy
+      run: |
+        cd comma-tools
+        mypy src/ --ignore-missing-imports
+
+    - name: Test with pytest
+      run: |
+        cd comma-tools
+        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml
+
+    - name: Integration test with dependency bootstrap
+      run: |
+        cd comma-tools
+        # Test that the analyzer can bootstrap its dependencies
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+        from comma_tools.analyzers.cruise_control_analyzer import find_repo_root, prepare_environment, resolve_deps_dir
+        repo_root = find_repo_root()
+        deps_dir = resolve_deps_dir(repo_root, None)
+        prepare_environment(repo_root, deps_dir)
+        print('✓ Environment bootstrap successful')
+        "
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: matrix.python-version == '3.11'
+      with:
+        file: ./comma-tools/coverage.xml
+        fail_ci_if_error: false
