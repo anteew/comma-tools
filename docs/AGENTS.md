@@ -1,68 +1,164 @@
-# AGENTS NOTES
+# AI DEVELOPMENT STANDARDS & CONTRIBUTOR GUIDELINES
 
-## Repository Structure
-- `cruise_control_analyzer.py`: main tool for parsing rlog segments. Now bootstraps its own environment and caches third-party deps in `<repo-root>/comma-depends`.
-- Other scripts are exploratory utilities for CAN analysis; see comments inside each script.
+> **Note**: This repository maintains professional development standards. All AI contributors must follow these guidelines to ensure code quality, documentation excellence, and maintainable contributions.
 
-## Environment & Dependencies
-- Requires Python 3.12 (CI and tools are only supported on Python 3.12).
-- Analyzer auto-detects repo root (expects `openpilot/` alongside `comma-tools/`). Override with `--repo-root` if needed.
-- Third-party packages installed locally: `matplotlib`, `numpy`, `pycapnp`, `tqdm`, `zstandard`, `pyzmq`, `smbus2`. Run once with `--install-missing-deps` to populate the cache.
-- Analyzer stubs `openpilot.common.swaglog` to avoid hardware init; no comma device required.
+## 🎯 CORE DEVELOPMENT PRINCIPLES
 
-## Recent Changes
-- Added repo/dep bootstrap + CLI options (`--repo-root`, `--deps-dir`, `--install-missing-deps`).
-- Added blinker-based marker detection with window analysis (`--marker-type/--marker-pre/--marker-post/--marker-timeout`).
-- Converted stored CAN payloads to immutable `bytes` before analysis (prevents pycapnp buffer lifetime segfaults).
-- `run_analysis` now accepts speed bounds; CLI passes `--speed-min/--speed-max` through.
-- Verified analyzer on `dcb4c2e18426be55_00000001--d6b09d8e76--0--rlog.zst` (no cruise set button activity in that segment).
+### Code Quality Standards
+- **Type Hints Required**: All functions must include comprehensive type hints for parameters and return values
+- **Docstring Excellence**: Use Google-style docstrings with detailed parameter descriptions, return values, and examples
+- **Error Handling**: Document all exceptions that functions can raise, include proper error handling
+- **Domain Expertise**: Leverage automotive/CAN bus knowledge - use hex addresses, understand vehicle systems
+- **No Comments in Code**: Code should be self-documenting; avoid inline comments unless absolutely necessary
 
-## How To Reproduce
-1. `cd /home/dmann/repos/comma-tools`
-2. `python3 cruise_control_analyzer.py ../<segment>.zst --install-missing-deps`
-3. Re-run without `--install-missing-deps` afterwards. Plot saved as `speed_timeline.png`.
+### Documentation Requirements
+- **Sphinx Integration**: All new modules must be compatible with Sphinx autodoc
+- **API Documentation**: Functions and classes must have complete docstrings that render beautifully in HTML
+- **Examples Required**: Include practical usage examples in docstrings
+- **Knowledge Base**: Complex concepts belong in the `knowledge/` directory with proper markdown documentation
 
-## Outstanding Ideas
-- Integrate blinker-based markers to auto-window around cruise button presses.
-- Expose raw CAN dump (+ unknown address highlighting) to assist manual inspection.
-- Improve reporting when vehicle never hits target speed (currently notes zero events).
-- Consider caching the parsed log output to speed up repeated analysis of same segment.
+### Testing & Verification Standards
+- **Local Testing**: Always test changes locally before committing
+- **CI Compliance**: All PRs must pass CI checks (build, test, lint)
+- **Regression Testing**: Use the regression check procedures below before major changes
+- **Real Data Validation**: When possible, test with actual vehicle logs and real-world scenarios
 
-## Tips for Next Agent
-- All edits so far are confined to `cruise_control_analyzer.py`; `git diff` shows context if further tweaks needed.
-- Analyzer assumes Subaru-specific decoding; adjust `SubaruCANDecoder` if working on another platform.
-- If openpilot schema moves, ensure `LogReader` import path still resolves through the submodule mirror (`openpilot/opendbc_repo/...`).
-- When adding new dependencies, update the requirement list in `ensure_python_packages` to keep the bootstrap consistent.
+## 🏗️ REPOSITORY ARCHITECTURE
 
-## Marker Windows
-- Default marker type is `'blinkers'`; use `--marker-type none` to disable.
-- Script watches for left-blinker ON followed by right-blinker ON (within timeout) to define analysis windows.
-- Window boundaries extend `--marker-pre` seconds before and `--marker-post` seconds after the markers.
-- Reports list the most active CAN addresses/bits within each window (uses all recorded frames while markers are enabled).
+### Core Systems
+- **Primary Tool**: `cruise_control_analyzer.py` - main analysis engine with self-contained dependency management
+- **CAN Analysis**: Specialized decoders for Subaru and other vehicle platforms in `src/comma_tools/can/`
+- **Monitoring Tools**: Real-time safety state monitoring in `src/comma_tools/monitors/`
+- **Documentation**: Professional Sphinx-generated docs deployed to GitHub Pages
 
+### Environment & Dependencies
+- **Python Version**: Python 3.12 required (CI and tools only support 3.12)
+- **Dependency Management**: Tools bootstrap their own environment, cache deps in `<repo-root>/comma-depends`
+- **OpenPilot Integration**: Analyzer expects `openpilot/` alongside `comma-tools/`, override with `--repo-root`
+- **Hardware Independence**: Tools stub hardware dependencies to work without comma devices
 
-## Quick Regression Check (Fresh Cache)
-Use these steps whenever you need to prove the analyzer works end-to-end starting from an empty dependency cache.
+## 🚀 CONTRIBUTION WORKFLOW
 
-1. Optional cleanup: remove the cached deps to mimic a clean environment.
+### Branch & PR Standards
+- **Branch Naming**: Use `devin/{timestamp}-{descriptive-slug}` format (generate timestamp with `date +%s`)
+- **Commit Messages**: Descriptive, professional commit messages with bullet points for multiple changes
+- **PR Requirements**: All PRs must include comprehensive descriptions, pass CI, and maintain documentation
+- **Code Review**: PRs are automatically reviewed for adherence to these standards
+
+### Pre-Commit Checklist
+1. **Run Local Tests**: Verify all functionality works as expected
+2. **Check Documentation**: Ensure Sphinx can build docs without errors (`sphinx-build -b html docs/ docs/_build/html`)
+3. **Verify Type Hints**: All new functions have complete type annotations
+4. **Update Dependencies**: If adding packages, update `pyproject.toml` and bootstrap requirements
+5. **Test Real Scenarios**: Use actual log files when possible for validation
+
+### Documentation Deployment
+- **Automatic Deployment**: Docs auto-deploy to https://anteew.github.io/comma-tools/ on main branch merges
+- **Local Preview**: Build docs locally to preview changes before committing
+- **API Reference**: New modules automatically appear in API docs via Sphinx autodoc
+- **Examples**: Include usage examples in both docstrings and `docs/examples.rst`
+
+## 🔧 DEVELOPMENT ENVIRONMENT
+
+### Quick Setup
+```bash
+# Clone and setup
+git clone https://github.com/anteew/comma-tools.git
+cd comma-tools
+pip install -e ".[dev,docs]"
+
+# Test documentation build
+cd docs && sphinx-build -b html . _build/html
+```
+
+### Development Tools
+- **Sphinx Documentation**: Professional HTML docs with Furo theme
+- **GitHub Actions**: Automated testing and deployment
+- **Type Checking**: MyPy integration for type safety
+- **Code Quality**: Automated linting and formatting checks
+
+## 📋 RECENT ENHANCEMENTS
+- **Professional Documentation**: Added Sphinx with GitHub Pages deployment and beautiful Furo theme
+- **Comprehensive API Docs**: Auto-generated from excellent existing docstrings
+- **Enhanced Analysis**: Blinker-based marker detection with configurable time windows
+- **Robust Error Handling**: Immutable bytes conversion prevents pycapnp segfaults
+- **Flexible Configuration**: CLI options for repo root, dependency directories, speed bounds
+
+## 💡 DEVELOPMENT PRIORITIES
+- **Real-World Testing**: Always validate with actual vehicle logs when possible
+- **Cross-Platform Support**: Extend beyond Subaru to other vehicle platforms
+- **Performance Optimization**: Consider caching parsed logs for repeated analysis
+- **Enhanced Visualization**: Improve plotting and data presentation capabilities
+- **Safety Integration**: Deeper integration with openpilot safety systems
+
+## 🔍 TECHNICAL IMPLEMENTATION DETAILS
+
+### Marker Window Analysis
+- **Default Configuration**: Blinker-based markers (`--marker-type blinkers`)
+- **Detection Logic**: Left-blinker ON → Right-blinker ON sequence within timeout window
+- **Time Boundaries**: Configurable pre/post marker extensions (`--marker-pre`, `--marker-post`)
+- **Activity Reporting**: Lists most active CAN addresses/bits during marker windows
+- **Disable Option**: Use `--marker-type none` to disable marker-based windowing
+
+### CAN Message Decoding
+- **Subaru Specialization**: Primary focus on Subaru CAN protocols and addresses
+- **Hex Address Usage**: Proper automotive convention (e.g., `0x119` for steering, `0x146` for cruise buttons)
+- **Type Safety**: All CAN data converted to immutable bytes before processing
+- **Error Resilience**: Graceful handling of malformed or missing CAN messages
+
+## 🧪 REGRESSION TESTING PROTOCOL
+
+### Complete End-to-End Validation
+**Use this procedure before major changes or when validating new contributions:**
+
+1. **Clean Environment Setup**:
    ```bash
-   rm -rf ~/repos/comma-depends
-   ```
-2. Run the analyzer on a known-good log (the latest segment lives in `/home/dmann/` and a copy is in `/home/dmann/repos/`):
-   ```bash
+   rm -rf ~/repos/comma-depends  # Optional: test fresh dependency installation
    cd ~/repos/comma-tools
+   ```
+
+2. **Primary Analysis Test**:
+   ```bash
    python3 cruise_control_analyzer.py ../dcb4c2e18426be55_00000001--d6b09d8e76--0--rlog.zst --install-missing-deps
    ```
-   - Expect a dependency install banner followed by “Openpilot modules loaded.” and the full report.
-   - Exit code should be `0` and `speed_timeline.png` appears in the working directory.
-3. Re-run without the install flag to confirm cached imports work:
+   **Expected Results**:
+   - Dependency installation banner
+   - "Openpilot modules loaded." message
+   - Complete analysis report
+   - Exit code `0`
+   - Generated `speed_timeline.png` file
+
+3. **Cached Dependencies Test**:
    ```bash
    python3 cruise_control_analyzer.py ../dcb4c2e18426be55_00000001--d6b09d8e76--0--rlog.zst
    ```
-   - This should skip the pip step and still succeed.
-4. (Optional) Spot-check critical stats in the report:
-   - “Extracted 6110 speed data points”
-   - “Speed range: 1.0 - 22.6 MPH”
-   - “No clear 'Set' button presses detected …”
+   **Expected Results**:
+   - Skip pip installation step
+   - Same successful analysis output
 
-If all steps pass, you’re in the golden state and can begin modifying the analyzer with confidence.
+4. **Data Validation Checkpoints**:
+   - "Extracted 6110 speed data points"
+   - "Speed range: 1.0 - 22.6 MPH"
+   - "No clear 'Set' button presses detected ..." (for this specific log)
+
+**✅ Golden State**: All steps pass → Ready for development work
+**❌ Failure**: Any step fails → Environment issue, investigate before proceeding
+
+## 🎓 AI CONTRIBUTOR EXPECTATIONS
+
+### Professional Standards
+- **Domain Knowledge**: Understand automotive systems, CAN protocols, and openpilot architecture
+- **Code Excellence**: Write production-quality code with comprehensive error handling
+- **Documentation First**: Prioritize clear, comprehensive documentation over quick fixes
+- **Testing Rigor**: Validate all changes with real-world data when possible
+- **Collaborative Approach**: Respect existing patterns and architectural decisions
+
+### Prohibited Actions
+- **No Inline Comments**: Code should be self-documenting
+- **No Breaking Changes**: Maintain backward compatibility unless explicitly required
+- **No Shortcuts**: Follow all testing and documentation requirements
+- **No Direct Main Commits**: Always use feature branches and PRs
+
+---
+
+*This repository represents professional-grade automotive debugging tools. Maintain these standards to ensure continued excellence and reliability for the openpilot community.*e.
