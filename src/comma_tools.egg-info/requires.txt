@@ -12,3 +12,9 @@ pytest-cov
 black
 flake8
 mypy
+
+[docs]
+sphinx>=4.0
+sphinx-autodoc-typehints
+furo
+myst-parser

@@ -27,6 +27,11 @@ Requires-Dist: pytest-cov; extra == "dev"
 Requires-Dist: black; extra == "dev"
 Requires-Dist: flake8; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
+Provides-Extra: docs
+Requires-Dist: sphinx>=4.0; extra == "docs"
+Requires-Dist: sphinx-autodoc-typehints; extra == "docs"
+Requires-Dist: furo; extra == "docs"
+Requires-Dist: myst-parser; extra == "docs"
 
 # Comma Tools
 [![Test Suite](https://github.com/anteew/comma-tools/actions/workflows/test.yml/badge.svg)](https://github.com/anteew/comma-tools/actions/workflows/test.yml)
@@ -136,7 +141,7 @@ comma-tools/
 
 ## Requirements
 
-- Python 3.12 (project is tested on 3.9–3.12 in CI)
+- Python 3.12
 - openpilot installation (for some tools)
 - Panda device (for real-time monitoring tools)
 ## Integration tests with a real rlog.zst
