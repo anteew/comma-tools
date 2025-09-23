@@ -150,17 +150,17 @@ def ensure_cloudlog_stub():
 def load_external_modules():
     """Load external modules required for OpenPilot analysis."""
     ensure_cloudlog_stub()
-    
+
     try:
         import numpy as np
         import matplotlib.pyplot as plt
         from tools.lib.logreader import LogReader
-        
+
         return {
-            'np': np,
-            'plt': plt,
-            'LogReader': LogReader,
-            'messaging': None  # Not used in current implementation
+            "np": np,
+            "plt": plt,
+            "LogReader": LogReader,
+            "messaging": None,  # Not used in current implementation
         }
     except ImportError as e:
         raise ImportError(

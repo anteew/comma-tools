@@ -12,7 +12,7 @@ from .openpilot_utils import (
 
 __all__ = [
     "find_repo_root",
-    "resolve_deps_dir", 
+    "resolve_deps_dir",
     "prepare_environment",
     "ensure_python_packages",
     "ensure_cloudlog_stub",

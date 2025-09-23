@@ -986,10 +986,10 @@ def main():
     print("Dependencies ready; loading openpilot modules...", flush=True)
     modules = load_external_modules()
     global np, plt, LogReader, messaging
-    np = modules['np']
-    plt = modules['plt']
-    LogReader = modules['LogReader']
-    messaging = modules['messaging']
+    np = modules["np"]
+    plt = modules["plt"]
+    LogReader = modules["LogReader"]
+    messaging = modules["messaging"]
     print("Openpilot modules loaded.", flush=True)
 
     if args.marker_pre < 0 or args.marker_post < 0:
