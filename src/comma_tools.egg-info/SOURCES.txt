@@ -9,7 +9,9 @@ src/comma_tools.egg-info/entry_points.txt
 src/comma_tools.egg-info/requires.txt
 src/comma_tools.egg-info/top_level.txt
 src/comma_tools/analyzers/__init__.py
+src/comma_tools/analyzers/can_bitwatch.py
 src/comma_tools/analyzers/cruise_control_analyzer.py
+src/comma_tools/analyzers/rlog_to_csv.py
 src/comma_tools/monitors/__init__.py
 src/comma_tools/monitors/can_bus_check.py
 src/comma_tools/monitors/can_hybrid_rx_check.py

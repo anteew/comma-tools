@@ -23,7 +23,7 @@ from ..utils import (
     ensure_python_packages,
     load_external_modules,
 )
-from ..can import SubaruCANDecoder
+from ..can import SubaruCANDecoder, BitAnalyzer, CanMessage
 
 np = None  # loaded at runtime
 plt = None  # loaded at runtime
@@ -54,6 +54,7 @@ class CruiseControlAnalyzer:
         self.target_speed_events: List[Dict[str, float]] = []
         self.candidate_addresses: Dict[int, Dict[str, object]] = {}
         self.decoder = SubaruCANDecoder()
+        self.bit_analyzer = BitAnalyzer()
 
         self.target_addresses = {
             self.decoder.WHEEL_SPEEDS_ADDR: "Wheel_Speeds",
@@ -315,31 +316,32 @@ class CruiseControlAnalyzer:
 
         return signal_analysis
 
-    def compute_bit_change_stats(self, messages: List[Dict[str, object]]):
-        if len(messages) < 2:
+    def _convert_to_can_messages(
+        self, messages: List[Dict[str, object]], address: int
+    ) -> List[CanMessage]:
+        """Convert internal message format to CanMessage objects"""
+        can_messages = []
+        for msg in messages:
+            timestamp = float(msg["timestamp"])  # type: ignore
+            data = msg["data"] if isinstance(msg["data"], bytes) else b""
+            bus_val = msg.get("bus", 0) or 0
+            bus = int(bus_val)  # type: ignore
+            can_messages.append(CanMessage(timestamp, address, data, bus))
+        return can_messages
+
+    def compute_bit_change_stats(self, messages: List[Dict[str, object]], address: int = 0):
+        """Compute bit change statistics using the new library"""
+        can_messages = self._convert_to_can_messages(messages, address)
+        stats = self.bit_analyzer.compute_change_stats(can_messages)
+
+        if not stats:
             return None
 
-        bit_frequency: Counter[int] = Counter()
-        total_changes = 0
-
-        prev_data = messages[0]["data"]
-        for msg in messages[1:]:
-            prev_bytes = prev_data if isinstance(prev_data, bytes) else b""
-            msg_bytes = msg["data"] if isinstance(msg["data"], bytes) else b""
-            changed_bits = self.find_changed_bits(prev_bytes, msg_bytes)
-            if changed_bits:
-                total_changes += 1
-                for bit_pos in changed_bits:
-                    bit_frequency[bit_pos] += 1
-            prev_data = msg["data"]
-
-        if total_changes == 0:
-            return None
-
+        # Convert to old format for compatibility
         return {
-            "total_changes": total_changes,
-            "bit_frequency": bit_frequency,
-            "message_count": len(messages),
+            "total_changes": stats.total_changes,
+            "bit_frequency": stats.bit_frequency,
+            "message_count": stats.message_count,
         }
 
     def analyze_can_bit_changes(self):
@@ -353,7 +355,7 @@ class CruiseControlAnalyzer:
             if not messages:
                 continue
 
-            stats = self.compute_bit_change_stats(messages)
+            stats = self.compute_bit_change_stats(messages, address)
             if not stats:
                 continue
 
@@ -369,19 +371,8 @@ class CruiseControlAnalyzer:
         return bit_analysis
 
     def find_changed_bits(self, old_data: bytes, new_data: bytes) -> List[int]:
-        """Find which bits changed between two CAN messages"""
-        changed_bits = []
-        min_len = min(len(old_data), len(new_data))
-
-        for byte_idx in range(min_len):
-            if old_data[byte_idx] != new_data[byte_idx]:
-                xor_result = old_data[byte_idx] ^ new_data[byte_idx]
-                for bit_idx in range(8):
-                    if xor_result & (1 << bit_idx):
-                        bit_position = byte_idx * 8 + bit_idx
-                        changed_bits.append(bit_position)
-
-        return changed_bits
+        """Find which bits changed between two CAN messages - now uses library"""
+        return self.bit_analyzer.find_changed_bits(old_data, new_data)
 
     def correlate_signals_with_speed(self, signal_analysis):
         """Correlate cruise control signals with speed data"""

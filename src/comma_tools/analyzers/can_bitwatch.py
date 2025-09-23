@@ -30,6 +30,8 @@ from collections import defaultdict, Counter
 from dataclasses import dataclass
 from typing import Tuple, List
 
+from ..can import BitAnalyzer, CanMessage
+
 SEG_PRE, SEG_WIN, SEG_POST = "pre", "window", "post"
 
 
@@ -101,13 +103,18 @@ def fmt_time_rel(seconds: float) -> str:
     return f"{m:02d}:{s:06.3f}"
 
 
+# Create shared bit analyzer instance
+_bit_analyzer = BitAnalyzer()
+
+
 def payload_to_u64_le(payload: bytes) -> int:
-    b = payload + b"\x00" * (8 - len(payload)) if len(payload) < 8 else payload[:8]
-    return int.from_bytes(b, "little")
+    """Convert payload to u64 - now uses library"""
+    return _bit_analyzer.payload_to_u64(payload, "little")
 
 
 def bit_value(u64: int, gidx: int) -> int:
-    return (u64 >> gidx) & 1
+    """Extract bit value - now uses library"""
+    return _bit_analyzer.get_bit_value(u64, gidx)
 
 
 def read_csv_rows(path: str):

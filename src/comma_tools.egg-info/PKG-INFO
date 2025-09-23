@@ -55,6 +55,8 @@ pip install -e ".[dev]"
 
 ### Analyzers
 - **Cruise Control Analyzer** (`cruise-control-analyzer`): Deep analysis of recorded driving logs (`rlog.zst` files) with focus on Subaru vehicle cruise control systems
+- **RLog to CSV** (`rlog-to-csv`): Convert openpilot rlog.zst files to CSV format for analysis
+- **CAN Bitwatch** (`can-bitwatch`): Analyze CAN CSV data for bit patterns, edge detection, and pulse sequences
 
 ### Monitors
 - **Hybrid RX Trace** (`hybrid_rx_trace.py`): Real-time monitoring of Panda safety states
@@ -81,6 +83,16 @@ cruise-control-analyzer /path/to/logfile.zst
 
 # With custom speed range
 cruise-control-analyzer /path/to/logfile.zst --speed-min 50 --speed-max 60
+```
+
+### CAN Analysis Tools
+
+```bash
+# Convert rlog to CSV for analysis
+rlog-to-csv --rlog /path/to/logfile.zst --out output.csv --window-start 100.0 --window-dur 30.0
+
+# Analyze CAN bit patterns
+can-bitwatch --csv output.csv --output-prefix analysis/results --watch 0x027:B4b5 0x321:B5b1
 ```
 
 ### Real-time Monitoring
@@ -129,7 +141,11 @@ comma-tools/
 - Panda device (for real-time monitoring tools)
 ## Integration tests with a real rlog.zst
 
-By default, tests run without any large external files. To exercise the analyzer with a real log:
+By default, the repo includes a known-good real log fixture stored via Git LFS:
+- Path: `tests/data/known_good.rlog.zst`
+- CI and local runs will use this fixture automatically for integration tests.
+
+Override the fixture with your own log if desired:
 
 Option A: environment variable
 ```bash
@@ -138,11 +154,12 @@ LOG_FILE=/absolute/path/to/your.rlog.zst pytest tests/integration -v -m integrat
 
 Option B: pytest option
 ```bash
-pytest tests/integration -v -m integration --log-file=/absolute/path/to/your.rlog.zst
+pytest tests/integration -v -m integration --real-log-file=/absolute/path/to/your.rlog.zst
 ```
 
 Notes:
-- If no log is provided, these tests are skipped automatically.
+- If neither CLI nor env is provided and the fixture is present, tests will use the fixture. If no fixture is present, tests are skipped automatically.
+- Ensure Git LFS is installed locally to fetch the fixture (`git lfs install`).
 - To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
 
 ## License

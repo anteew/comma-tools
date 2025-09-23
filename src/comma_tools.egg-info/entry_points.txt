@@ -1,2 +1,4 @@
 [console_scripts]
+can-bitwatch = comma_tools.analyzers.can_bitwatch:main
 cruise-control-analyzer = comma_tools.analyzers.cruise_control_analyzer:main
+rlog-to-csv = comma_tools.analyzers.rlog_to_csv:main
