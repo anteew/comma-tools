@@ -8,7 +8,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.analyzers.cruise_control_analyzer import (
+from comma_tools.utils import (
     find_repo_root,
     prepare_environment,
     resolve_deps_dir,
@@ -95,7 +95,7 @@ class TestAnalyzerStubbing:
 
     def test_cloudlog_stub_import(self):
         """Test that cloudlog stub can be imported."""
-        from comma_tools.analyzers.cruise_control_analyzer import ensure_cloudlog_stub
+        from comma_tools.utils import ensure_cloudlog_stub
 
         ensure_cloudlog_stub()
 

@@ -78,7 +78,7 @@ jobs:
         python -c "
         import sys
         sys.path.insert(0, 'src')
-        from comma_tools.analyzers.cruise_control_analyzer import find_repo_root, prepare_environment, resolve_deps_dir
+        from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
         repo_root = find_repo_root()
         deps_dir = resolve_deps_dir(repo_root, None)
         prepare_environment(repo_root, deps_dir)

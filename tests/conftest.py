@@ -1,8 +1,11 @@
 import os
 from pathlib import Path
 import pytest
+import sys
 
-from comma_tools.analyzers.cruise_control_analyzer import (
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from comma_tools.utils import (
     find_repo_root,
     resolve_deps_dir,
     prepare_environment,
@@ -59,5 +62,13 @@ def integration_env():
         )
     except Exception:
         pass
-    load_external_modules()
+
+    modules = load_external_modules()
+    import comma_tools.analyzers.cruise_control_analyzer as analyzer_module
+
+    analyzer_module.np = modules["np"]
+    analyzer_module.plt = modules["plt"]
+    analyzer_module.LogReader = modules["LogReader"]
+    analyzer_module.messaging = modules["messaging"]
+
     return True

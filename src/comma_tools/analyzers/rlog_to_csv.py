@@ -23,55 +23,7 @@ import csv
 from typing import Optional
 from pathlib import Path
 
-
-def find_repo_root(explicit: Optional[str] = None) -> Path:
-    """Locate the root directory that contains the openpilot checkout."""
-    candidates: list[Path] = []
-    if explicit:
-        candidates.append(Path(explicit).expanduser())
-
-    script_path = Path(__file__).resolve()
-    candidates.extend(script_path.parents)
-    candidates.append(Path.cwd())
-
-    seen: set[Path] = set()
-    for candidate in candidates:
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        if (candidate / "openpilot").exists():
-            return candidate
-
-    raise FileNotFoundError(
-        "Could not find the openpilot checkout.\n\n"
-        "Expected directory structure:\n"
-        "  parent-directory/\n"
-        "  ├── openpilot/          # Clone from https://github.com/commaai/openpilot\n"
-        "  └── comma-tools/        # This repository\n\n"
-        "Pass --repo-root to specify the parent directory explicitly."
-    )
-
-
-def add_openpilot_to_path(repo_root: Optional[str]):
-    if repo_root:
-        repo_path = Path(repo_root).expanduser()
-        openpilot_path = repo_path / "openpilot"
-        if not openpilot_path.exists():
-            openpilot_path = Path(repo_root).expanduser()
-        sys.path.insert(0, str(openpilot_path / "tools"))
-        sys.path.insert(0, str(openpilot_path))
-    else:
-        try:
-            repo_root_path = find_repo_root()
-            openpilot_path = repo_root_path / "openpilot"
-            sys.path.insert(0, str(openpilot_path / "tools"))
-            sys.path.insert(0, str(openpilot_path))
-        except FileNotFoundError:
-            script_path = Path(__file__).resolve()
-            cand = script_path.parent.parent.parent.parent / "openpilot"
-            if cand.exists():
-                sys.path.insert(0, str(cand / "tools"))
-                sys.path.insert(0, str(cand))
+from ..utils import add_openpilot_to_path
 
 
 def main():
