@@ -24,12 +24,17 @@ class TestFindRepoRoot:
         result = find_repo_root(str(tmp_path))
         assert result == tmp_path
 
-    def test_find_repo_root_not_found(self, tmp_path):
+    @patch("comma_tools.analyzers.rlog_to_csv.Path.cwd")
+    @patch("comma_tools.analyzers.rlog_to_csv.__file__", "/fake/path/to/script.py")
+    def test_find_repo_root_not_found(self, mock_cwd, tmp_path):
         """Test error when repo root not found."""
+        mock_cwd.return_value = tmp_path
+        
         with pytest.raises(FileNotFoundError, match="Could not find the openpilot checkout"):
             find_repo_root(str(tmp_path))
 
     @patch("comma_tools.analyzers.rlog_to_csv.Path.cwd")
+    @patch("comma_tools.analyzers.rlog_to_csv.__file__", "/fake/path/to/script.py")
     def test_find_repo_root_current_directory(self, mock_cwd, tmp_path):
         """Test finding repo root in current directory."""
         openpilot_dir = tmp_path / "openpilot"
