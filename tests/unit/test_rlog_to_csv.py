@@ -1,7 +1,7 @@
 """Unit tests for rlog_to_csv module."""
 
 import pytest
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import patch
 import sys
 from pathlib import Path
 import tempfile
@@ -29,7 +29,7 @@ class TestFindRepoRoot:
     def test_find_repo_root_not_found(self, mock_cwd, tmp_path):
         """Test error when repo root not found."""
         mock_cwd.return_value = tmp_path
-        
+
         with pytest.raises(FileNotFoundError, match="Could not find the openpilot checkout"):
             find_repo_root(str(tmp_path))
 
@@ -87,7 +87,6 @@ class TestSegmentation:
 
     def test_segmentation_no_window(self):
         """Test segmentation when no window is defined."""
-        from comma_tools.analyzers.rlog_to_csv import main
 
         def seg_for(t, window_start=None, window_dur=None):
             if window_start is None or window_dur is None:

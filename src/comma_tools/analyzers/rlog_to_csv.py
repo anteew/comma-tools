@@ -12,11 +12,14 @@ Requires openpilot's LogReader on PYTHONPATH;
 either install openpilot next to this script or run from within your openpilot venv.
 
 Examples:
-  python rlog_to_csv.py --rlog /path/route/rlog2.zst --window-start 58918.188 --window-dur 27.399 --out out.csv
+  python rlog_to_csv.py --rlog /path/route/rlog2.zst --window-start 58918.188 \\
+    --window-dur 27.399 --out out.csv
 
 """
 from __future__ import annotations
-import argparse, os, sys, csv, zlib
+import argparse
+import sys
+import csv
 from typing import Optional
 from pathlib import Path
 
@@ -95,9 +98,10 @@ def main():
     add_openpilot_to_path(args.repo_root)
     try:
         from tools.lib.logreader import LogReader
-    except Exception as e:
+    except Exception:
         print(
-            "ERROR: couldn't import LogReader from openpilot. Pass --repo-root or run with openpilot on PYTHONPATH.",
+            "ERROR: couldn't import LogReader from openpilot. Pass --repo-root or "
+            "run with openpilot on PYTHONPATH.",
             file=sys.stderr,
         )
         raise

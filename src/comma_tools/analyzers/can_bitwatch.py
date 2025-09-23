@@ -21,10 +21,14 @@ Tip:
   Use together with rlog_to_csv.py to generate the CSV from an rlog.zst.
 """
 from __future__ import annotations
-import argparse, csv, re, math, sys, json, os
+import argparse
+import csv
+import re
+import json
+import os
 from collections import defaultdict, Counter
 from dataclasses import dataclass
-from typing import Tuple, List, Dict, Iterable
+from typing import Tuple, List
 
 SEG_PRE, SEG_WIN, SEG_POST = "pre", "window", "post"
 
@@ -259,7 +263,8 @@ def detect_edges_and_candidates(rows, watch: List[WatchBit], window_start: float
 
 def hunt_accel_pulses(rows, candidates, window_start, window_end=None, pulse_sec=2.0, tol=0.5):
     """
-    For each candidate bit, reconstruct its on/off timeline and look for exactly three ~2s high pulses.
+    For each candidate bit, reconstruct its on/off timeline and look for exactly three
+    ~2s high pulses.
     """
     rows_sorted = sorted(rows, key=lambda r: r["timestamp"])
     if window_end is None:
@@ -298,11 +303,9 @@ def hunt_accel_pulses(rows, candidates, window_start, window_end=None, pulse_sec
         # Determine starting state at window_start
         # Replay until window_start
         curr = 0
-        t_last = 0.0
         for t, b in series:
             if t <= window_start:
                 curr = b
-                t_last = t
                 continue
             break
         state = curr
@@ -410,7 +413,8 @@ def main():
             wr.writerow({**row, "pulses": json.dumps(row["pulses"])})
 
     print(
-        f"Wrote:\n  {op}.counts.csv\n  {op}.per_address.json\n  {op}.bit_edges.csv\n  {op}.candidates_window_only.csv\n  {op}.accel_hunt.csv"
+        f"Wrote:\n  {op}.counts.csv\n  {op}.per_address.json\n  {op}.bit_edges.csv\n"
+        f"  {op}.candidates_window_only.csv\n  {op}.accel_hunt.csv"
     )
 
 

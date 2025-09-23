@@ -1,13 +1,8 @@
 """Unit tests for can_bitwatch module."""
 
 import pytest
-from unittest.mock import Mock, patch
 import sys
 from pathlib import Path
-import tempfile
-import csv
-import json
-import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
