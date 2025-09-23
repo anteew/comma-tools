@@ -99,7 +99,8 @@ class EventDetector:
             prev_buttons = None
 
             for msg in button_messages:
-                buttons = self.decoder.decode_cruise_buttons(msg["data"] if isinstance(msg["data"], bytes) else b"")
+                data = msg["data"] if isinstance(msg["data"], bytes) else b""
+                buttons = self.decoder.decode_cruise_buttons(data)
                 if buttons:
                     buttons_dict = cast(Dict[str, Any], buttons)
                     if prev_buttons and buttons_dict != prev_buttons:
@@ -139,7 +140,8 @@ class EventDetector:
             prev_status = None
 
             for msg in status_messages:
-                status = self.decoder.decode_cruise_status(msg["data"] if isinstance(msg["data"], bytes) else b"")
+                data = msg["data"] if isinstance(msg["data"], bytes) else b""
+                status = self.decoder.decode_cruise_status(data)
                 if status:
                     status_dict = cast(Dict[str, Any], status)
                     if prev_status and status_dict != prev_status:
@@ -179,7 +181,8 @@ class EventDetector:
             prev_brake = None
 
             for msg in brake_messages:
-                brake_info = self.decoder.decode_es_brake(msg["data"] if isinstance(msg["data"], bytes) else b"")
+                data = msg["data"] if isinstance(msg["data"], bytes) else b""
+                brake_info = self.decoder.decode_es_brake(data)
                 if brake_info:
                     brake_dict = cast(Dict[str, Any], brake_info)
                     if prev_brake and brake_dict != prev_brake:
