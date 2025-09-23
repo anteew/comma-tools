@@ -1,6 +1,10 @@
 # Getting to `controls_allowed = True`
 
-This guide explains how openpilot transitions from power-on to an active control state, and gives a troubleshooting checklist for users whose car will not engage. References point to the upstream openpilot tree in `../openpilot`.
+This guide explains how openpilot transitions from power-on to an active control state, and gives a troubleshooting checklist for users whose car will not engage.
+
+**IMPORTANT**: Debug commands in this guide must be run **on the comma device** (EON/comma three) via SSH or ADB, not in your local development repo. The comma device runs the actual openpilot software that controls your car.
+
+References point to the upstream openpilot tree in `../openpilot`.
 
 ## 1. Processes That Must Be Healthy
 
@@ -149,19 +153,19 @@ flowchart TD
     A[openpilot won't engage] --> B{UI shows 'openpilot unavailable'?}
 
     B -->|Yes| C[Check CAN communication]
-    C --> C1[./tools/params read FirmwareQueryDone]
+    C --> C1[python -m openpilot.common.params FirmwareQueryDone]
     C1 --> C2{Returns '1'?}
     C2 -->|No| C3[No CAN packets<br/>Check harness/wiring]
     C2 -->|Yes| D[Check car fingerprinting]
 
     B -->|No| E{UI toggles but instantly disengages?}
 
-    D --> D1[./tools/params read ControlsReady]
+    D --> D1[python -m openpilot.common.params ControlsReady]
     D1 --> D2{Returns '1'?}
     D2 -->|No| D3[card process failed<br/>Check car port logs]
     D2 -->|Yes| F[Check CarParams]
 
-    F --> F1[./tools/params read CarParams]
+    F --> F1[python -m openpilot.common.params CarParams]
     F1 --> F2{Non-empty blob?}
     F2 -->|No| F3[Fingerprint failed<br/>Unsupported car model]
     F2 -->|Yes| G[Check pandaStates]
@@ -169,7 +173,7 @@ flowchart TD
     E -->|Yes| G[Check pandaStates]
     E -->|No| H{Green LED never lights?}
 
-    G --> G1[./tools/cereal/messaging/listener.py pandaStates]
+    G --> G1[Monitor pandaStates messages<br/>via cereal SubMaster]
     G1 --> G2{controlsAllowed = True?}
     G2 -->|No| G3[Safety hook blocking<br/>Check cruise/pedal state]
     G2 -->|Yes| I[Check selfdriveState]
@@ -177,7 +181,7 @@ flowchart TD
     H -->|Yes| I[Check selfdriveState]
     H -->|No| J{Sudden disengagement?}
 
-    I --> I1[./tools/cereal/messaging/listener.py selfdriveState]
+    I --> I1[Monitor selfdriveState messages<br/>via cereal SubMaster]
     I1 --> I2{enabled toggles correctly?}
     I2 -->|No| I3[Manager restart<br/>Check process crashes]
     I2 -->|Yes| K[Check heartbeat]
@@ -201,13 +205,45 @@ flowchart TD
 
 ### Command Reference:
 
-Run these checks in a comma shell (from `../openpilot`):
+**IMPORTANT**: Run these checks **on the comma device** (EON/comma three) via SSH or ADB, not in your local development repo.
 
-- `./tools/params read FirmwareQueryDone` → should print `1` soon after ignition.
-- `./tools/params read ControlsReady` → flips to `1` once `card` initializes.
-- `./tools/params read CarParams` → non-empty blob confirms fingerprint success.
-- `./tools/cereal/messaging/listener.py pandaStates` → watch `controlsAllowed`, `ignitionLine`, `faultStatus`.
-- `./tools/cereal/messaging/listener.py selfdriveState` → ensure `enabled` mirrors your steering-wheel button presses.
+#### Access the comma device:
+```bash
+# SSH method (if SSH is enabled)
+ssh comma@192.168.x.x
+
+# ADB method (most common)
+adb shell
+```
+
+#### Debug commands on device:
+```bash
+# Check parameter values
+python -m openpilot.common.params FirmwareQueryDone    # should print '1' soon after ignition
+python -m openpilot.common.params ControlsReady       # flips to '1' once card initializes
+python -m openpilot.common.params CarParams           # non-empty blob confirms fingerprint success
+
+# Monitor real-time message streams
+python -c "
+from openpilot.cereal.messaging import SubMaster
+sm = SubMaster(['pandaStates'])
+while True:
+    sm.update()
+    if sm.updated['pandaStates']:
+        ps = sm['pandaStates']
+        print(f'controlsAllowed: {ps.controlsAllowed}, ignitionLine: {ps.ignitionLine}')
+"
+
+python -c "
+from openpilot.cereal.messaging import SubMaster
+sm = SubMaster(['selfdriveState'])
+while True:
+    sm.update()
+    if sm.updated['selfdriveState']:
+        sds = sm['selfdriveState']
+        print(f'enabled: {sds.enabled}, alertStatus: {sds.alertStatus}')
+"
+```
 
 ### Interpretation Tips:
 
