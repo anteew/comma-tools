@@ -6,7 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.analyzers.cruise_control_analyzer import SubaruCANDecoder, MarkerConfig
+from comma_tools.analyzers.cruise_control_analyzer import MarkerConfig
+from comma_tools.can import SubaruCANDecoder
 
 
 class TestSubaruCANDecoder:
