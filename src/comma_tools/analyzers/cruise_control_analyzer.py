@@ -26,6 +26,7 @@ from ..utils import (
 from ..can import SubaruCANDecoder, BitAnalyzer, CanMessage
 from ..visualization import SpeedTimelinePlotter
 from .event_detection import EventDetector
+from .marker_detection import MarkerDetector, MarkerConfig
 
 np = None  # loaded at runtime
 plt = None  # loaded at runtime
@@ -33,16 +34,6 @@ LogReader = None  # loaded at runtime
 messaging = None  # loaded at runtime
 
 
-@dataclass
-class MarkerConfig:
-    marker_type: str = "blinkers"
-    pre_time: float = 1.5
-    post_time: float = 1.5
-    timeout: float = 15.0
-
-    @property
-    def enabled(self) -> bool:
-        return self.marker_type != "none"
 
 
 class CruiseControlAnalyzer:
@@ -57,6 +48,7 @@ class CruiseControlAnalyzer:
         self.candidate_addresses: Dict[int, Dict[str, object]] = {}
         self.decoder = SubaruCANDecoder()
         self.bit_analyzer = BitAnalyzer()
+        self.marker_detector = MarkerDetector(self.decoder, self.marker_config)
 
         self.target_addresses = {
             self.decoder.WHEEL_SPEEDS_ADDR: "Wheel_Speeds",
@@ -67,10 +59,7 @@ class CruiseControlAnalyzer:
         }
 
         # Marker tracking
-        self.marker_events: List[Dict[str, object]] = []
-        self.marker_windows: List[Dict[str, float]] = []
         self.marker_window_analysis: List[Dict[str, object]] = []
-        self._prev_blinker_state = {"left": False, "right": False}
 
         # Cached lookups for naming
         self.address_labels: Dict[int, str] = dict(self.target_addresses)
@@ -111,7 +100,7 @@ class CruiseControlAnalyzer:
                             self.marker_config.marker_type == "blinkers"
                             and address == self.decoder.DASHLIGHTS_ADDR
                         ):
-                            self._record_blinker_event(timestamp, data)
+                            self.marker_detector.record_blinker_event(timestamp, data)
 
                         if address == self.decoder.WHEEL_SPEEDS_ADDR:
                             speeds = self.decoder.decode_wheel_speeds(data)
@@ -393,10 +382,14 @@ class CruiseControlAnalyzer:
             return False
 
         if self.marker_config.enabled:
-            self.marker_windows = self.detect_marker_windows()
-            self.marker_window_analysis = self.analyze_marker_windows()
+            marker_windows = self.marker_detector.detect_marker_windows()
+            self.marker_window_analysis = self.marker_detector.analyze_marker_windows(
+                self.all_can_data, 
+                self.address_labels, 
+                self.compute_bit_change_stats
+            )
         else:
-            self.marker_windows = []
+            marker_windows = []
             self.marker_window_analysis = []
 
         self.find_target_speed_events(target_speed_min, target_speed_max)
@@ -407,132 +400,6 @@ class CruiseControlAnalyzer:
 
         return True
 
-    def _record_blinker_event(self, timestamp: float, data: bytes) -> None:
-        decoded = self.decoder.decode_blinkers(data)
-        if not decoded:
-            return
-
-        left = bool(decoded.get("left"))
-        right = bool(decoded.get("right"))
-        prev_left = self._prev_blinker_state["left"]
-        prev_right = self._prev_blinker_state["right"]
-
-        if left == prev_left and right == prev_right:
-            return
-
-        event = {
-            "timestamp": timestamp,
-            "left": left,
-            "right": right,
-            "left_prev": prev_left,
-            "right_prev": prev_right,
-            "left_changed": left != prev_left,
-            "right_changed": right != prev_right,
-        }
-        self.marker_events.append(event)  # type: ignore[arg-type]
-        self._prev_blinker_state["left"] = left
-        self._prev_blinker_state["right"] = right
-
-    def detect_marker_windows(self) -> List[Dict[str, float]]:
-        if not self.marker_config.enabled or self.marker_config.marker_type != "blinkers":
-            return []
-
-        windows: List[Dict[str, float]] = []
-        start_event: Optional[Dict[str, Any]] = None
-
-        for event in self.marker_events:
-            timestamp_val = event.get("timestamp")
-            if isinstance(timestamp_val, (int, float, str)):
-                ts = float(timestamp_val)
-            else:
-                ts = 0.0
-
-            if event.get("left_changed") and event.get("left"):
-                start_event = event
-                continue
-
-            if not start_event:
-                continue
-
-            if ts - float(start_event["timestamp"]) > self.marker_config.timeout:
-                start_event = None
-                continue
-
-            if event.get("right_changed") and event.get("right"):
-                start_time = float(start_event["timestamp"])
-                stop_time = ts
-                window_start = max(0.0, start_time - self.marker_config.pre_time)
-                window_end = stop_time + self.marker_config.post_time
-                windows.append(
-                    {
-                        "start_time": start_time,
-                        "stop_time": stop_time,
-                        "window_start": window_start,
-                        "window_end": window_end,
-                        "partial": False,
-                    }
-                )
-                start_event = None
-
-        if start_event:
-            start_time = float(start_event["timestamp"])
-            window_start = max(0.0, start_time - self.marker_config.pre_time)
-            window_end = start_time + self.marker_config.post_time
-            windows.append(
-                {
-                    "start_time": start_time,
-                    "stop_time": start_time,
-                    "window_start": window_start,
-                    "window_end": window_end,
-                    "partial": True,
-                }
-            )
-
-        return windows
-
-    def analyze_marker_windows(self) -> List[Dict[str, Any]]:
-        if not self.marker_config.enabled or not self.marker_windows:
-            return []
-
-        analysis: List[Dict[str, Any]] = []
-
-        source = self.all_can_data if self.marker_config.enabled else self.can_data
-
-        for window in self.marker_windows:
-            window_start = window["window_start"]
-            window_end = window["window_end"]
-            address_stats: List[Dict[str, Any]] = []
-
-            for address, messages in source.items():
-                window_messages = []
-                for m in messages:
-                    if isinstance(m, dict) and "timestamp" in m:
-                        timestamp_val = m["timestamp"]
-                        if isinstance(timestamp_val, (int, float, str)):
-                            ts = float(timestamp_val)
-                            if window_start <= ts <= window_end:
-                                window_messages.append(m)
-                stats = self.compute_bit_change_stats(window_messages)
-                if not stats:
-                    continue
-
-                address_stats.append(
-                    {
-                        "address": address,
-                        "name": self.address_labels.get(address, "Unknown"),
-                        **stats,
-                    }
-                )
-
-            address_stats.sort(key=lambda x: x["total_changes"], reverse=True)
-            analysis.append(
-                {
-                    "window": window,
-                    "address_stats": address_stats,
-                }
-            )
-
-        return analysis
 
 
 def main():
