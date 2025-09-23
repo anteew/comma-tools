@@ -20,7 +20,7 @@ class TestSubaruCANDecoder:
         assert "RR" in result
         assert "avg_kph" in result
         assert "avg_mph" in result
-        
+
         for key in ["FL", "FR", "RL", "RR", "avg_kph", "avg_mph"]:
             assert isinstance(result[key], float)
 
@@ -46,7 +46,7 @@ class TestSubaruCANDecoder:
         assert "main" in result
         assert "set" in result
         assert "resume" in result
-        
+
         for key in ["main", "set", "resume"]:
             assert isinstance(result[key], bool)
 
@@ -66,7 +66,7 @@ class TestSubaruCANDecoder:
         assert "cruise_set_speed" in result
         assert "cruise_on" in result
         assert "cruise_activated" in result
-        
+
         assert isinstance(result["cruise_set_speed"], int)
         assert isinstance(result["cruise_on"], bool)
         assert isinstance(result["cruise_activated"], bool)
@@ -86,7 +86,7 @@ class TestSubaruCANDecoder:
         assert isinstance(result, dict)
         assert "cruise_brake_active" in result
         assert "cruise_activated" in result
-        
+
         assert isinstance(result["cruise_brake_active"], bool)
         assert isinstance(result["cruise_activated"], bool)
 
@@ -105,7 +105,7 @@ class TestSubaruCANDecoder:
         assert isinstance(result, dict)
         assert "left" in result
         assert "right" in result
-        
+
         assert isinstance(result["left"], bool)
         assert isinstance(result["right"], bool)
 
@@ -128,6 +128,6 @@ class TestSubaruCANDecoder:
         """Test wheel speed conversion accuracy with known values."""
         test_data = b"\x00\x10\x00\x00\x00\x00\x00\x00"
         result = SubaruCANDecoder.decode_wheel_speeds(test_data)
-        
+
         assert result is not None
         assert result["avg_mph"] == result["avg_kph"] * 0.621371
