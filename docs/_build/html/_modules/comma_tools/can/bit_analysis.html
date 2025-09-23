@@ -6,7 +6,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>comma_tools.can.bit_analysis - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -250,16 +250,16 @@
 <span class="sd">Provides both low-level bit manipulation and high-level statistical analysis.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
 
 
 <div class="viewcode-block" id="BitChangeEvent">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitChangeEvent">[docs]</a>
 <span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">BitChangeEvent</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BitChangeEvent</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Single bit change event with timing information&quot;&quot;&quot;</span>
 
     <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span>
@@ -273,7 +273,7 @@
 <div class="viewcode-block" id="BitChangeStats">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitChangeStats">[docs]</a>
 <span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">BitChangeStats</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BitChangeStats</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Statistics for bit changes across a sequence of messages&quot;&quot;&quot;</span>
 
     <span class="n">total_changes</span><span class="p">:</span> <span class="nb">int</span>
@@ -286,19 +286,19 @@
 
 <div class="viewcode-block" id="CanMessage">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.CanMessage">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">CanMessage</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">CanMessage</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Standardized CAN message representation&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="CanMessage.__init__">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.CanMessage.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="n">address</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bus</span> <span class="o">=</span> <span class="n">bus</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">data_hex</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">b</span><span class="si">:</span><span class="s2">02X</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;CanMessage(t=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">timestamp</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, addr=0x</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="si">:</span><span class="s2">03X</span><span class="si">}</span><span class="s2">, data=[</span><span class="si">{</span><span class="n">data_hex</span><span class="si">}</span><span class="s2">])&quot;</span></div>
 
@@ -306,12 +306,12 @@
 
 <div class="viewcode-block" id="BitAnalyzer">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">BitAnalyzer</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BitAnalyzer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Unified CAN bit analysis functionality&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="BitAnalyzer.find_changed_bits">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.find_changed_bits">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_changed_bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">new_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">find_changed_bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">new_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find bit positions that changed between two payloads.</span>
 
@@ -349,7 +349,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.payload_to_u64">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.payload_to_u64">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">payload_to_u64</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">endian</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;little&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">payload_to_u64</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">endian</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;little&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convert payload to 64-bit int for bit operations.</span>
 
@@ -370,7 +370,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.get_bit_value">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.get_bit_value">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_bit_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">bit_position</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">get_bit_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">bit_position</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Extract single bit value from data.</span>
 
@@ -389,7 +389,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.compute_change_stats">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.compute_change_stats">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_change_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BitChangeStats</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">compute_change_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BitChangeStats</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute bit change statistics across message sequence.</span>
 
@@ -431,7 +431,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.track_bit_toggles">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.track_bit_toggles">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">track_bit_toggles</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">track_bit_toggles</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">],</span> <span class="n">watched_bits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -471,7 +471,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.analyze_multi_address">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.analyze_multi_address">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_multi_address</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">analyze_multi_address</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">messages_by_address</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">BitChangeStats</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -498,7 +498,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.find_bits_active_in_window">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.find_bits_active_in_window">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_bits_active_in_window</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">find_bits_active_in_window</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">],</span> <span class="n">window_start</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">window_end</span><span class="p">:</span> <span class="nb">float</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -530,7 +530,7 @@
 
 <div class="viewcode-block" id="BitAnalyzer.detect_bit_edges">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.bit_analysis.BitAnalyzer.detect_bit_edges">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">detect_bit_edges</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">detect_bit_edges</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">],</span> <span class="n">watched_bits</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">BitChangeEvent</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

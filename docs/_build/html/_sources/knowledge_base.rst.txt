@@ -6,10 +6,7 @@ This section contains technical background information and explanations for unde
 OpenPilot Architecture
 ----------------------
 
-For detailed information about OpenPilot's architecture and control systems, see the knowledge base files:
-
-- :doc:`../knowledge/openpilot/architecture`
-- :doc:`../knowledge/openpilot/control_allowed`
+For detailed information about OpenPilot's architecture and control systems, see the knowledge base files in the ``knowledge/`` directory.
 
 CAN Bus Analysis
 ----------------
@@ -68,7 +65,7 @@ The Panda device implements safety checks to prevent unsafe vehicle control:
 - **RX Checks**: Validation of incoming CAN messages
 - **Safety Model**: Vehicle-specific safety configuration
 
-For detailed safety information, see :doc:`../knowledge/openpilot/control_allowed`.
+For detailed safety information, see the ``knowledge/openpilot/control_allowed.md`` file in the repository.
 
 Development Workflow
 --------------------

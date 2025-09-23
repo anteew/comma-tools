@@ -6,7 +6,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>comma_tools.analyzers.cruise_control_analyzer - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -251,25 +251,25 @@
 <span class="sd">to decode wheel speeds and cruise control signals.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">struct</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">cast</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span> <span class="nn">..utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">find_repo_root</span><span class="p">,</span>
     <span class="n">resolve_deps_dir</span><span class="p">,</span>
     <span class="n">prepare_environment</span><span class="p">,</span>
     <span class="n">ensure_python_packages</span><span class="p">,</span>
     <span class="n">load_external_modules</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..can</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubaruCANDecoder</span><span class="p">,</span> <span class="n">BitAnalyzer</span><span class="p">,</span> <span class="n">CanMessage</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpeedTimelinePlotter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.event_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDetector</span>
+<span class="kn">from</span> <span class="nn">..can</span> <span class="kn">import</span> <span class="n">SubaruCANDecoder</span><span class="p">,</span> <span class="n">BitAnalyzer</span><span class="p">,</span> <span class="n">CanMessage</span>
+<span class="kn">from</span> <span class="nn">..visualization</span> <span class="kn">import</span> <span class="n">SpeedTimelinePlotter</span>
+<span class="kn">from</span> <span class="nn">.event_detection</span> <span class="kn">import</span> <span class="n">EventDetector</span>
 
 <span class="n">np</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># loaded at runtime</span>
 <span class="n">plt</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># loaded at runtime</span>
@@ -280,24 +280,24 @@
 <div class="viewcode-block" id="MarkerConfig">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.MarkerConfig">[docs]</a>
 <span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">MarkerConfig</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">MarkerConfig</span><span class="p">:</span>
     <span class="n">marker_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;blinkers&quot;</span>
     <span class="n">pre_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>
     <span class="n">post_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">15.0</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">enabled</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_type</span> <span class="o">!=</span> <span class="s2">&quot;none&quot;</span></div>
 
 
 
 <div class="viewcode-block" id="CruiseControlAnalyzer">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">CruiseControlAnalyzer</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">CruiseControlAnalyzer</span><span class="p">:</span>
 <div class="viewcode-block" id="CruiseControlAnalyzer.__init__">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">marker_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MarkerConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">marker_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MarkerConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log_file</span> <span class="o">=</span> <span class="n">log_file</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">marker_config</span> <span class="o">=</span> <span class="n">marker_config</span> <span class="ow">or</span> <span class="n">MarkerConfig</span><span class="p">()</span>
 
@@ -329,7 +329,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.parse_log_file">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.parse_log_file">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">parse_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">parse_log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse the rlog.zst file and extract speed and CAN data&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parsing log file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">log_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -403,7 +403,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.find_target_speed_events">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.find_target_speed_events">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_target_speed_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_speed_min</span><span class="o">=</span><span class="mf">55.0</span><span class="p">,</span> <span class="n">target_speed_max</span><span class="o">=</span><span class="mf">56.0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">find_target_speed_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_speed_min</span><span class="o">=</span><span class="mf">55.0</span><span class="p">,</span> <span class="n">target_speed_max</span><span class="o">=</span><span class="mf">56.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find time windows when the vehicle was at target speed (55-56 MPH)&quot;&quot;&quot;</span>
         <span class="n">event_detector</span> <span class="o">=</span> <span class="n">EventDetector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_data</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_speed_events</span> <span class="o">=</span> <span class="n">event_detector</span><span class="o">.</span><span class="n">find_target_speed_events</span><span class="p">(</span>
@@ -413,13 +413,13 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.analyze_cruise_control_signals">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.analyze_cruise_control_signals">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_cruise_control_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">analyze_cruise_control_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze specific cruise control CAN signals&quot;&quot;&quot;</span>
         <span class="n">event_detector</span> <span class="o">=</span> <span class="n">EventDetector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">event_detector</span><span class="o">.</span><span class="n">analyze_cruise_control_signals</span><span class="p">()</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_can_messages</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">_convert_to_can_messages</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]],</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">CanMessage</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert internal message format to CanMessage objects&quot;&quot;&quot;</span>
@@ -434,7 +434,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.compute_bit_change_stats">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.compute_bit_change_stats">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">compute_bit_change_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]],</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">compute_bit_change_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">messages</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]],</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute bit change statistics using the new library&quot;&quot;&quot;</span>
         <span class="n">can_messages</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_can_messages</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">address</span><span class="p">)</span>
         <span class="n">stats</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bit_analyzer</span><span class="o">.</span><span class="n">compute_change_stats</span><span class="p">(</span><span class="n">can_messages</span><span class="p">)</span>
@@ -452,7 +452,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.analyze_can_bit_changes">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.analyze_can_bit_changes">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_can_bit_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">analyze_can_bit_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze bit-level changes in all target CAN addresses&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Analyzing bit-level changes in target CAN addresses...&quot;</span><span class="p">)</span>
 
@@ -481,14 +481,14 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.find_changed_bits">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.find_changed_bits">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_changed_bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">new_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">find_changed_bits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">old_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">new_data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find which bits changed between two CAN messages - now uses library&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bit_analyzer</span><span class="o">.</span><span class="n">find_changed_bits</span><span class="p">(</span><span class="n">old_data</span><span class="p">,</span> <span class="n">new_data</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.correlate_signals_with_speed">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.correlate_signals_with_speed">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">correlate_signals_with_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal_analysis</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">correlate_signals_with_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal_analysis</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Correlate cruise control signals with speed data&quot;&quot;&quot;</span>
         <span class="n">event_detector</span> <span class="o">=</span> <span class="n">EventDetector</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">event_detector</span><span class="o">.</span><span class="n">correlate_signals_with_speed</span><span class="p">(</span><span class="n">signal_analysis</span><span class="p">)</span></div>
@@ -496,7 +496,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.generate_report">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.generate_report">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a detailed analysis report&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">80</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SUBARU CRUISE CONTROL ANALYSIS REPORT&quot;</span><span class="p">)</span>
@@ -600,7 +600,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.report_marker_windows">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.report_marker_windows">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">report_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">marker_analysis</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">report_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">marker_analysis</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">MARKER WINDOWS:&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">marker_analysis</span><span class="p">:</span>
@@ -650,7 +650,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.plot_speed_timeline">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.plot_speed_timeline">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">plot_speed_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">plot_speed_timeline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a plot showing speed over time with target events highlighted&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">speed_data</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No speed data to plot&quot;</span><span class="p">)</span>
@@ -669,7 +669,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.run_analysis">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.run_analysis">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_speed_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">55.0</span><span class="p">,</span> <span class="n">target_speed_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">56.0</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">run_analysis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_speed_min</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">55.0</span><span class="p">,</span> <span class="n">target_speed_max</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">56.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the complete analysis&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting Subaru cruise control analysis...&quot;</span><span class="p">)</span>
 
@@ -692,7 +692,7 @@
         <span class="k">return</span> <span class="kc">True</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_record_blinker_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_record_blinker_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">decode_blinkers</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">decoded</span><span class="p">:</span>
             <span class="k">return</span>
@@ -720,7 +720,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.detect_marker_windows">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.detect_marker_windows">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">detect_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">detect_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_config</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_config</span><span class="o">.</span><span class="n">marker_type</span> <span class="o">!=</span> <span class="s2">&quot;blinkers&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
 
@@ -780,7 +780,7 @@
 
 <div class="viewcode-block" id="CruiseControlAnalyzer.analyze_marker_windows">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.CruiseControlAnalyzer.analyze_marker_windows">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">analyze_marker_windows</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_config</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">marker_windows</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
 
@@ -829,7 +829,7 @@
 
 <div class="viewcode-block" id="main">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.cruise_control_analyzer.main">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
     <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Analyze rlog.zst files for Subaru cruise control signals&quot;</span>
     <span class="p">)</span>

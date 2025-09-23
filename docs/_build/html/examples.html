@@ -7,7 +7,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>Examples - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -255,9 +255,9 @@
 <h2>Analyzing Cruise Control Behavior<a class="headerlink" href="#analyzing-cruise-control-behavior" title="Link to this heading">¶</a></h2>
 <section id="basic-analysis">
 <h3>Basic Analysis<a class="headerlink" href="#basic-analysis" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.analyzers.cruise_control_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">CruiseControlAnalyzer</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.analyzers.event_detection</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDetector</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.can</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.analyzers.cruise_control_analyzer</span> <span class="kn">import</span> <span class="n">CruiseControlAnalyzer</span>
+<span class="kn">from</span> <span class="nn">comma_tools.analyzers.event_detection</span> <span class="kn">import</span> <span class="n">EventDetector</span>
+<span class="kn">from</span> <span class="nn">comma_tools.can</span> <span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
 
 <span class="c1"># Initialize analyzer</span>
 <span class="n">analyzer</span> <span class="o">=</span> <span class="n">CruiseControlAnalyzer</span><span class="p">(</span><span class="s2">&quot;/path/to/logfile.zst&quot;</span><span class="p">)</span>
@@ -289,7 +289,7 @@
 <h2>CAN Message Decoding<a class="headerlink" href="#can-message-decoding" title="Link to this heading">¶</a></h2>
 <section id="decoding-wheel-speeds">
 <h3>Decoding Wheel Speeds<a class="headerlink" href="#decoding-wheel-speeds" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.can.decoders</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.can.decoders</span> <span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
 
 <span class="c1"># Sample CAN data (8 bytes)</span>
 <span class="n">can_data</span> <span class="o">=</span> <span class="sa">b</span><span class="s1">&#39;</span><span class="se">\x12\x34\x56\x78\x9a\xbc\xde\xf0</span><span class="s1">&#39;</span>
@@ -332,7 +332,7 @@
 <h2>Bit Pattern Analysis<a class="headerlink" href="#bit-pattern-analysis" title="Link to this heading">¶</a></h2>
 <section id="analyzing-can-bit-changes">
 <h3>Analyzing CAN Bit Changes<a class="headerlink" href="#analyzing-can-bit-changes" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.can.bit_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitAnalyzer</span><span class="p">,</span> <span class="n">CanMessage</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.can.bit_analysis</span> <span class="kn">import</span> <span class="n">BitAnalyzer</span><span class="p">,</span> <span class="n">CanMessage</span>
 
 <span class="n">analyzer</span> <span class="o">=</span> <span class="n">BitAnalyzer</span><span class="p">()</span>
 
@@ -351,7 +351,7 @@
 <h2>Data Visualization<a class="headerlink" href="#data-visualization" title="Link to this heading">¶</a></h2>
 <section id="creating-speed-timeline-plots">
 <h3>Creating Speed Timeline Plots<a class="headerlink" href="#creating-speed-timeline-plots" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.visualization.plotting</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpeedTimelinePlotter</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.visualization.plotting</span> <span class="kn">import</span> <span class="n">SpeedTimelinePlotter</span>
 
 <span class="n">plotter</span> <span class="o">=</span> <span class="n">SpeedTimelinePlotter</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
 
@@ -370,8 +370,8 @@
 <h2>Converting Logs to CSV<a class="headerlink" href="#converting-logs-to-csv" title="Link to this heading">¶</a></h2>
 <section id="basic-conversion">
 <h3>Basic Conversion<a class="headerlink" href="#basic-conversion" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.analyzers.rlog_to_csv</span><span class="w"> </span><span class="kn">import</span> <span class="n">main</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.analyzers.rlog_to_csv</span> <span class="kn">import</span> <span class="n">main</span>
+<span class="kn">import</span> <span class="nn">sys</span>
 
 <span class="c1"># Set up arguments for conversion</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">argv</span> <span class="o">=</span> <span class="p">[</span>
@@ -391,7 +391,7 @@
 <h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading">¶</a></h2>
 <section id="robust-can-decoding">
 <h3>Robust CAN Decoding<a class="headerlink" href="#robust-can-decoding" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.can.decoders</span><span class="w"> </span><span class="kn">import</span> <span class="n">CANDecodingError</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.can.decoders</span> <span class="kn">import</span> <span class="n">CANDecodingError</span>
 
 <span class="k">try</span><span class="p">:</span>
     <span class="n">speeds</span> <span class="o">=</span> <span class="n">SubaruCANDecoder</span><span class="o">.</span><span class="n">decode_wheel_speeds</span><span class="p">(</span><span class="n">can_data</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -409,7 +409,7 @@
 <h2>Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading">¶</a></h2>
 <section id="setting-up-openpilot-environment">
 <h3>Setting up OpenPilot Environment<a class="headerlink" href="#setting-up-openpilot-environment" title="Link to this heading">¶</a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">comma_tools.utils.openpilot_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comma_tools.utils.openpilot_utils</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">find_repo_root</span><span class="p">,</span>
     <span class="n">prepare_environment</span><span class="p">,</span>
     <span class="n">ensure_python_packages</span><span class="p">,</span>

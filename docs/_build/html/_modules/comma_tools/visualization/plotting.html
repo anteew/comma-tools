@@ -6,7 +6,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>comma_tools.visualization.plotting - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -244,25 +244,25 @@
           <h1>Source code for comma_tools.visualization.plotting</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Plotting utilities for automotive data visualization.&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
 
 
 <div class="viewcode-block" id="SpeedTimelinePlotter">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.visualization.plotting.SpeedTimelinePlotter">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SpeedTimelinePlotter</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">SpeedTimelinePlotter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Utility class for creating speed timeline plots with event highlighting.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="SpeedTimelinePlotter.__init__">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.visualization.plotting.SpeedTimelinePlotter.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">)):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">)):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the plotter with default figure size.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span></div>
 
 
 <div class="viewcode-block" id="SpeedTimelinePlotter.plot_speed_timeline">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.visualization.plotting.SpeedTimelinePlotter.plot_speed_timeline">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">plot_speed_timeline</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">plot_speed_timeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">speed_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="n">target_speed_events</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -324,7 +324,7 @@
 
 <div class="viewcode-block" id="SpeedTimelinePlotter.plot_signal_timeline">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.visualization.plotting.SpeedTimelinePlotter.plot_signal_timeline">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">plot_signal_timeline</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">plot_signal_timeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">signal_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="n">signal_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -387,7 +387,7 @@
 
 <div class="viewcode-block" id="SpeedTimelinePlotter.plot_multi_signal_timeline">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.visualization.plotting.SpeedTimelinePlotter.plot_multi_signal_timeline">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">plot_multi_signal_timeline</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">plot_multi_signal_timeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">signals</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]],</span>
         <span class="n">output_filename</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;multi_signal_timeline.png&quot;</span><span class="p">,</span>

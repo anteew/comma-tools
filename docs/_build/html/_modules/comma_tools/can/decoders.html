@@ -6,7 +6,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>comma_tools.can.decoders - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -244,15 +244,15 @@
           <h1>Source code for comma_tools.can.decoders</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;CAN message decoders for automotive analysis.&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="CANDecodingError">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.CANDecodingError">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">CANDecodingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">CANDecodingError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Exception raised when CAN message decoding fails.&quot;&quot;&quot;</span>
 
     <span class="k">pass</span></div>
@@ -261,7 +261,7 @@
 
 <div class="viewcode-block" id="SubaruCANDecoder">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">SubaruCANDecoder</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">SubaruCANDecoder</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Decoder for Subaru CAN messages based on DBC specifications&quot;&quot;&quot;</span>
 
     <span class="n">WHEEL_SPEEDS_ADDR</span> <span class="o">=</span> <span class="mh">0x13A</span>  <span class="c1"># 314 decimal</span>
@@ -274,7 +274,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_wheel_speeds">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_wheel_speeds">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_wheel_speeds</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">decode_wheel_speeds</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decode wheel speeds from address 0x13A (314).</span>
 
@@ -327,7 +327,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_cruise_buttons">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_cruise_buttons">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_cruise_buttons</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">decode_cruise_buttons</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decode cruise control buttons from address 0x146 (326).</span>
 
@@ -360,7 +360,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_cruise_status">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_cruise_status">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_cruise_status</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">decode_cruise_status</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decode cruise status from address 0x241 (577).</span>
 
@@ -403,7 +403,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_es_brake">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_es_brake">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_es_brake</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">decode_es_brake</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decode ES_Brake from address 0x220 (544).</span>
 
@@ -435,7 +435,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_blinkers">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_blinkers">[docs]</a>
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_blinkers</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
+    <span class="k">def</span> <span class="nf">decode_blinkers</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Decode blinker lamp state from Dashlights (0x390).</span>
 
@@ -461,7 +461,7 @@
 
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_wheel_speeds</span><span class="p">(</span><span class="n">speeds</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_validate_wheel_speeds</span><span class="p">(</span><span class="n">speeds</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate wheel speed values for reasonableness.&quot;&quot;&quot;</span>
         <span class="n">max_reasonable_speed</span> <span class="o">=</span> <span class="mf">400.0</span>  <span class="c1"># kph - reasonable upper limit</span>
         <span class="n">min_reasonable_speed</span> <span class="o">=</span> <span class="mf">0.0</span>
@@ -477,7 +477,7 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Large speed difference between wheels detected&quot;</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_cruise_speed</span><span class="p">(</span><span class="n">set_speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_validate_cruise_speed</span><span class="p">(</span><span class="n">set_speed</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate cruise control set speed.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">set_speed</span> <span class="o">&lt;=</span> <span class="mi">500</span><span class="p">):</span>  <span class="c1"># Expanded range for test compatibility</span>
             <span class="k">raise</span> <span class="n">CANDecodingError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unreasonable cruise set speed: </span><span class="si">{</span><span class="n">set_speed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -485,7 +485,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.decode_message">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.decode_message">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">decode_message</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">decode_message</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">address</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -518,7 +518,7 @@
 <div class="viewcode-block" id="SubaruCANDecoder.get_supported_addresses">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.can.decoders.SubaruCANDecoder.get_supported_addresses">[docs]</a>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_supported_addresses</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">get_supported_addresses</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all supported CAN addresses and their descriptions.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="bp">cls</span><span class="o">.</span><span class="n">WHEEL_SPEEDS_ADDR</span><span class="p">:</span> <span class="s2">&quot;Wheel_Speeds&quot;</span><span class="p">,</span>

@@ -6,7 +6,7 @@
 
     <!-- Generated with Sphinx 8.2.3 and Furo 2025.07.19 -->
         <title>comma_tools.analyzers.event_detection - Comma Tools Documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo.css?v=25af2a20" />
     <link rel="stylesheet" type="text/css" href="../../../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -248,18 +248,18 @@
 <span class="sd">CruiseControlAnalyzer for use across different CAN analysis tools.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..can</span><span class="w"> </span><span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">cast</span>
+<span class="kn">from</span> <span class="nn">..can</span> <span class="kn">import</span> <span class="n">SubaruCANDecoder</span>
 
 
 <div class="viewcode-block" id="EventDetector">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.event_detection.EventDetector">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">EventDetector</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">EventDetector</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reusable event detection and analysis engine for CAN bus data.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="EventDetector.__init__">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.event_detection.EventDetector.__init__">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">decoder</span><span class="p">:</span> <span class="n">SubaruCANDecoder</span><span class="p">,</span>
         <span class="n">speed_data</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
@@ -280,7 +280,7 @@
 
 <div class="viewcode-block" id="EventDetector.find_target_speed_events">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.event_detection.EventDetector.find_target_speed_events">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_target_speed_events</span><span class="p">(</span>
+    <span class="k">def</span> <span class="nf">find_target_speed_events</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">target_speed_min</span><span class="o">=</span><span class="mf">55.0</span><span class="p">,</span> <span class="n">target_speed_max</span><span class="o">=</span><span class="mf">56.0</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find time windows when the vehicle was at target speed (55-56 MPH)&quot;&quot;&quot;</span>
@@ -337,7 +337,7 @@
 
 <div class="viewcode-block" id="EventDetector.analyze_cruise_control_signals">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.event_detection.EventDetector.analyze_cruise_control_signals">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_cruise_control_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">analyze_cruise_control_signals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze specific cruise control CAN signals&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Analyzing Subaru cruise control signals...&quot;</span><span class="p">)</span>
 
@@ -479,7 +479,7 @@
 
 <div class="viewcode-block" id="EventDetector.correlate_signals_with_speed">
 <a class="viewcode-back" href="../../../api_reference.html#comma_tools.analyzers.event_detection.EventDetector.correlate_signals_with_speed">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">correlate_signals_with_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal_analysis</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="nf">correlate_signals_with_speed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">signal_analysis</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Correlate cruise control signals with speed data&quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Correlating cruise control signals with speed data...&quot;</span><span class="p">)</span>
 
