@@ -34,8 +34,6 @@ LogReader = None  # loaded at runtime
 messaging = None  # loaded at runtime
 
 
-
-
 class CruiseControlAnalyzer:
     def __init__(self, log_file: str, marker_config: Optional[MarkerConfig] = None):
         self.log_file = log_file
@@ -384,9 +382,7 @@ class CruiseControlAnalyzer:
         if self.marker_config.enabled:
             marker_windows = self.marker_detector.detect_marker_windows()
             self.marker_window_analysis = self.marker_detector.analyze_marker_windows(
-                self.all_can_data, 
-                self.address_labels, 
-                self.compute_bit_change_stats
+                self.all_can_data, self.address_labels, self.compute_bit_change_stats
             )
         else:
             marker_windows = []
@@ -399,7 +395,6 @@ class CruiseControlAnalyzer:
             self.plot_speed_timeline()
 
         return True
-
 
 
 def main():

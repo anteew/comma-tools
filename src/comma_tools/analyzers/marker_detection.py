@@ -12,7 +12,7 @@ from ..can import SubaruCANDecoder
 @dataclass
 class MarkerConfig:
     """Configuration for marker-based time window detection."""
-    
+
     marker_type: str = "blinkers"
     pre_time: float = 1.5
     post_time: float = 1.5
@@ -26,10 +26,10 @@ class MarkerConfig:
 
 class MarkerDetector:
     """Detects time windows of interest using configurable marker strategies."""
-    
+
     def __init__(self, decoder: SubaruCANDecoder, marker_config: Optional[MarkerConfig] = None):
         """Initialize the MarkerDetector.
-        
+
         Args:
             decoder: SubaruCANDecoder instance for decoding CAN messages
             marker_config: Configuration for marker detection behavior
@@ -39,10 +39,10 @@ class MarkerDetector:
         self.marker_events: List[Dict[str, object]] = []
         self.marker_windows: List[Dict[str, float]] = []
         self._prev_blinker_state = {"left": False, "right": False}
-    
+
     def record_blinker_event(self, timestamp: float, data: bytes) -> None:
         """Record a blinker state change event.
-        
+
         Args:
             timestamp: Timestamp of the CAN message
             data: Raw CAN message data
@@ -74,7 +74,7 @@ class MarkerDetector:
 
     def detect_marker_windows(self) -> List[Dict[str, float]]:
         """Detect time windows based on marker events.
-        
+
         Returns:
             List of time windows with start/stop times and window boundaries
         """
@@ -136,18 +136,18 @@ class MarkerDetector:
         return windows
 
     def analyze_marker_windows(
-        self, 
+        self,
         all_can_data: Dict[int, List[Dict[str, object]]],
         address_labels: Dict[int, str],
-        bit_analyzer_func
+        bit_analyzer_func,
     ) -> List[Dict[str, Any]]:
         """Analyze CAN activity within detected marker windows.
-        
+
         Args:
             all_can_data: Dictionary mapping CAN addresses to message lists
             address_labels: Mapping of CAN addresses to human-readable names
             bit_analyzer_func: Function to compute bit change statistics
-            
+
         Returns:
             List of analysis results for each marker window
         """
@@ -170,7 +170,7 @@ class MarkerDetector:
                             ts = float(timestamp_val)
                             if window_start <= ts <= window_end:
                                 window_messages.append(m)
-                
+
                 stats = bit_analyzer_func(window_messages)
                 if not stats:
                     continue
