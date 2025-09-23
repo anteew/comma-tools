@@ -175,7 +175,9 @@ def detect_edges_and_candidates(rows, watch: List[WatchBit], window_start: float
 
     # State trackers
     last_u64_by_addr: dict[int, int] = {}
-    last_bit_by_addr_gidx: dict[int, dict[int, int]] = defaultdict(lambda: {})  # addr -> {gidx: last_bit}
+    last_bit_by_addr_gidx: dict[int, dict[int, int]] = defaultdict(
+        lambda: {}
+    )  # addr -> {gidx: last_bit}
     edges = []  # for watched bits
     toggles_by_bit = defaultdict(list)  # (addr,gidx) -> list[timestamp]
 
