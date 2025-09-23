@@ -91,6 +91,24 @@ black src/ tests/
 mypy src/
 ```
 
+### Documentation
+
+The documentation is built using [Sphinx](https://www.sphinx-doc.org/) from reStructuredText source files:
+
+```bash
+# Install documentation dependencies
+pip install -e ".[docs]"
+
+# Build HTML documentation
+cd docs/
+make html
+
+# Serve documentation locally at http://localhost:8000
+make serve
+```
+
+The source files (`.rst`) in `docs/` are converted to HTML in `docs/_build/html/`. See `docs/README.md` for more details.
+
 ## Project Structure
 
 ```
