@@ -1091,6 +1091,8 @@ def main():
                 ("zstandard", "zstandard"),
                 ("zmq", "pyzmq"),
                 ("smbus2", "smbus2"),
+                ("urllib3", "urllib3"),
+                ("requests", "requests"),
             ],
             deps_dir,
             args.install_missing_deps,

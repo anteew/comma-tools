@@ -97,6 +97,29 @@ comma-tools/
 - Python 3.12 (project is tested on 3.9–3.12 in CI)
 - openpilot installation (for some tools)
 - Panda device (for real-time monitoring tools)
+## Integration tests with a real rlog.zst
+
+By default, the repo includes a known-good real log fixture stored via Git LFS:
+- Path: `tests/data/known_good.rlog.zst`
+- CI and local runs will use this fixture automatically for integration tests.
+
+Override the fixture with your own log if desired:
+
+Option A: environment variable
+```bash
+LOG_FILE=/absolute/path/to/your.rlog.zst pytest tests/integration -v -m integration
+```
+
+Option B: pytest option
+```bash
+pytest tests/integration -v -m integration --real-log-file=/absolute/path/to/your.rlog.zst
+```
+
+Notes:
+- If neither CLI nor env is provided and the fixture is present, tests will use the fixture. If no fixture is present, tests are skipped automatically.
+- Ensure Git LFS is installed locally to fetch the fixture (`git lfs install`).
+- To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
+
 ## License
 
 MIT License - see LICENSE file for details.
