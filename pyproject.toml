@@ -40,6 +40,12 @@ dev = [
     "flake8",
     "mypy",
 ]
+docs = [
+    "sphinx>=4.0",
+    "sphinx-autodoc-typehints",
+    "furo",
+    "myst-parser",
+]
 
 [project.scripts]
 cruise-control-analyzer = "comma_tools.analyzers.cruise_control_analyzer:main"
