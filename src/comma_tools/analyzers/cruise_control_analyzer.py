@@ -24,6 +24,7 @@ from ..utils import (
     load_external_modules,
 )
 from ..can import SubaruCANDecoder, BitAnalyzer, CanMessage
+from ..visualization import SpeedTimelinePlotter
 
 np = None  # loaded at runtime
 plt = None  # loaded at runtime
@@ -579,35 +580,15 @@ class CruiseControlAnalyzer:
             print("No speed data to plot")
             return
 
-        timestamps = [d["timestamp"] for d in self.speed_data]
-        speeds = [d["speed_mph"] for d in self.speed_data]
-
-        plt.figure(figsize=(12, 6))
-        plt.plot(timestamps, speeds, "b-", linewidth=1, alpha=0.7, label="Vehicle Speed")
-
-        plt.axhline(y=55, color="r", linestyle="--", alpha=0.5, label="Target Speed Range")
-        plt.axhline(y=56, color="r", linestyle="--", alpha=0.5)
-        plt.fill_between(timestamps, 55, 56, alpha=0.2, color="red")
-
-        for i, event in enumerate(self.target_speed_events):
-            plt.axvspan(
-                event["start_time"],
-                event["end_time"],
-                alpha=0.3,
-                color="green",
-                label="Target Speed Event" if i == 0 else "",
-            )
-
-        plt.xlabel("Time (seconds)")
-        plt.ylabel("Speed (MPH)")
-        plt.title("Vehicle Speed Timeline - Extracted from Wheel Speed CAN Messages")
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-
-        plot_filename = "speed_timeline.png"
-        plt.savefig(plot_filename, dpi=150, bbox_inches="tight")
+        plotter = SpeedTimelinePlotter()
+        plot_filename = plotter.plot_speed_timeline(
+            speed_data=self.speed_data,
+            target_speed_events=self.target_speed_events,
+            target_speed_min=55.0,
+            target_speed_max=56.0,
+            output_filename="speed_timeline.png"
+        )
         print(f"Speed timeline plot saved as: {plot_filename}")
-        plt.close()
 
     def run_analysis(self, target_speed_min: float = 55.0, target_speed_max: float = 56.0):
         """Run the complete analysis"""
