@@ -41,6 +41,7 @@ def real_log_path(pytestconfig):
 
 @pytest.fixture(scope="session")
 def integration_env():
+    print("DEBUG: integration_env fixture starting...")
     repo_root = find_repo_root(None)
     deps_dir = resolve_deps_dir(repo_root, None)
     prepare_environment(repo_root, deps_dir)
@@ -63,12 +64,21 @@ def integration_env():
     except Exception:
         pass
 
+    print("DEBUG: Loading external modules...")
     modules = load_external_modules()
+    print(f"DEBUG: Loaded modules: {list(modules.keys())}")
+    print(f"DEBUG: LogReader type: {type(modules['LogReader'])}")
+
     import comma_tools.analyzers.cruise_control_analyzer as analyzer_module
+
+    print(f"DEBUG: analyzer_module.LogReader before setting: {analyzer_module.LogReader}")
 
     analyzer_module.np = modules["np"]
     analyzer_module.plt = modules["plt"]
     analyzer_module.LogReader = modules["LogReader"]
     analyzer_module.messaging = modules["messaging"]
+
+    print(f"DEBUG: analyzer_module.LogReader after setting: {analyzer_module.LogReader}")
+    print("DEBUG: integration_env fixture completed successfully")
 
     return True
