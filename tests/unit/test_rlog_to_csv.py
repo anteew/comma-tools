@@ -10,7 +10,7 @@ import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.analyzers.rlog_to_csv import find_repo_root, add_openpilot_to_path
+from comma_tools.utils import find_repo_root, add_openpilot_to_path
 
 
 class TestFindRepoRoot:
@@ -24,8 +24,8 @@ class TestFindRepoRoot:
         result = find_repo_root(str(tmp_path))
         assert result == tmp_path
 
-    @patch("comma_tools.analyzers.rlog_to_csv.Path.cwd")
-    @patch("comma_tools.analyzers.rlog_to_csv.__file__", "/fake/path/to/script.py")
+    @patch("comma_tools.utils.openpilot_utils.Path.cwd")
+    @patch("comma_tools.utils.openpilot_utils.__file__", "/fake/path/to/script.py")
     def test_find_repo_root_not_found(self, mock_cwd, tmp_path):
         """Test error when repo root not found."""
         mock_cwd.return_value = tmp_path
@@ -33,8 +33,8 @@ class TestFindRepoRoot:
         with pytest.raises(FileNotFoundError, match="Could not find the openpilot checkout"):
             find_repo_root(str(tmp_path))
 
-    @patch("comma_tools.analyzers.rlog_to_csv.Path.cwd")
-    @patch("comma_tools.analyzers.rlog_to_csv.__file__", "/fake/path/to/script.py")
+    @patch("comma_tools.utils.openpilot_utils.Path.cwd")
+    @patch("comma_tools.utils.openpilot_utils.__file__", "/fake/path/to/script.py")
     def test_find_repo_root_current_directory(self, mock_cwd, tmp_path):
         """Test finding repo root in current directory."""
         openpilot_dir = tmp_path / "openpilot"
@@ -63,7 +63,7 @@ class TestAddOpenpilotToPath:
         finally:
             sys.path[:] = original_path
 
-    @patch("comma_tools.analyzers.rlog_to_csv.find_repo_root")
+    @patch("comma_tools.utils.openpilot_utils.find_repo_root")
     def test_add_openpilot_to_path_none(self, mock_find_repo_root, tmp_path):
         """Test adding openpilot to path with None repo root."""
         openpilot_dir = tmp_path / "openpilot"
