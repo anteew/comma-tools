@@ -117,11 +117,12 @@ def test_marker_pipeline_detects_window(monkeypatch):
     analyzer = CruiseControlAnalyzer(log_file="dummy.zst")
     assert analyzer.parse_log_file() is True
     analyzer.marker_config.marker_type = "blinkers"
-    windows = analyzer.detect_marker_windows()
+    windows = analyzer.marker_detector.detect_marker_windows()
     assert isinstance(windows, list)
     assert len(windows) >= 1
-    analyzer.marker_windows = windows
-    res = analyzer.analyze_marker_windows()
+    res = analyzer.marker_detector.analyze_marker_windows(
+        analyzer.all_can_data, analyzer.address_labels, analyzer.compute_bit_change_stats
+    )
     assert isinstance(res, list)
 
 

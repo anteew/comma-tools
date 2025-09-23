@@ -6,8 +6,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from comma_tools.analyzers.cruise_control_analyzer import (  # noqa: E402
     CruiseControlAnalyzer,
-    MarkerConfig,
 )
+from comma_tools.analyzers.marker_detection import MarkerConfig  # noqa: E402
 
 
 @pytest.mark.integration
@@ -31,9 +31,10 @@ def test_marker_window_pipeline_on_real_log(real_log_path, integration_env):
         str(real_log_path), marker_config=MarkerConfig(marker_type="blinkers")
     )
     assert analyzer.parse_log_file() is True
-    windows = analyzer.detect_marker_windows()
+    windows = analyzer.marker_detector.detect_marker_windows()
     assert isinstance(windows, list)
     if windows:
-        analyzer.marker_windows = windows
-        out = analyzer.analyze_marker_windows()
+        out = analyzer.marker_detector.analyze_marker_windows(
+            analyzer.all_can_data, analyzer.address_labels, analyzer.compute_bit_change_stats
+        )
         assert isinstance(out, list)
