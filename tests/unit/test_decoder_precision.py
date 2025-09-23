@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.analyzers.cruise_control_analyzer import SubaruCANDecoder  # noqa: E402
+from comma_tools.can import SubaruCANDecoder  # noqa: E402
 
 
 def make_payload_from_bits(bits_on):
