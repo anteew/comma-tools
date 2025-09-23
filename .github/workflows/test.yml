@@ -81,6 +81,7 @@ jobs:
         "
 
     - name: Integration tests (real log fixture)
+      if: matrix.python-version == '3.12'
       env:
         CAPNPC_IMPORT_PATH: ${{ github.workspace }}/openpilot/cereal
       run: |
