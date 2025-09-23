@@ -17,6 +17,61 @@ If any of these crash or fail health checks, openpilot never reaches an enabled 
 
 A successful bring-up passes the following checkpoints:
 
+```mermaid
+sequenceDiagram
+    participant U as User/Car
+    participant M as Manager
+    participant PD as pandad
+    participant C as card
+    participant CS as controlsd
+    participant SD as selfdrived
+    participant P as Panda MCU
+
+    Note over U,P: System Startup
+    U->>M: Ignition On
+    M->>PD: Start pandad (always running)
+    M->>C: Start card (onroad only)
+    M->>CS: Start controlsd (onroad only)
+    M->>SD: Start selfdrived
+
+    Note over U,P: Step 1-2: Basic Communication
+    U->>P: Ignition detected via harness/CAN
+    P->>PD: Keep panda awake
+    C->>P: Wait for CAN packets
+    P->>C: CAN streaming confirmed
+
+    Note over U,P: Step 3-4: Car Identification
+    C->>P: Query VIN/FW (OBD multiplexing)
+    P->>U: Read car data
+    U->>P: Return car information
+    P->>C: Forward car data
+    C->>C: Fingerprint car, create CarParams
+    C->>M: Set FirmwareQueryDone=True
+    C->>M: Set CarParams bytes
+    C->>M: Set ControlsReady=True
+
+    Note over U,P: Step 5-6: Safety Configuration
+    PD->>M: Poll for FirmwareQueryDone & ControlsReady
+    M->>PD: Return flags=True
+    PD->>P: Switch from ELM327 to car-specific safety
+    PD->>P: Begin USB heartbeat loop
+
+    Note over U,P: Step 7-8: Enable Control
+    U->>U: Press cruise enable button
+    U->>P: Cruise enable via CAN
+    P->>P: Safety hook checks conditions
+    P->>P: Set controls_allowed=True
+    P->>SD: Report controlsAllowed=True
+    SD->>SD: Confirm engagement state
+
+    Note over U,P: Active Control State
+    CS->>P: Send steering/accel commands
+    P->>P: Validate commands via safety hook
+    P->>U: Forward approved commands to car
+```
+
+### Detailed Steps:
+
 1. **Ignition detected**: `pandad` sees ignition through the harness or CAN and keeps the panda awake (`openpilot/selfdrive/pandad/pandad.cc:200`).
 2. **CAN streaming**: `card` blocks until a CAN packet arrives, ensuring wiring is correct (`openpilot/selfdrive/car/card.py:85`).
 3. **Fingerprint + firmware query**: `card` queries VIN/FW (OBD multiplexing), matches interfaces, and emits `CarParams` (`openpilot/selfdrive/car/card.py:93`).
@@ -33,19 +88,118 @@ Only after all eight steps succeed should you see "openpilot engaged" in the UI 
 
 ## 3. What Drives `controls_allowed`
 
-The panda MCU enforces safety:
+```mermaid
+stateDiagram-v2
+    [*] --> NO_OUTPUT: Ignition Off
+    NO_OUTPUT --> ELM327: Ignition On
 
-- The firmware copies the safety hook’s global `controls_allowed` into panda state, lights the green LED, and times out if heartbeats stop (`panda/board/main.c:162`).
+    state ELM327 {
+        [*] --> Fingerprinting
+        Fingerprinting --> WaitingForParams: CAN packets received
+    }
+
+    ELM327 --> CarSpecificSafety: FirmwareQueryDone=True AND ControlsReady=True
+
+    state CarSpecificSafety {
+        [*] --> SafetyModeSet
+        SafetyModeSet --> WaitingForCruise: Safety hook loaded
+        WaitingForCruise --> CheckingConditions: Cruise main switch ON
+        CheckingConditions --> ControlsAllowed: Brake/gas released AND heartbeat active
+        ControlsAllowed --> CheckingConditions: Brake/gas pressed OR cruise disabled
+    }
+
+    CarSpecificSafety --> SILENT: Heartbeat timeout (>3 seconds)
+    CarSpecificSafety --> NO_OUTPUT: Ignition Off
+    SILENT --> CarSpecificSafety: Heartbeat restored
+    SILENT --> NO_OUTPUT: Ignition Off
+
+    note right of ControlsAllowed
+        Green LED on
+        Commands accepted
+        Steering/accel active
+    end note
+
+    note right of SILENT
+        Emergency fallback
+        No control allowed
+        Safety violation
+    end note
+```
+
+### Safety Enforcement Details:
+
+The panda MCU enforces safety through multiple layers:
+
+- The firmware copies the safety hook's global `controls_allowed` into panda state, lights the green LED, and times out if heartbeats stop (`panda/board/main.c:162`).
 - If the heartbeat mismatches the engaged state, panda clears `controls_allowed` after ~3 samples and falls back to `SILENT` if heartbeats disappear for multiple seconds (`panda/board/main.c:189`).
 - When ignition drops, `pandad` commands every panda back to `NO_OUTPUT` (`openpilot/selfdrive/pandad/pandad.cc:474`).
 
+### Brand-Specific Preconditions:
+
 Because the safety hooks differ by brand, common preconditions include:
 
-- Cruise main switch on; some cars require the user to press the set/resume button to engage.
-- Brake and gas pedals released.
-- For car ports that reuse stock longitudinal control, openpilot may only be "alerting" without enabling torque.
+- **Cruise main switch on**: Some cars require the user to press the set/resume button to engage.
+- **Brake and gas pedals released**: Active pedal input blocks engagement.
+- **Longitudinal control**: For car ports that reuse stock longitudinal control, openpilot may only be "alerting" without enabling torque.
 
 ## 4. Quick Debug Checklist (Noob Friendly)
+
+```mermaid
+flowchart TD
+    A[openpilot won't engage] --> B{UI shows 'openpilot unavailable'?}
+
+    B -->|Yes| C[Check CAN communication]
+    C --> C1[./tools/params read FirmwareQueryDone]
+    C1 --> C2{Returns '1'?}
+    C2 -->|No| C3[No CAN packets<br/>Check harness/wiring]
+    C2 -->|Yes| D[Check car fingerprinting]
+
+    B -->|No| E{UI toggles but instantly disengages?}
+
+    D --> D1[./tools/params read ControlsReady]
+    D1 --> D2{Returns '1'?}
+    D2 -->|No| D3[card process failed<br/>Check car port logs]
+    D2 -->|Yes| F[Check CarParams]
+
+    F --> F1[./tools/params read CarParams]
+    F1 --> F2{Non-empty blob?}
+    F2 -->|No| F3[Fingerprint failed<br/>Unsupported car model]
+    F2 -->|Yes| G[Check pandaStates]
+
+    E -->|Yes| G[Check pandaStates]
+    E -->|No| H{Green LED never lights?}
+
+    G --> G1[./tools/cereal/messaging/listener.py pandaStates]
+    G1 --> G2{controlsAllowed = True?}
+    G2 -->|No| G3[Safety hook blocking<br/>Check cruise/pedal state]
+    G2 -->|Yes| I[Check selfdriveState]
+
+    H -->|Yes| I[Check selfdriveState]
+    H -->|No| J{Sudden disengagement?}
+
+    I --> I1[./tools/cereal/messaging/listener.py selfdriveState]
+    I1 --> I2{enabled toggles correctly?}
+    I2 -->|No| I3[Manager restart<br/>Check process crashes]
+    I2 -->|Yes| K[Check heartbeat]
+
+    J -->|Yes| K[Check heartbeat]
+    J -->|No| L[Check failure table below]
+
+    K --> K1{pandaStates.heartbeatLost = True?}
+    K1 -->|Yes| K2[USB instability<br/>Check pandad process]
+    K1 -->|No| L[Advanced debugging needed]
+
+    style A fill:#ffcccc
+    style C3 fill:#ffeeee
+    style D3 fill:#ffeeee
+    style F3 fill:#ffeeee
+    style G3 fill:#ffeeee
+    style I3 fill:#ffeeee
+    style K2 fill:#ffeeee
+    style L fill:#e6f3ff
+```
+
+### Command Reference:
 
 Run these checks in a comma shell (from `../openpilot`):
 
@@ -55,7 +209,7 @@ Run these checks in a comma shell (from `../openpilot`):
 - `./tools/cereal/messaging/listener.py pandaStates` → watch `controlsAllowed`, `ignitionLine`, `faultStatus`.
 - `./tools/cereal/messaging/listener.py selfdriveState` → ensure `enabled` mirrors your steering-wheel button presses.
 
-Interpretation tips:
+### Interpretation Tips:
 
 - `FirmwareQueryDone = 0`: panda stayed in ELM327, likely no CAN seen or OBD multiplexing blocked.
 - `ControlsReady = 0`: `card` never finished `CarInterface.init()` – inspect car port logs.
