@@ -14,7 +14,7 @@ class SpeedTimelinePlotter:
     def plot_speed_timeline(
         self,
         speed_data: List[Dict[str, Any]],
-        target_speed_events: List[Dict[str, Any]] = None,
+        target_speed_events: Optional[List[Dict[str, Any]]] = None,
         target_speed_min: float = 55.0,
         target_speed_max: float = 56.0,
         output_filename: str = "speed_timeline.png",
@@ -74,7 +74,7 @@ class SpeedTimelinePlotter:
         self,
         signal_data: List[Dict[str, Any]],
         signal_name: str,
-        events: List[Dict[str, Any]] = None,
+        events: Optional[List[Dict[str, Any]]] = None,
         output_filename: Optional[str] = None,
         title: Optional[str] = None,
     ) -> str:
