@@ -586,7 +586,7 @@ class CruiseControlAnalyzer:
             target_speed_events=self.target_speed_events,
             target_speed_min=55.0,
             target_speed_max=56.0,
-            output_filename="speed_timeline.png"
+            output_filename="speed_timeline.png",
         )
         print(f"Speed timeline plot saved as: {plot_filename}")
 
