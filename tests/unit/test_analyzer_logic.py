@@ -10,6 +10,7 @@ from comma_tools.analyzers.cruise_control_analyzer import (  # noqa: E402
     CruiseControlAnalyzer,
     SubaruCANDecoder,
 )
+from comma_tools.analyzers.event_detection import EventDetector  # noqa: E402
 
 
 def make_payload_from_bits(bits_on):
@@ -145,3 +146,62 @@ def test_generate_report_and_plot_no_speed_data(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "SUBARU CRUISE CONTROL ANALYSIS REPORT" in captured.out
     analyzer.plot_speed_timeline()
+
+
+def test_event_detector_find_target_speed_events():
+    """Test EventDetector find_target_speed_events method directly."""
+    decoder = SubaruCANDecoder()
+    speed_data = [
+        {"timestamp": 0.0, "speed_mph": 54.9, "speed_kph": 0.0, "wheel_speeds": {}},
+        {"timestamp": 1.0, "speed_mph": 55.1, "speed_kph": 0.0, "wheel_speeds": {}},
+        {"timestamp": 2.0, "speed_mph": 56.0, "speed_kph": 0.0, "wheel_speeds": {}},
+        {"timestamp": 3.0, "speed_mph": 56.1, "speed_kph": 0.0, "wheel_speeds": {}},
+    ]
+    can_data = {}
+
+    event_detector = EventDetector(decoder, speed_data, can_data)
+    events = event_detector.find_target_speed_events(55.0, 56.0)
+
+    assert len(events) >= 1
+    evt = events[0]
+    assert evt["start_time"] >= 1.0
+    assert evt["end_time"] <= 3.0
+
+
+def test_event_detector_analyze_cruise_control_signals():
+    """Test EventDetector analyze_cruise_control_signals method directly."""
+    decoder = SubaruCANDecoder()
+    speed_data = []
+    can_data = {
+        decoder.CRUISE_BUTTONS_ADDR: [
+            {"timestamp": 0.2, "data": make_payload_from_bits([])},
+            {"timestamp": 0.3, "data": make_payload_from_bits([43])},
+        ]
+    }
+
+    event_detector = EventDetector(decoder, speed_data, can_data)
+    analysis = event_detector.analyze_cruise_control_signals()
+
+    assert "cruise_buttons" in analysis
+    buttons_analysis = analysis["cruise_buttons"]
+    assert buttons_analysis["total_messages"] >= 2
+    assert len(buttons_analysis["changes"]) >= 1
+
+
+def test_event_detector_correlate_signals_with_speed():
+    """Test EventDetector correlate_signals_with_speed method directly."""
+    decoder = SubaruCANDecoder()
+    speed_data = [
+        {"timestamp": 0.25, "speed_mph": 55.5, "speed_kph": 0.0, "wheel_speeds": {}},
+    ]
+    can_data = {}
+
+    signal_analysis = {
+        "cruise_buttons": {"set_button_presses": [{"timestamp": 0.3, "changes": {"set": True}}]}
+    }
+
+    event_detector = EventDetector(decoder, speed_data, can_data)
+    correlations = event_detector.correlate_signals_with_speed(signal_analysis)
+
+    assert "set_button_speeds" in correlations
+    assert len(correlations["set_button_speeds"]) >= 0
