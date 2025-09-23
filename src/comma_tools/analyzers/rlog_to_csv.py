@@ -75,16 +75,31 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rlog", required=True, help="Path to rlog.zst")
     ap.add_argument("--out", required=True, help="Output CSV path")
-    ap.add_argument("--window-start", type=float, default=None, help="Window start (s, relative to first CAN)")
-    ap.add_argument("--window-dur", type=float, default=None, help="Window duration (s). If given, marks 'window', otherwise all rows are 'pre'")
-    ap.add_argument("--repo-root", type=str, default=None, help="Path to openpilot checkout (to import LogReader)")
+    ap.add_argument(
+        "--window-start", type=float, default=None, help="Window start (s, relative to first CAN)"
+    )
+    ap.add_argument(
+        "--window-dur",
+        type=float,
+        default=None,
+        help="Window duration (s). If given, marks 'window', otherwise all rows are 'pre'",
+    )
+    ap.add_argument(
+        "--repo-root",
+        type=str,
+        default=None,
+        help="Path to openpilot checkout (to import LogReader)",
+    )
     args = ap.parse_args()
 
     add_openpilot_to_path(args.repo_root)
     try:
         from tools.lib.logreader import LogReader
     except Exception as e:
-        print("ERROR: couldn't import LogReader from openpilot. Pass --repo-root or run with openpilot on PYTHONPATH.", file=sys.stderr)
+        print(
+            "ERROR: couldn't import LogReader from openpilot. Pass --repo-root or run with openpilot on PYTHONPATH.",
+            file=sys.stderr,
+        )
         raise
 
     lr = LogReader(args.rlog)
@@ -115,19 +130,24 @@ def main():
 
     # Write CSV
     with open(args.out, "w", newline="") as f:
-        wr = csv.DictWriter(f, fieldnames=["window","segment","timestamp","address","bus","data_hex"])
+        wr = csv.DictWriter(
+            f, fieldnames=["window", "segment", "timestamp", "address", "bus", "data_hex"]
+        )
         wr.writeheader()
         for r in rows:
-            wr.writerow({
-                "window": "1",
-                "segment": seg_for(r["timestamp"]),
-                "timestamp": f"{r['timestamp']:.6f}",
-                "address": f"0x{int(r['address']):03X}",
-                "bus": r["bus"],
-                "data_hex": r["data_hex"],
-            })
+            wr.writerow(
+                {
+                    "window": "1",
+                    "segment": seg_for(r["timestamp"]),
+                    "timestamp": f"{r['timestamp']:.6f}",
+                    "address": f"0x{int(r['address']):03X}",
+                    "bus": r["bus"],
+                    "data_hex": r["data_hex"],
+                }
+            )
 
     print(f"Wrote {args.out} with {len(rows)} rows.")
+
 
 if __name__ == "__main__":
     main()

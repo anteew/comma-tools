@@ -6,7 +6,7 @@ from .can_bitwatch import main as can_bitwatch_main
 
 __all__ = [
     "CruiseControlAnalyzer",
-    "SubaruCANDecoder", 
+    "SubaruCANDecoder",
     "MarkerConfig",
     "rlog_to_csv_main",
     "can_bitwatch_main",

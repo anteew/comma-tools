@@ -31,22 +31,22 @@ class TestParseHexBytes:
     def test_parse_hex_bytes_normal(self):
         """Test parsing normal hex string."""
         result = parse_hex_bytes("DEADBEEF")
-        assert result == b"\xDE\xAD\xBE\xEF"
+        assert result == b"\xde\xad\xbe\xef"
 
     def test_parse_hex_bytes_with_spaces(self):
         """Test parsing hex string with spaces."""
         result = parse_hex_bytes("DE AD BE EF")
-        assert result == b"\xDE\xAD\xBE\xEF"
+        assert result == b"\xde\xad\xbe\xef"
 
     def test_parse_hex_bytes_with_0x(self):
         """Test parsing hex string with 0x prefix."""
         result = parse_hex_bytes("0xDEADBEEF")
-        assert result == b"\xDE\xAD\xBE\xEF"
+        assert result == b"\xde\xad\xbe\xef"
 
     def test_parse_hex_bytes_odd_length(self):
         """Test parsing hex string with odd length."""
         result = parse_hex_bytes("ABC")
-        assert result == b"\x0A\xBC"
+        assert result == b"\x0a\xbc"
 
     def test_parse_hex_bytes_empty(self):
         """Test parsing empty string."""
@@ -162,7 +162,7 @@ class TestPayloadToU64Le:
 
     def test_payload_to_u64_le_long(self):
         """Test converting long payload (truncated)."""
-        payload = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A"
+        payload = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a"
         result = payload_to_u64_le(payload)
         expected = int.from_bytes(b"\x01\x02\x03\x04\x05\x06\x07\x08", "little")
         assert result == expected
@@ -191,9 +191,9 @@ class TestAnalyzeCounts:
             {"address": 0x123, "segment": "window"},
             {"address": 0x456, "segment": "post"},
         ]
-        
+
         result = analyze_counts(rows)
-        
+
         assert len(result) == 2
         addr_123 = next(r for r in result if r["address"] == "0x123")
         assert addr_123["pre"] == 1
@@ -212,9 +212,9 @@ class TestAnalyzePerAddress:
             {"address": 0x123, "segment": "pre", "payload": b"\x01\x02"},
             {"address": 0x123, "segment": "window", "payload": b"\x03\x04"},
         ]
-        
+
         result = analyze_per_address(rows)
-        
+
         assert "0x123" in result
         addr_data = result["0x123"]
         assert "pre" in addr_data
