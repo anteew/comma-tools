@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 class CANDecodingError(Exception):
     """Exception raised when CAN message decoding fails."""
+
     pass
 
 
@@ -25,14 +26,14 @@ class SubaruCANDecoder:
     def decode_wheel_speeds(data: bytes, validate: bool = True) -> Optional[Dict[str, float]]:
         """
         Decode wheel speeds from address 0x13A (314).
-        
+
         Args:
             data: 8-byte CAN message payload
             validate: Whether to validate decoded values for reasonableness
-            
+
         Returns:
             Dict with wheel speeds in kph/mph, or None if decoding fails
-            
+
         Raises:
             CANDecodingError: If validation is enabled and values are unreasonable
         """
@@ -75,10 +76,10 @@ class SubaruCANDecoder:
     def decode_cruise_buttons(data: bytes) -> Optional[Dict[str, bool]]:
         """
         Decode cruise control buttons from address 0x146 (326).
-        
+
         Args:
             data: 8-byte CAN message payload
-            
+
         Returns:
             Dict with button states, or None if decoding fails
         """
@@ -105,14 +106,14 @@ class SubaruCANDecoder:
     def decode_cruise_status(data: bytes, validate: bool = True) -> Optional[Dict[str, Any]]:
         """
         Decode cruise status from address 0x241 (577).
-        
+
         Args:
             data: 8-byte CAN message payload
             validate: Whether to validate decoded values
-            
+
         Returns:
             Dict with cruise status, or None if decoding fails
-            
+
         Raises:
             CANDecodingError: If validation fails
         """
@@ -145,10 +146,10 @@ class SubaruCANDecoder:
     def decode_es_brake(data: bytes) -> Optional[Dict[str, Any]]:
         """
         Decode ES_Brake from address 0x220 (544).
-        
+
         Args:
             data: 8-byte CAN message payload
-            
+
         Returns:
             Dict with brake system status, or None if decoding fails
         """
@@ -174,10 +175,10 @@ class SubaruCANDecoder:
     def decode_blinkers(data: bytes) -> Optional[Dict[str, bool]]:
         """
         Decode blinker lamp state from Dashlights (0x390).
-        
+
         Args:
             data: 8-byte CAN message payload
-            
+
         Returns:
             Dict with blinker states, or None if decoding fails
         """
@@ -200,15 +201,13 @@ class SubaruCANDecoder:
         """Validate wheel speed values for reasonableness."""
         max_reasonable_speed = 400.0  # kph - reasonable upper limit
         min_reasonable_speed = 0.0
-        
+
         for wheel, speed in speeds.items():
             if wheel.startswith("avg_"):
                 continue
             if not (min_reasonable_speed <= speed <= max_reasonable_speed):
-                raise CANDecodingError(
-                    f"Unreasonable wheel speed for {wheel}: {speed:.1f} kph"
-                )
-        
+                raise CANDecodingError(f"Unreasonable wheel speed for {wheel}: {speed:.1f} kph")
+
         wheel_speeds = [speeds["FL"], speeds["FR"], speeds["RL"], speeds["RR"]]
         if max(wheel_speeds) - min(wheel_speeds) > 100.0:  # 100 kph difference
             logger.warning("Large speed difference between wheels detected")
@@ -217,20 +216,20 @@ class SubaruCANDecoder:
     def _validate_cruise_speed(set_speed: int) -> None:
         """Validate cruise control set speed."""
         if not (0 <= set_speed <= 500):  # Expanded range for test compatibility
-            raise CANDecodingError(
-                f"Unreasonable cruise set speed: {set_speed}"
-            )
+            raise CANDecodingError(f"Unreasonable cruise set speed: {set_speed}")
 
     @classmethod
-    def decode_message(cls, address: int, data: bytes, validate: bool = True) -> Optional[Dict[str, Any]]:
+    def decode_message(
+        cls, address: int, data: bytes, validate: bool = True
+    ) -> Optional[Dict[str, Any]]:
         """
         Generic decoder that routes to appropriate decoder based on address.
-        
+
         Args:
             address: CAN message address
             data: Message payload
             validate: Whether to validate decoded values
-            
+
         Returns:
             Decoded message data or None if no decoder available
         """
@@ -241,11 +240,11 @@ class SubaruCANDecoder:
             cls.ES_BRAKE_ADDR: cls.decode_es_brake,
             cls.DASHLIGHTS_ADDR: cls.decode_blinkers,
         }
-        
+
         decoder = decoders.get(address)
         if decoder:
             return decoder(data)
-        
+
         logger.debug(f"No decoder available for address 0x{address:03X}")
         return None
 
@@ -254,7 +253,7 @@ class SubaruCANDecoder:
         """Get all supported CAN addresses and their descriptions."""
         return {
             cls.WHEEL_SPEEDS_ADDR: "Wheel_Speeds",
-            cls.CRUISE_BUTTONS_ADDR: "Cruise_Buttons", 
+            cls.CRUISE_BUTTONS_ADDR: "Cruise_Buttons",
             cls.CRUISE_STATUS_ADDR: "Cruise_Status",
             cls.ES_BRAKE_ADDR: "ES_Brake",
             cls.BRAKE_PEDAL_ADDR: "Brake_Pedal",
