@@ -25,6 +25,8 @@ pip install -e ".[dev]"
 
 ### Analyzers
 - **Cruise Control Analyzer** (`cruise-control-analyzer`): Deep analysis of recorded driving logs (`rlog.zst` files) with focus on Subaru vehicle cruise control systems
+- **RLog to CSV** (`rlog-to-csv`): Convert openpilot rlog.zst files to CSV format for analysis
+- **CAN Bitwatch** (`can-bitwatch`): Analyze CAN CSV data for bit patterns, edge detection, and pulse sequences
 
 ### Monitors
 - **Hybrid RX Trace** (`hybrid_rx_trace.py`): Real-time monitoring of Panda safety states
@@ -51,6 +53,16 @@ cruise-control-analyzer /path/to/logfile.zst
 
 # With custom speed range
 cruise-control-analyzer /path/to/logfile.zst --speed-min 50 --speed-max 60
+```
+
+### CAN Analysis Tools
+
+```bash
+# Convert rlog to CSV for analysis
+rlog-to-csv --rlog /path/to/logfile.zst --out output.csv --window-start 100.0 --window-dur 30.0
+
+# Analyze CAN bit patterns
+can-bitwatch --csv output.csv --output-prefix analysis/results --watch 0x027:B4b5 0x321:B5b1
 ```
 
 ### Real-time Monitoring
