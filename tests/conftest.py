@@ -2,6 +2,14 @@ import os
 from pathlib import Path
 import pytest
 
+from comma_tools.analyzers.cruise_control_analyzer import (
+    find_repo_root,
+    resolve_deps_dir,
+    prepare_environment,
+    ensure_python_packages,
+    load_external_modules,
+)
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -26,3 +34,30 @@ def real_log_path(pytestconfig):
     if not p.exists():
         pytest.skip(f"Real log not found at: {p}")
     return p
+
+
+@pytest.fixture(scope="session")
+def integration_env():
+    repo_root = find_repo_root(None)
+    deps_dir = resolve_deps_dir(repo_root, None)
+    prepare_environment(repo_root, deps_dir)
+    try:
+        ensure_python_packages(
+            [
+                ("matplotlib", "matplotlib"),
+                ("numpy", "numpy"),
+                ("capnp", "pycapnp"),
+                ("tqdm", "tqdm"),
+                ("zstandard", "zstandard"),
+                ("zmq", "pyzmq"),
+                ("smbus2", "smbus2"),
+                ("urllib3", "urllib3"),
+                ("requests", "requests"),
+            ],
+            deps_dir,
+            True,
+        )
+    except Exception:
+        pass
+    load_external_modules()
+    return True

@@ -11,7 +11,7 @@ from comma_tools.analyzers.cruise_control_analyzer import (  # noqa: E402
 
 
 @pytest.mark.integration
-def test_parse_and_report_with_default_options(real_log_path, capsys):
+def test_parse_and_report_with_default_options(real_log_path, capsys, integration_env):
     analyzer = CruiseControlAnalyzer(str(real_log_path))
     assert analyzer.parse_log_file() is True
     analyzer.generate_report()
@@ -26,7 +26,7 @@ def test_parse_and_report_with_default_options(real_log_path, capsys):
 
 
 @pytest.mark.integration
-def test_marker_window_pipeline_on_real_log(real_log_path):
+def test_marker_window_pipeline_on_real_log(real_log_path, integration_env):
     analyzer = CruiseControlAnalyzer(
         str(real_log_path), marker_config=MarkerConfig(marker_type="blinkers")
     )
