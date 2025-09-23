@@ -1,7 +1,6 @@
 """Unit tests for cruise control analyzer."""
 
 import pytest
-from unittest.mock import Mock, patch
 import sys
 from pathlib import Path
 
