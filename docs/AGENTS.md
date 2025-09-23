@@ -5,6 +5,7 @@
 - Other scripts are exploratory utilities for CAN analysis; see comments inside each script.
 
 ## Environment & Dependencies
+- Requires Python 3.12 (CI and tools are only supported on Python 3.12).
 - Analyzer auto-detects repo root (expects `openpilot/` alongside `comma-tools/`). Override with `--repo-root` if needed.
 - Third-party packages installed locally: `matplotlib`, `numpy`, `pycapnp`, `tqdm`, `zstandard`, `pyzmq`, `smbus2`. Run once with `--install-missing-deps` to populate the cache.
 - Analyzer stubs `openpilot.common.swaglog` to avoid hardware init; no comma device required.

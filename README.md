@@ -94,7 +94,7 @@ comma-tools/
 
 ## Requirements
 
-- Python 3.12 (project is tested on 3.9–3.12 in CI)
+- Python 3.12
 - openpilot installation (for some tools)
 - Panda device (for real-time monitoring tools)
 ## Integration tests with a real rlog.zst
