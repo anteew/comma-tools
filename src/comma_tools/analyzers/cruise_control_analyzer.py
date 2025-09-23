@@ -8,163 +8,26 @@ to decode wheel speeds and cruise control signals.
 """
 
 import argparse
-import importlib
-import importlib.util
 import os
 import struct
-import subprocess
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+from ..utils import (
+    find_repo_root,
+    resolve_deps_dir,
+    prepare_environment,
+    ensure_python_packages,
+    load_external_modules,
+)
+
 np = None  # loaded at runtime
 plt = None  # loaded at runtime
 LogReader = None  # loaded at runtime
 messaging = None  # loaded at runtime
-
-
-def find_repo_root(explicit: Optional[str] = None) -> Path:
-    """Locate the root directory that contains the openpilot checkout."""
-    candidates: List[Path] = []
-    if explicit:
-        candidates.append(Path(explicit).expanduser())
-
-    script_path = Path(__file__).resolve()
-    candidates.extend(script_path.parents)
-    candidates.append(Path.cwd())
-
-    seen: set[Path] = set()
-    for candidate in candidates:
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        if (candidate / "openpilot").exists():
-            return candidate
-
-    raise FileNotFoundError(
-        "Could not find the openpilot checkout.\n\n"
-        "Expected directory structure:\n"
-        "  parent-directory/\n"
-        "  ├── openpilot/          # Clone from https://github.com/commaai/openpilot\n"
-        "  └── comma-tools/        # This repository\n\n"
-        "To fix this:\n"
-        "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
-        "2. Ensure both repositories are in the same parent directory\n"
-        "3. Or use --repo-root to specify the parent directory path\n\n"
-        "Example: cruise-control-analyzer logfile.zst --repo-root /path/to/parent-directory"
-    )
-
-
-def resolve_deps_dir(repo_root: Path, override: Optional[str]) -> Path:
-    if override:
-        deps_dir = Path(override).expanduser()
-        if not deps_dir.is_absolute():
-            deps_dir = repo_root / deps_dir
-    else:
-        deps_dir = repo_root / "comma-depends"
-    return deps_dir
-
-
-def prepare_environment(repo_root: Path, deps_dir: Path) -> None:
-    openpilot_path = repo_root / "openpilot"
-    if not openpilot_path.exists():
-        raise FileNotFoundError(
-            f"openpilot checkout not found under {repo_root}\n\n"
-            f"Expected to find: {openpilot_path}\n\n"
-            "To fix this:\n"
-            "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
-            "2. Ensure the openpilot directory is in the correct location\n"
-            "3. Or use --repo-root to specify the correct parent directory"
-        )
-
-    deps_dir.mkdir(parents=True, exist_ok=True)
-
-    for path in (deps_dir, repo_root / "openpilot"):
-        path_str = str(path)
-        if path_str not in sys.path:
-            sys.path.insert(0, path_str)
-
-
-def ensure_python_packages(
-    requirements: List[Tuple[str, str]], deps_dir: Path, install_missing: bool
-) -> None:
-    missing = [
-        (module, package)
-        for module, package in requirements
-        if importlib.util.find_spec(module) is None
-    ]
-
-    if missing and install_missing:
-        print(f"Installing {len(missing)} missing packages to {deps_dir}...")
-        for i, (module, package) in enumerate(missing, 1):
-            print(f"  [{i}/{len(missing)}] Installing {package}...", end=" ", flush=True)
-            cmd = [sys.executable, "-m", "pip", "install", "--target", str(deps_dir), package]
-            try:
-                subprocess.check_call(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-                print("✓")
-            except subprocess.CalledProcessError as exc:
-                print("✗")
-                stderr_output = exc.stderr.decode() if exc.stderr else "No error details"
-                raise RuntimeError(
-                    f"Failed to install {package}:\n{stderr_output}\n\n"
-                    "This might be due to:\n"
-                    "- Network connectivity issues\n"
-                    "- Missing system dependencies\n"
-                    "- Python version compatibility\n\n"
-                    "Try installing manually: pip install " + " ".join(pkg for _, pkg in missing)
-                ) from exc
-
-        missing = [
-            (module, package)
-            for module, package in missing
-            if importlib.util.find_spec(module) is None
-        ]
-
-    if missing:
-        missing_desc = ", ".join(f"{module} (pip: {package})" for module, package in missing)
-        raise ImportError(
-            f"Missing Python packages: {missing_desc}\n\n"
-            "To fix this:\n"
-            "1. Install automatically: rerun with --install-missing-deps\n"
-            "2. Install manually: pip install " + " ".join(pkg for _, pkg in missing) + "\n"
-            "3. Use virtual environment if needed: python -m venv venv && source venv/bin/activate\n\n"
-            "Note: Some packages may require system dependencies (e.g., build tools, headers)"
-        )
-
-
-def ensure_cloudlog_stub():
-    import types
-    import sys as _sys
-
-    if "openpilot.common.swaglog" in _sys.modules:
-        return
-
-    stub_module = types.ModuleType("openpilot.common.swaglog")
-
-    class _StubLogger:
-        def __getattr__(self, _name):
-            def _log(*_args, **_kwargs):
-                pass
-
-            return _log
-
-    stub_module.cloudlog = _StubLogger()
-    _sys.modules["openpilot.common.swaglog"] = stub_module
-
-
-def load_external_modules() -> None:
-    global np, plt, LogReader, messaging
-    ensure_cloudlog_stub()
-    import numpy as _np
-    import matplotlib.pyplot as _plt
-    from tools.lib.logreader import LogReader as _LogReader
-
-    np = _np
-    plt = _plt
-    LogReader = _LogReader
-    messaging = None
 
 
 @dataclass
@@ -1121,7 +984,12 @@ def main():
         return 1
 
     print("Dependencies ready; loading openpilot modules...", flush=True)
-    load_external_modules()
+    modules = load_external_modules()
+    global np, plt, LogReader, messaging
+    np = modules['np']
+    plt = modules['plt']
+    LogReader = modules['LogReader']
+    messaging = modules['messaging']
     print("Openpilot modules loaded.", flush=True)
 
     if args.marker_pre < 0 or args.marker_post < 0:
