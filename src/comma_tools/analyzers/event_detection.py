@@ -110,7 +110,9 @@ class EventDetector:
                                 "old_state": prev_buttons.copy(),
                                 "new_state": buttons_dict.copy(),
                                 "changes": {
-                                    k: v for k, v in buttons_dict.items() if prev_buttons.get(k) != v
+                                    k: v
+                                    for k, v in buttons_dict.items()
+                                    if prev_buttons.get(k) != v
                                 },
                             }
                         )
@@ -120,15 +122,17 @@ class EventDetector:
                 "total_messages": len(button_messages),
                 "changes": button_changes,
                 "set_button_presses": [
-                    c for c in button_changes if cast(Dict[str, Any], c["changes"]).get("set") == True
+                    c
+                    for c in button_changes
+                    if cast(Dict[str, Any], c["changes"]).get("set") == True
                 ],
             }
 
             print(f"  Button state changes: {len(button_changes)}")
-            set_button_presses = cast(List[Any], signal_analysis['cruise_buttons']['set_button_presses'])
-            print(
-                f"  'Set' button presses detected: {len(set_button_presses)}"
+            set_button_presses = cast(
+                List[Any], signal_analysis["cruise_buttons"]["set_button_presses"]
             )
+            print(f"  'Set' button presses detected: {len(set_button_presses)}")
 
         if self.decoder.CRUISE_STATUS_ADDR in self.can_data:
             status_messages = self.can_data[self.decoder.CRUISE_STATUS_ADDR]
@@ -161,15 +165,17 @@ class EventDetector:
                 "total_messages": len(status_messages),
                 "changes": status_changes,
                 "activation_events": [
-                    c for c in status_changes if cast(Dict[str, Any], c["changes"]).get("cruise_activated") == True
+                    c
+                    for c in status_changes
+                    if cast(Dict[str, Any], c["changes"]).get("cruise_activated") == True
                 ],
             }
 
             print(f"  Status changes: {len(status_changes)}")
-            activation_events = cast(List[Any], signal_analysis['cruise_status']['activation_events'])
-            print(
-                f"  Cruise activation events: {len(activation_events)}"
+            activation_events = cast(
+                List[Any], signal_analysis["cruise_status"]["activation_events"]
             )
+            print(f"  Cruise activation events: {len(activation_events)}")
 
         if self.decoder.ES_BRAKE_ADDR in self.can_data:
             brake_messages = self.can_data[self.decoder.ES_BRAKE_ADDR]
@@ -202,15 +208,17 @@ class EventDetector:
                 "total_messages": len(brake_messages),
                 "changes": brake_changes,
                 "cruise_activation_events": [
-                    c for c in brake_changes if cast(Dict[str, Any], c["changes"]).get("cruise_activated") == True
+                    c
+                    for c in brake_changes
+                    if cast(Dict[str, Any], c["changes"]).get("cruise_activated") == True
                 ],
             }
 
             print(f"  Brake signal changes: {len(brake_changes)}")
-            cruise_activation_events = cast(List[Any], signal_analysis['es_brake']['cruise_activation_events'])
-            print(
-                f"  Cruise activation via brake signal: {len(cruise_activation_events)}"
+            cruise_activation_events = cast(
+                List[Any], signal_analysis["es_brake"]["cruise_activation_events"]
             )
+            print(f"  Cruise activation via brake signal: {len(cruise_activation_events)}")
 
         return signal_analysis
 
