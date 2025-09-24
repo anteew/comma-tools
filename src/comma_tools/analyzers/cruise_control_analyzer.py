@@ -86,8 +86,12 @@ class CruiseControlAnalyzer:
         ]
         self.CANDIDATES_SCHEMA_V1 = [
             "address_hex",
-            "bit_global_lsb",
-            "bit_global_msb",
+            "bit_global",
+            "byte_index",
+            "bit_lsb",
+            "bit_msb",
+            "label_lsb",
+            "label_msb",
             "score",
             "rises_set",
             "falls_end",
@@ -96,35 +100,48 @@ class CruiseControlAnalyzer:
         ]
         self.EDGES_SCHEMA_V1 = [
             "address_hex",
-            "bit_global_lsb",
-            "bit_global_msb",
+            "bit_global",
+            "byte_index",
+            "bit_lsb",
+            "bit_msb",
+            "label_lsb",
+            "label_msb",
             "ts_abs",
             "ts_rel",
-            "ts_str",
+            "ts_mmss",
             "edge_type",
             "speed_mph",
             "bus",
         ]
         self.RUNS_SCHEMA_V1 = [
             "address_hex",
-            "bit_global_lsb",
-            "bit_global_msb",
-            "start_ts_abs",
-            "start_ts_rel",
-            "start_ts_str",
-            "end_ts_abs",
-            "end_ts_rel",
-            "end_ts_str",
+            "bit_global",
+            "byte_index",
+            "bit_lsb",
+            "bit_msb",
+            "label_lsb",
+            "label_msb",
+            "start_abs",
+            "start_rel",
+            "start_mmss",
+            "end_abs",
+            "end_rel",
+            "end_mmss",
             "duration_s",
+            "duration_mmss",
             "bus",
         ]
         self.TIMELINE_SCHEMA_V1 = [
             "ts_abs",
             "ts_rel",
-            "ts_str",
+            "ts_mmss",
             "address_hex",
-            "bit_global_lsb",
-            "bit_global_msb",
+            "bit_global",
+            "byte_index",
+            "bit_lsb",
+            "bit_msb",
+            "label_lsb",
+            "label_msb",
             "event",
             "value",
             "speed_mph",
@@ -515,8 +532,8 @@ class CruiseControlAnalyzer:
     def _format_time_fields(self, ts_abs: float, t0: float) -> Dict[str, object]:
         ts_rel = round(ts_abs - t0, 3)
         minutes, seconds = divmod(ts_rel, 60)
-        ts_str = f"{int(minutes):02d}:{seconds:06.3f}"
-        return {"ts_abs": round(ts_abs, 3), "ts_rel": ts_rel, "ts_str": ts_str}
+        ts_mmss = f"{int(minutes):02d}:{seconds:06.3f}"
+        return {"ts_abs": round(ts_abs, 3), "ts_rel": ts_rel, "ts_mmss": ts_mmss}
 
     def _round_speed(self, speed_mph: float) -> float:
         return round(speed_mph, 1)
@@ -524,14 +541,14 @@ class CruiseControlAnalyzer:
     def _candidates_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
         score = x.get("score", 0.0)
         address_hex = x.get("address_hex", "")
-        bit_lsb = x.get("bit_global_lsb", 0)
-        return (-float(cast(float, score)), str(address_hex), int(cast(int, bit_lsb)))
+        bit_global = x.get("bit_global", 0)
+        return (-float(cast(float, score)), str(address_hex), int(cast(int, bit_global)))
 
     def _runs_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
         duration_s = x.get("duration_s", 0.0)
         address_hex = x.get("address_hex", "")
-        bit_lsb = x.get("bit_global_lsb", 0)
-        return (-float(cast(float, duration_s)), str(address_hex), int(cast(int, bit_lsb)))
+        bit_global = x.get("bit_global", 0)
+        return (-float(cast(float, duration_s)), str(address_hex), int(cast(int, bit_global)))
 
     def _dual_bit_numeric(self, bit_lsb: int, width: int = 64) -> Tuple[int, int]:
         bit_msb = (width - 1) - bit_lsb
@@ -752,15 +769,21 @@ class CruiseControlAnalyzer:
                 falls_end = frequency - rises_set
                 penalty = 0.0
 
-                bit_lsb = bit_pos % 8
-                bit_lsb_global = bit_pos
-                bit_lsb_idx, bit_msb_idx = self._dual_bit_numeric(bit_lsb_global, width=64)
+                bit_global = bit_pos
+                byte_index = bit_global // 8
+                bit_lsb = bit_global % 8
+                bit_msb = 7 - bit_lsb
+                label_lsb, label_msb = self.format_bit_labels(bit_global)
 
                 candidates_data.append(
                     {
                         "address_hex": f"0x{address:03X}",
-                        "bit_global_lsb": bit_lsb_idx,
-                        "bit_global_msb": bit_msb_idx,
+                        "bit_global": bit_global,
+                        "byte_index": byte_index,
+                        "bit_lsb": bit_lsb,
+                        "bit_msb": bit_msb,
+                        "label_lsb": label_lsb,
+                        "label_msb": label_msb,
                         "score": round(score, 3),
                         "rises_set": int(rises_set),
                         "falls_end": int(falls_end),
@@ -773,7 +796,7 @@ class CruiseControlAnalyzer:
             key=lambda x: (
                 -float(x.get("score", 0.0)),
                 str(x.get("address_hex", "")),
-                int(x.get("bit_global_lsb", 0)),
+                int(x.get("bit_global", 0)),
             )
         )
 
@@ -829,8 +852,11 @@ class CruiseControlAnalyzer:
 
                 tf = self._format_time_fields(timestamp, self.window_start_time)
 
-                bit_global_lsb = 43
-                _, bit_global_msb = self._dual_bit_numeric(bit_global_lsb, width=64)
+                bit_global = 43
+                byte_index = bit_global // 8
+                bit_lsb = bit_global % 8
+                bit_msb = 7 - bit_lsb
+                label_lsb, label_msb = self.format_bit_labels(bit_global)
 
                 address = self.decoder.CRUISE_BUTTONS_ADDR
                 bus = self.get_bus_for_address(address)
@@ -838,18 +864,22 @@ class CruiseControlAnalyzer:
                 edges_data.append(
                     {
                         "address_hex": f"0x{address:03X}",
-                        "bit_global_lsb": bit_global_lsb,
-                        "bit_global_msb": bit_global_msb,
+                        "bit_global": bit_global,
+                        "byte_index": byte_index,
+                        "bit_lsb": bit_lsb,
+                        "bit_msb": bit_msb,
+                        "label_lsb": label_lsb,
+                        "label_msb": label_msb,
                         "ts_abs": tf["ts_abs"],
                         "ts_rel": tf["ts_rel"],
-                        "ts_str": tf["ts_str"],
+                        "ts_mmss": tf["ts_mmss"],
                         "edge_type": "rise",
                         "speed_mph": self._round_speed(speed_mph),
                         "bus": bus,
                     }
                 )
 
-        edges_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["bit_global_lsb"]))
+        edges_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["bit_global"]))
         rows = [self._coerce_to_schema(r, self.EDGES_SCHEMA_V1) for r in edges_data]
 
         if self.export_csv:
@@ -904,22 +934,32 @@ class CruiseControlAnalyzer:
             if not partial:
                 tf_end = self._format_time_fields(stop_time, self.window_start_time)
             else:
-                tf_end = {"ts_abs": 0.0, "ts_rel": 0.0, "ts_str": "incomplete"}
+                tf_end = {"ts_abs": 0.0, "ts_rel": 0.0, "ts_mmss": "incomplete"}
 
             duration_s = round(max(0.0, stop_time - start_time) if not partial else 0.0, 3)
+
+            byte_index = bit_global // 8
+            bit_lsb = bit_global % 8
+            bit_msb = 7 - bit_lsb
+            label_lsb, label_msb = self.format_bit_labels(bit_global)
 
             runs_data.append(
                 {
                     "address_hex": f"0x{address:03X}",
-                    "bit_global_lsb": bit_global,
-                    "bit_global_msb": self._dual_bit_numeric(bit_global, width=64)[1],
-                    "start_ts_abs": tf_start["ts_abs"],
-                    "start_ts_rel": tf_start["ts_rel"],
-                    "start_ts_str": tf_start["ts_str"],
-                    "end_ts_abs": tf_end["ts_abs"],
-                    "end_ts_rel": tf_end["ts_rel"],
-                    "end_ts_str": tf_end["ts_str"],
+                    "bit_global": bit_global,
+                    "byte_index": byte_index,
+                    "bit_lsb": bit_lsb,
+                    "bit_msb": bit_msb,
+                    "label_lsb": label_lsb,
+                    "label_msb": label_msb,
+                    "start_abs": tf_start["ts_abs"],
+                    "start_rel": tf_start["ts_rel"],
+                    "start_mmss": tf_start["ts_mmss"],
+                    "end_abs": tf_end.get("ts_abs", 0.0),
+                    "end_rel": tf_end.get("ts_rel", 0.0),
+                    "end_mmss": tf_end.get("ts_mmss", "incomplete"),
                     "duration_s": duration_s,
+                    "duration_mmss": f"{int(duration_s//60):02d}:{(duration_s%60):06.3f}",
                     "bus": bus,
                 }
             )
@@ -928,7 +968,7 @@ class CruiseControlAnalyzer:
             key=lambda x: (
                 -float(x.get("duration_s", 0.0)),
                 str(x.get("address_hex", "")),
-                int(x.get("bit_global_lsb", 0)),
+                int(x.get("bit_global", 0)),
             )
         )
         rows = [self._coerce_to_schema(r, self.RUNS_SCHEMA_V1) for r in runs_data]
@@ -1022,8 +1062,11 @@ class CruiseControlAnalyzer:
             event_typed: Dict[str, Any] = cast(Dict[str, Any], event)
             timestamp = event_typed["timestamp"]
             address = event_typed["address"]
-            bit_global_lsb = event_typed["bit_global"]
-            _, bit_global_msb = self._dual_bit_numeric(bit_global_lsb, width=64)
+            bit_global = event_typed["bit_global"]
+            byte_index = bit_global // 8
+            bit_lsb = bit_global % 8
+            bit_msb = 7 - bit_lsb
+            label_lsb, label_msb = self.format_bit_labels(bit_global)
 
             tf = self._format_time_fields(timestamp, self.window_start_time)
             bus = self.get_bus_for_address(address)
@@ -1032,10 +1075,14 @@ class CruiseControlAnalyzer:
                 {
                     "ts_abs": tf["ts_abs"],
                     "ts_rel": tf["ts_rel"],
-                    "ts_str": tf["ts_str"],
+                    "ts_mmss": tf["ts_mmss"],
                     "address_hex": f"0x{address:03X}",
-                    "bit_global_lsb": bit_global_lsb,
-                    "bit_global_msb": bit_global_msb,
+                    "bit_global": bit_global,
+                    "byte_index": byte_index,
+                    "bit_lsb": bit_lsb,
+                    "bit_msb": bit_msb,
+                    "label_lsb": label_lsb,
+                    "label_msb": label_msb,
                     "event": event_typed["event_name"],
                     "value": "",
                     "speed_mph": 0.0,
