@@ -11,10 +11,8 @@ import argparse
 import csv
 import json
 import os
-import struct
 import sys
-from collections import Counter, defaultdict
-from dataclasses import dataclass
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -326,12 +324,12 @@ class CruiseControlAnalyzer:
 
         marker_analysis = self.marker_window_analysis if self.marker_config.enabled else []
 
-        correlations = self.correlate_signals_with_speed(signal_analysis)
+        _ = self.correlate_signals_with_speed(signal_analysis)
 
         if self.marker_config.enabled:
             self.report_marker_windows(marker_analysis)
 
-        print(f"\nKEY FINDINGS:")
+        print("\nKEY FINDINGS:")
         print("-" * 50)
 
         if "cruise_buttons" in signal_analysis:
@@ -370,7 +368,7 @@ class CruiseControlAnalyzer:
                 top_bits = list(analysis["bit_frequency"].most_common(3))
                 print(f"     Most active bits: {top_bits}")
 
-        print(f"\nRECOMMENDATIONS:")
+        print("\nRECOMMENDATIONS:")
         print("-" * 20)
 
         if (
@@ -384,7 +382,7 @@ class CruiseControlAnalyzer:
         else:
             print("⚠ No clear 'Set' button presses detected in expected address")
 
-        print(f"\nNEXT STEPS:")
+        print("\nNEXT STEPS:")
         print(
             "1. Monitor address 0x{:03X} (Cruise_Buttons) in real-time".format(
                 self.decoder.CRUISE_BUTTONS_ADDR
@@ -398,7 +396,7 @@ class CruiseControlAnalyzer:
         )
         print("4. Use openpilot's cabana tool for real-time CAN monitoring")
 
-        print(f"\nCABANA COMMANDS:")
+        print("\nCABANA COMMANDS:")
         print(f"cd /home/ubuntu/repos/openpilot && tools/cabana")
         print(
             f"# Focus on addresses: 0x{self.decoder.CRUISE_BUTTONS_ADDR:03X}, 0x{self.decoder.CRUISE_STATUS_ADDR:03X}, 0x{self.decoder.ES_BRAKE_ADDR:03X}"
@@ -1399,12 +1397,12 @@ class CruiseControlAnalyzer:
             except Exception:
                 pass
 
-        has_empty_exports = False
+        _has_empty_exports = False
         if not any(self.marker_window_analysis):
-            has_empty_exports = True
+            _has_empty_exports = True
             empty_warnings.append("Counts by segment export will be empty")
         if not any(addr for addr in self.target_addresses.keys() if self.can_data.get(addr)):
-            has_empty_exports = True
+            _has_empty_exports = True
             empty_warnings.append("Candidates export will be empty")
 
         html_content = f"""<!DOCTYPE html>
@@ -1675,7 +1673,7 @@ class CruiseControlAnalyzer:
                 self.all_can_data, self.address_labels, self.compute_bit_change_stats
             )
         else:
-            marker_windows = []
+            _ = []
             self.marker_window_analysis = []
 
         self.find_target_speed_events(target_speed_min, target_speed_max)
