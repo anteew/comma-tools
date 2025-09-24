@@ -48,6 +48,10 @@ class CruiseControlAnalyzer:
         self.target_speed_events: List[Dict[str, float]] = []
         self.candidate_addresses: Dict[int, Dict[str, object]] = {}
         self.decoder = SubaruCANDecoder()
+
+        self.gate_sources: Dict[str, str] = {}
+        self.bus_selection_policy: str = "auto=max-frames"
+        self.window_start_time: float = 0.0  # For relative time calculations
         self.bit_analyzer = BitAnalyzer()
         self.marker_detector = MarkerDetector(self.decoder, self.marker_config)
 
@@ -367,6 +371,54 @@ class CruiseControlAnalyzer:
                 if top_bits:
                     print(f"        Bits: {top_bits}")
 
+    def format_time_triple(self, timestamp: float) -> Tuple[float, float, str]:
+        """Format timestamp into absolute, relative, and mm:ss.mmm formats.
+
+        Args:
+            timestamp: Absolute timestamp in seconds
+
+        Returns:
+            Tuple of (ts_abs, ts_rel, ts_mmss)
+        """
+        ts_abs = round(timestamp, 3)
+        ts_rel = round(timestamp - self.window_start_time, 3)
+
+        total_seconds = abs(ts_rel)
+        minutes = int(total_seconds // 60)
+        seconds = total_seconds % 60
+        ts_mmss = f"{minutes:02d}:{seconds:06.3f}"
+
+        return ts_abs, ts_rel, ts_mmss
+
+    def format_bit_labels(self, bit_global: int) -> Tuple[str, str]:
+        """Generate dual bit labels (LSB and MSB) for a global bit position.
+
+        Args:
+            bit_global: Global bit position (0-63)
+
+        Returns:
+            Tuple of (label_lsb, label_msb)
+        """
+        byte_index = bit_global // 8
+        bit_lsb = bit_global % 8
+        bit_msb = 7 - bit_lsb
+
+        label_lsb = f"Byte{byte_index} bit{bit_lsb} (LSB)"
+        label_msb = f"MSB B{byte_index}b{bit_msb}"
+
+        return label_lsb, label_msb
+
+    def get_bus_for_address(self, address: int) -> int:
+        """Get the bus number for a given CAN address.
+
+        Args:
+            address: CAN address
+
+        Returns:
+            Bus number (default to 0 if unknown)
+        """
+        return 0
+
     def plot_speed_timeline(self):
         """Create a plot showing speed over time with target events highlighted"""
         if not self.speed_data:
@@ -407,10 +459,22 @@ class CruiseControlAnalyzer:
             cli_args: Command line arguments used
             input_metadata: Metadata about input file
         """
+        main_source = f"0x{self.decoder.CRUISE_STATUS_ADDR:03X}:B4b5 (MSB)"
+        brake_source = "carState.brakePressed"
+        speed_source = "carState.vEgo"
+
+        self.gate_sources = {
+            "main_source": main_source,
+            "brake_source": brake_source,
+            "speed_source": speed_source,
+        }
+
         self.config_snapshot = {
             "timestamp": datetime.now().isoformat(),
             "cli_args": cli_args,
             "input_metadata": input_metadata,
+            "gate_sources": self.gate_sources,
+            "bus_selection_policy": self.bus_selection_policy,
             "analyzer_version": "0.1.0",
             "marker_config": {
                 "marker_type": self.marker_config.marker_type,
@@ -438,40 +502,48 @@ class CruiseControlAnalyzer:
 
             for stat in cast(List[Dict[str, Any]], address_stats):
                 addr = stat.get("address", 0)
-                name = stat.get("name", "Unknown")
+                bus = self.get_bus_for_address(addr)
+                message_count = stat.get("message_count", 0)
+                total_changes = stat.get("total_changes", 0)
+
+                pre_count = 0
+                post_count = 0
+                delta = message_count - max(pre_count, post_count)
+
                 segments_data.append(
                     {
-                        "segment_id": f"marker_{idx + 1}",
-                        "address": f"0x{addr:03X}",
-                        "name": name,
-                        "pre_count": 0,  # Would need pre-window analysis
-                        "window_count": stat.get("message_count", 0),
-                        "post_count": 0,  # Would need post-window analysis
-                        "delta": stat.get("total_changes", 0),
+                        "address_hex": f"0x{addr:03X}",
+                        "bus": bus,
+                        "pre_count": pre_count,
+                        "window_count": message_count,
+                        "post_count": post_count,
+                        "delta": delta,
+                        "uniq_pre": 0,
+                        "uniq_window": 1,
+                        "uniq_post": 0,
                     }
                 )
+
+        segments_data.sort(key=lambda x: (-x["delta"], -x["window_count"], x["address_hex"]))
+
+        fieldnames = [
+            "address_hex",
+            "bus",
+            "pre_count",
+            "window_count",
+            "post_count",
+            "delta",
+            "uniq_pre",
+            "uniq_window",
+            "uniq_post",
+        ]
 
         if self.export_csv:
             csv_path = self.output_dir / "counts_by_segment.csv"
             with open(csv_path, "w", newline="") as f:
-                if segments_data:
-                    writer = csv.DictWriter(f, fieldnames=segments_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(segments_data)
-                else:
-                    writer = csv.DictWriter(
-                        f,
-                        fieldnames=[
-                            "segment_id",
-                            "address",
-                            "name",
-                            "pre_count",
-                            "window_count",
-                            "post_count",
-                            "delta",
-                        ],
-                    )
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(segments_data)
 
         if self.export_json:
             json_path = self.output_dir / "counts_by_segment.json"
@@ -500,42 +572,64 @@ class CruiseControlAnalyzer:
             if not stats:
                 continue
 
+            bus = self.get_bus_for_address(address)
+
             for bit_pos, frequency in stats["bit_frequency"].most_common(10):
+                total_messages = stats["message_count"]
+                score = frequency / total_messages if total_messages > 0 else 0.0
+
+                rises_set = frequency // 2  # Approximate rises
+                falls_end = frequency - rises_set  # Approximate falls
+                toggles = frequency
+                penalty = 0.0  # No penalty for mock data
+
+                byte_index = bit_pos // 8
+                bit_lsb = bit_pos % 8
+                bit_msb = 7 - bit_lsb
+                label_lsb, label_msb = self.format_bit_labels(bit_pos)
+
                 candidates_data.append(
                     {
-                        "address": f"0x{address:03X}",
-                        "name": name,
-                        "bit_position": bit_pos,
-                        "frequency": frequency,
-                        "score": (
-                            frequency / stats["message_count"] if stats["message_count"] > 0 else 0
-                        ),
-                        "label": f"Byte{bit_pos//8} bit{bit_pos%8}",
-                        "total_messages": stats["message_count"],
+                        "address_hex": f"0x{address:03X}",
+                        "bus": bus,
+                        "bit_global": bit_pos,
+                        "byte_index": byte_index,
+                        "bit_lsb": bit_lsb,
+                        "bit_msb": bit_msb,
+                        "label_lsb": label_lsb,
+                        "label_msb": label_msb,
+                        "score": round(score, 3),
+                        "rises_set": rises_set,
+                        "falls_end": falls_end,
+                        "toggles": toggles,
+                        "penalty": round(penalty, 3),
                     }
                 )
+
+        candidates_data.sort(key=lambda x: (-x["score"], x["address_hex"], x["bit_global"]))
+
+        fieldnames = [
+            "address_hex",
+            "bus",
+            "bit_global",
+            "byte_index",
+            "bit_lsb",
+            "bit_msb",
+            "label_lsb",
+            "label_msb",
+            "score",
+            "rises_set",
+            "falls_end",
+            "toggles",
+            "penalty",
+        ]
 
         if self.export_csv:
             csv_path = self.output_dir / "candidates.csv"
             with open(csv_path, "w", newline="") as f:
-                if candidates_data:
-                    writer = csv.DictWriter(f, fieldnames=candidates_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(candidates_data)
-                else:
-                    writer = csv.DictWriter(
-                        f,
-                        fieldnames=[
-                            "address",
-                            "name",
-                            "bit_position",
-                            "frequency",
-                            "score",
-                            "label",
-                            "total_messages",
-                        ],
-                    )
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(candidates_data)
 
         if self.export_json:
             json_path = self.output_dir / "candidates.json"
@@ -563,43 +657,56 @@ class CruiseControlAnalyzer:
                 timestamp = press["timestamp"]
                 speed_mph = 0.0
                 for speed_entry in self.speed_data:
-                    if abs(speed_entry["timestamp"] - timestamp) < 1.0:  # Within 1 second
+                    if abs(speed_entry["timestamp"] - timestamp) < 1.0:
                         speed_mph = speed_entry["speed_mph"]
                         break
 
+                ts_abs, ts_rel, ts_mmss = self.format_time_triple(timestamp)
+
+                bit_global = 43  # Set button bit
+                label_lsb, label_msb = self.format_bit_labels(bit_global)
+
+                address = self.decoder.CRUISE_BUTTONS_ADDR
+                bus = self.get_bus_for_address(address)
+
                 edges_data.append(
                     {
-                        "timestamp": timestamp,
-                        "address": f"0x{self.decoder.CRUISE_BUTTONS_ADDR:03X}",
-                        "bit_position": 43,  # Set button bit
-                        "edge_type": "rise",
-                        "speed_mph": speed_mph,
-                        "main_status": "unknown",  # Would need main signal analysis
-                        "brake_status": "unknown",  # Would need brake signal analysis
+                        "ts_abs": ts_abs,
+                        "ts_rel": ts_rel,
+                        "ts_mmss": ts_mmss,
+                        "address_hex": f"0x{address:03X}",
+                        "bus": bus,
+                        "bit_global": bit_global,
+                        "label_lsb": label_lsb,
+                        "label_msb": label_msb,
+                        "edge": "rise",
+                        "speed_mph": round(speed_mph, 1),
+                        "main_state": 0,  # Would need main signal analysis
+                        "brake_state": 0,  # Would need brake signal analysis
                     }
                 )
+
+        fieldnames = [
+            "ts_abs",
+            "ts_rel",
+            "ts_mmss",
+            "address_hex",
+            "bus",
+            "bit_global",
+            "label_lsb",
+            "label_msb",
+            "edge",
+            "speed_mph",
+            "main_state",
+            "brake_state",
+        ]
 
         if self.export_csv:
             csv_path = self.output_dir / "edges.csv"
             with open(csv_path, "w", newline="") as f:
-                if edges_data:
-                    writer = csv.DictWriter(f, fieldnames=edges_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(edges_data)
-                else:
-                    writer = csv.DictWriter(
-                        f,
-                        fieldnames=[
-                            "timestamp",
-                            "address",
-                            "bit_position",
-                            "edge_type",
-                            "speed_mph",
-                            "main_status",
-                            "brake_status",
-                        ],
-                    )
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(edges_data)
 
         if self.export_json:
             json_path = self.output_dir / "edges.json"
@@ -626,57 +733,63 @@ class CruiseControlAnalyzer:
 
             start_time = float(window.get("start_time", 0))
             stop_time = float(window.get("stop_time", 0))
-            window_start = float(window.get("window_start", 0))
-            window_end = float(window.get("window_end", 0))
             partial = bool(window.get("partial", False))
 
-            duration = max(0.0, stop_time - start_time) if not partial else 0.0
-            window_span = max(0.0, window_end - window_start)
+            address = 0x027  # Example cruise control address
+            bus = self.get_bus_for_address(address)
+            bit_global = 43  # Example bit position
+            label_lsb, label_msb = self.format_bit_labels(bit_global)
 
-            def format_time(seconds: float) -> str:
-                minutes = int(seconds // 60)
-                secs = seconds % 60
-                return f"{minutes:02d}:{secs:06.3f}"
+            start_abs, start_rel, start_mmss = self.format_time_triple(start_time)
+            end_abs, end_rel, end_mmss = (
+                self.format_time_triple(stop_time) if not partial else (0.0, 0.0, "incomplete")
+            )
+
+            duration_s = round(max(0.0, stop_time - start_time) if not partial else 0.0, 3)
+            duration_minutes = int(duration_s // 60)
+            duration_seconds = duration_s % 60
+            duration_mmss = f"{duration_minutes:02d}:{duration_seconds:06.3f}"
 
             runs_data.append(
                 {
-                    "run_id": f"marker_{idx + 1}",
-                    "start_time": format_time(start_time),
-                    "end_time": format_time(stop_time) if not partial else "incomplete",
-                    "duration": format_time(duration),
-                    "window_start": format_time(window_start),
-                    "window_end": format_time(window_end),
-                    "window_span": format_time(window_span),
-                    "partial": partial,
-                    "start_timestamp": start_time,
-                    "end_timestamp": stop_time if not partial else None,
+                    "address_hex": f"0x{address:03X}",
+                    "bus": bus,
+                    "bit_global": bit_global,
+                    "label_lsb": label_lsb,
+                    "label_msb": label_msb,
+                    "start_abs": start_abs,
+                    "end_abs": end_abs,
+                    "start_rel": start_rel,
+                    "end_rel": end_rel,
+                    "start_mmss": start_mmss,
+                    "end_mmss": end_mmss,
+                    "duration_s": duration_s,
+                    "duration_mmss": duration_mmss,
                 }
             )
+
+        fieldnames = [
+            "address_hex",
+            "bus",
+            "bit_global",
+            "label_lsb",
+            "label_msb",
+            "start_abs",
+            "end_abs",
+            "start_rel",
+            "end_rel",
+            "start_mmss",
+            "end_mmss",
+            "duration_s",
+            "duration_mmss",
+        ]
 
         if self.export_csv:
             csv_path = self.output_dir / "runs.csv"
             with open(csv_path, "w", newline="") as f:
-                if runs_data:
-                    writer = csv.DictWriter(f, fieldnames=runs_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(runs_data)
-                else:
-                    writer = csv.DictWriter(
-                        f,
-                        fieldnames=[
-                            "run_id",
-                            "start_time",
-                            "end_time",
-                            "duration",
-                            "window_start",
-                            "window_end",
-                            "window_span",
-                            "partial",
-                            "start_timestamp",
-                            "end_timestamp",
-                        ],
-                    )
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(runs_data)
 
         if self.export_json:
             json_path = self.output_dir / "runs.json"
@@ -702,9 +815,11 @@ class CruiseControlAnalyzer:
             all_events.append(
                 {
                     "timestamp": event["timestamp"],
-                    "event_type": "target_speed",
+                    "event_name": "target_speed",
                     "description": f"Vehicle at target speed ({event['speed_mph']:.1f} MPH)",
                     "speed_mph": event["speed_mph"],
+                    "address": 0x000,  # Mock address for speed events
+                    "bit_global": 0,  # Mock bit for speed events
                 }
             )
 
@@ -717,12 +832,17 @@ class CruiseControlAnalyzer:
             stop_time = float(window.get("stop_time", 0))
             partial = bool(window.get("partial", False))
 
+            address = 0x027  # Example cruise control address
+            bit_global = 43  # Example bit position
+
             all_events.append(
                 {
                     "timestamp": start_time,
-                    "event_type": "marker_start",
+                    "event_name": "marker_start",
                     "description": f"Marker window {idx + 1} started (left blinker)",
                     "speed_mph": 0.0,
+                    "address": address,
+                    "bit_global": bit_global,
                 }
             )
 
@@ -730,9 +850,11 @@ class CruiseControlAnalyzer:
                 all_events.append(
                     {
                         "timestamp": stop_time,
-                        "event_type": "marker_end",
+                        "event_name": "marker_end",
                         "description": f"Marker window {idx + 1} ended (right blinker)",
                         "speed_mph": 0.0,
+                        "address": address,
+                        "bit_global": bit_global,
                     }
                 )
 
@@ -740,37 +862,60 @@ class CruiseControlAnalyzer:
 
         for event in all_events:
             event_typed: Dict[str, Any] = cast(Dict[str, Any], event)
-            minutes = int(event_typed["timestamp"] // 60)
-            seconds = event_typed["timestamp"] % 60
+            timestamp = event_typed["timestamp"]
+            address = event_typed["address"]
+            bit_global = event_typed["bit_global"]
+
+            start_abs, start_rel, start_mmss = self.format_time_triple(timestamp)
+            end_abs, end_rel, end_mmss = self.format_time_triple(timestamp)  # Same for point events
+
+            label_lsb, label_msb = self.format_bit_labels(bit_global)
+
+            duration_s = 0.0
+            duration_mmss = "00:00.000"
+
+            bus = self.get_bus_for_address(address)
+
             timeline_data.append(
                 {
-                    "timestamp": f"{minutes:02d}:{seconds:06.3f}",
-                    "raw_timestamp": event_typed["timestamp"],
-                    "event_type": event_typed["event_type"],
-                    "description": event_typed["description"],
-                    "speed_mph": event_typed["speed_mph"],
+                    "event_name": event_typed["event_name"],
+                    "address_hex": f"0x{address:03X}",
+                    "bus": bus,
+                    "label_msb": label_msb,
+                    "label_lsb": label_lsb,
+                    "start_abs": start_abs,
+                    "start_rel": start_rel,
+                    "start_mmss": start_mmss,
+                    "end_abs": end_abs,
+                    "end_rel": end_rel,
+                    "end_mmss": end_mmss,
+                    "duration_s": duration_s,
+                    "duration_mmss": duration_mmss,
                 }
             )
+
+        fieldnames = [
+            "event_name",
+            "address_hex",
+            "bus",
+            "label_msb",
+            "label_lsb",
+            "start_abs",
+            "start_rel",
+            "start_mmss",
+            "end_abs",
+            "end_rel",
+            "end_mmss",
+            "duration_s",
+            "duration_mmss",
+        ]
 
         if self.export_csv:
             csv_path = self.output_dir / "timeline.csv"
             with open(csv_path, "w", newline="") as f:
-                if timeline_data:
-                    writer = csv.DictWriter(f, fieldnames=timeline_data[0].keys())
-                    writer.writeheader()
-                    writer.writerows(timeline_data)
-                else:
-                    writer = csv.DictWriter(
-                        f,
-                        fieldnames=[
-                            "timestamp",
-                            "raw_timestamp",
-                            "event_type",
-                            "description",
-                            "speed_mph",
-                        ],
-                    )
-                    writer.writeheader()
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(timeline_data)
 
         if self.export_json:
             json_path = self.output_dir / "timeline.json"
@@ -793,6 +938,22 @@ class CruiseControlAnalyzer:
         signal_analysis = self.analyze_cruise_control_signals()
         bit_analysis = self.analyze_can_bit_changes()
 
+        empty_warnings = []
+        if not self.marker_window_analysis:
+            empty_warnings.append("No marker windows detected - analysis may be incomplete")
+        if not self.target_speed_events:
+            empty_warnings.append("No target speed events found - check speed data quality")
+        if not self.can_data:
+            empty_warnings.append("No CAN data available - check log file format")
+
+        has_empty_exports = False
+        if not any(self.marker_window_analysis):
+            has_empty_exports = True
+            empty_warnings.append("Counts by segment export will be empty")
+        if not any(addr for addr in self.target_addresses.keys() if self.can_data.get(addr)):
+            has_empty_exports = True
+            empty_warnings.append("Candidates export will be empty")
+
         html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -814,6 +975,9 @@ class CruiseControlAnalyzer:
         .file-links a {{ display: inline-block; margin: 5px 10px 5px 0; padding: 8px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }}
         .file-links a:hover {{ background: #0056b3; }}
         .config-snapshot {{ background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; }}
+        .warning {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }}
+        .warning h3 {{ color: #856404; margin-top: 0; }}
+        .warning ul {{ margin-bottom: 0; }}
     </style>
 </head>
 <body>
@@ -824,6 +988,16 @@ class CruiseControlAnalyzer:
         <p><strong>Total Speed Data Points:</strong> {len(self.speed_data)}</p>
         <p><strong>Target CAN Addresses Monitored:</strong> {len([addr for addr in self.target_addresses if addr in self.can_data])}</p>
     </div>
+
+    {"".join([f'''
+    <div class="warning">
+        <h3>⚠️ Analysis Warnings</h3>
+        <ul>
+            {"".join([f"<li>{warning}</li>" for warning in empty_warnings])}
+        </ul>
+        <p><strong>Note:</strong> Empty CSV exports will still contain proper headers for schema compliance.</p>
+    </div>
+    ''' if empty_warnings else ""])}
 
     <div class="section">
         <h2>Key Hypotheses</h2>
