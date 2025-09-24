@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Cruise Control Analyzer for rlog.zst files
@@ -538,10 +539,10 @@ class CruiseControlAnalyzer:
         return round(speed_mph, 1)
 
     def _candidates_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
-        score = x.get("score", 0.0)
+        s = x.get("score", 0.0)
         address_hex = x.get("address_hex", "")
         bit_global = x.get("bit_global", 0)
-        return (-float(cast(float, score)), str(address_hex), int(cast(int, bit_global)))
+        return (-float(cast(float, s)), str(address_hex), int(cast(int, bit_global)))
 
     def _runs_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
         duration_s = x.get("duration_s", 0.0)
@@ -621,7 +622,7 @@ class CruiseControlAnalyzer:
                 except Exception:
                     meta["input_hashes"] = []
         scoring = {}
-        for k in ("set_speed_min_mph","set_speed_max_mph","fall_window_s"):
+        for k in ("set_speed_min_mph", "set_speed_max_mph", "fall_window_s"):
             v = (self.config_snapshot or {}).get("scoring", {}).get(k)
             if v is not None:
                 scoring[k] = v
@@ -791,14 +792,13 @@ class CruiseControlAnalyzer:
         segments_data = []
 
         for idx, window_analysis in enumerate(self.marker_window_analysis):
-            window = window_analysis.get("window", {})
             address_stats = window_analysis.get("address_stats", [])
 
             for stat in cast(List[Dict[str, Any]], address_stats):
                 addr = stat.get("address", 0)
                 bus = self.get_bus_for_address(addr)
                 message_count = stat.get("message_count", 0)
-                total_changes = stat.get("total_changes", 0)
+                _ = stat.get("total_changes", 0)
 
                 pre_count = 0
                 post_count = 0
@@ -871,7 +871,7 @@ class CruiseControlAnalyzer:
 
             for bit_pos, frequency in stats["bit_frequency"].most_common(10):
                 total_messages = stats["message_count"]
-                score = frequency / total_messages if total_messages > 0 else 0.0
+                _ = frequency / total_messages if total_messages > 0 else 0.0
 
                 rises_set = frequency // 2
                 falls_end = frequency - rises_set
@@ -1421,13 +1421,11 @@ class CruiseControlAnalyzer:
             except Exception:
                 pass
 
-        pass
+        
         if not any(self.marker_window_analysis):
-            pass
-            empty_warnings.append("Counts by segment export will be empty")
+                empty_warnings.append("Counts by segment export will be empty")
         if not any(addr for addr in self.target_addresses.keys() if self.can_data.get(addr)):
-            pass
-            empty_warnings.append("Candidates export will be empty")
+                empty_warnings.append("Candidates export will be empty")
 
         html_content = """<!DOCTYPE html>
 <html lang="en">
