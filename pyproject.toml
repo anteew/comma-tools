@@ -57,12 +57,21 @@ docs = [
     "furo",
     "myst-parser",
 ]
+service = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "aiosqlite>=0.19.0",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+]
 
 [project.scripts]
 cruise-control-analyzer = "comma_tools.analyzers.cruise_control_analyzer:main"
 rlog-to-csv = "comma_tools.analyzers.rlog_to_csv:main"
 can-bitwatch = "comma_tools.analyzers.can_bitwatch:main"
 comma-connect-dl = "comma_tools.sources.connect.cli:main"
+cts-lite = "cts_lite.main:cli_main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
