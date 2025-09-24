@@ -136,6 +136,11 @@ class CruiseControlAnalyzer:
         print(f"Parsing log file: {self.log_file}")
 
         try:
+            if LogReader is None:
+                raise RuntimeError(
+                    "LogReader dependency not loaded. Ensure openpilot dependencies are available or run with --install-missing-deps. "
+                    "You may also provide --repo-root to help locate dependencies."
+                )
             lr = LogReader(self.log_file)
             message_count = 0
             can_count = 0
@@ -516,6 +521,18 @@ class CruiseControlAnalyzer:
     def _round_speed(self, speed_mph: float) -> float:
         return round(speed_mph, 1)
 
+    def _candidates_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
+        score = x.get("score", 0.0)
+        address_hex = x.get("address_hex", "")
+        bit_lsb = x.get("bit_global_lsb", 0)
+        return (-float(cast(float, score)), str(address_hex), int(cast(int, bit_lsb)))
+
+    def _runs_sort_key(self, x: Dict[str, Any]) -> Tuple[float, str, int]:
+        duration_s = x.get("duration_s", 0.0)
+        address_hex = x.get("address_hex", "")
+        bit_lsb = x.get("bit_global_lsb", 0)
+        return (-float(cast(float, duration_s)), str(address_hex), int(cast(int, bit_lsb)))
+
     def _dual_bit_numeric(self, bit_lsb: int, width: int = 64) -> Tuple[int, int]:
         bit_msb = (width - 1) - bit_lsb
         return bit_lsb, bit_msb
@@ -714,7 +731,7 @@ class CruiseControlAnalyzer:
         if not (self.export_csv or self.export_json):
             return None
 
-        candidates_data = []
+        candidates_data: List[Dict[str, Any]] = []
 
         for address, name in self.target_addresses.items():
             messages = self.can_data.get(address, [])
@@ -752,7 +769,13 @@ class CruiseControlAnalyzer:
                     }
                 )
 
-        candidates_data.sort(key=lambda x: (-x["score"], x["address_hex"], x["bit_global_lsb"]))
+        candidates_data.sort(
+            key=lambda x: (
+                -float(x.get("score", 0.0)),
+                str(x.get("address_hex", "")),
+                int(x.get("bit_global_lsb", 0)),
+            )
+        )
 
         rows = [self._coerce_to_schema(r, self.CANDIDATES_SCHEMA_V1) for r in candidates_data]
 
@@ -861,7 +884,7 @@ class CruiseControlAnalyzer:
         if not (self.export_csv or self.export_json):
             return None
 
-        runs_data = []
+        runs_data: List[Dict[str, Any]] = []
 
         for idx, window_analysis in enumerate(self.marker_window_analysis):
             window = window_analysis.get("window", {})
@@ -901,7 +924,13 @@ class CruiseControlAnalyzer:
                 }
             )
 
-        runs_data.sort(key=lambda x: (-x["duration_s"], x["address_hex"], x["bit_global_lsb"]))
+        runs_data.sort(
+            key=lambda x: (
+                -float(x.get("duration_s", 0.0)),
+                str(x.get("address_hex", "")),
+                int(x.get("bit_global_lsb", 0)),
+            )
+        )
         rows = [self._coerce_to_schema(r, self.RUNS_SCHEMA_V1) for r in runs_data]
 
         if self.export_csv:
