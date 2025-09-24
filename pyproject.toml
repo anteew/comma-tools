@@ -23,7 +23,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "matplotlib",
     "numpy", 
     "pycapnp",
     "tqdm",
@@ -33,12 +32,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+plot = [
+    "matplotlib>=3.5.0",
+]
 dev = [
     "pytest>=6.0",
     "pytest-cov",
     "black",
     "flake8",
     "mypy",
+    "matplotlib>=3.5.0",
 ]
 docs = [
     "sphinx>=4.0",

@@ -590,9 +590,11 @@ class CruiseControlAnalyzer:
         time_origin = "window_start"
         window_start_abs = float(getattr(self, "window_start_time", 0.0) or 0.0)
         window_end_abs = float(getattr(self, "window_end_time", 0.0) or 0.0)
+
         def _mmss(val: float) -> str:
             m, s = divmod(round(val, 3), 60)
             return f"{int(m):02d}:{s:06.3f}"
+
         meta["time_origin"] = time_origin
         meta["window_start_abs_s"] = round(window_start_abs, 3)
         meta["window_end_abs_s"] = round(window_end_abs, 3)
@@ -820,7 +822,13 @@ class CruiseControlAnalyzer:
                     }
                 )
 
-        segments_data.sort(key=lambda x: (-int(x.get("delta", 0)), -int(x.get("window_count", 0)), str(x.get("address_hex", ""))))
+        segments_data.sort(
+            key=lambda x: (
+                -int(x.get("delta", 0)),
+                -int(x.get("window_count", 0)),
+                str(x.get("address_hex", "")),
+            )
+        )
 
         rows = [self._coerce_to_schema(r, self.COUNTS_BY_SEGMENT_SCHEMA_V1) for r in segments_data]
 
@@ -839,7 +847,11 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "counts_by_segment.v1", self._build_export_meta("counts_by_segment.v1", rows), rows, self.COUNTS_BY_SEGMENT_SCHEMA_V1
+                csv_path,
+                "counts_by_segment.v1",
+                self._build_export_meta("counts_by_segment.v1", rows),
+                rows,
+                self.COUNTS_BY_SEGMENT_SCHEMA_V1,
             )
 
         if self.export_json:
@@ -931,7 +943,11 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "candidates.v1", self._build_export_meta("candidates.v1", rows), rows, self.CANDIDATES_SCHEMA_V1
+                csv_path,
+                "candidates.v1",
+                self._build_export_meta("candidates.v1", rows),
+                rows,
+                self.CANDIDATES_SCHEMA_V1,
             )
 
         if self.export_json:
@@ -999,11 +1015,13 @@ class CruiseControlAnalyzer:
         if str(cli.get("engaged_mode") or "annotate") == "filter":
             intervals = getattr(self, "engaged_intervals", []) or []
             if intervals:
+
                 def _in_iv(ts: float) -> bool:
-                    for (s, e) in intervals:
+                    for s, e in intervals:
                         if s <= ts <= e:
                             return True
                     return False
+
                 rows = [r for r in rows if _in_iv(float(r.get("ts_abs", 0.0)))]
 
         if self.export_csv:
@@ -1020,7 +1038,13 @@ class CruiseControlAnalyzer:
                 )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
-            self._write_csv_with_header(csv_path, "edges.v1", self._build_export_meta("edges.v1", rows), rows, self.EDGES_SCHEMA_V1)
+            self._write_csv_with_header(
+                csv_path,
+                "edges.v1",
+                self._build_export_meta("edges.v1", rows),
+                rows,
+                self.EDGES_SCHEMA_V1,
+            )
 
         if self.export_json:
             json_path = self.output_dir / "edges.json"
@@ -1100,12 +1124,18 @@ class CruiseControlAnalyzer:
         if str(cli.get("engaged_mode") or "annotate") == "filter":
             intervals = getattr(self, "engaged_intervals", []) or []
             if intervals:
+
                 def _overlaps(a: float, b: float) -> bool:
-                    for (s, e) in intervals:
+                    for s, e in intervals:
                         if not (b < s or a > e):
                             return True
                     return False
-                rows = [r for r in rows if _overlaps(float(r.get("start_abs", 0.0)), float(r.get("end_abs", 0.0)))]
+
+                rows = [
+                    r
+                    for r in rows
+                    if _overlaps(float(r.get("start_abs", 0.0)), float(r.get("end_abs", 0.0)))
+                ]
 
         if self.export_csv:
             csv_path = self.output_dir / "runs.csv"
@@ -1121,14 +1151,26 @@ class CruiseControlAnalyzer:
                 )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
-            self._write_csv_with_header(csv_path, "runs.v1", self._build_export_meta("runs.v1", rows), rows, self.RUNS_SCHEMA_V1)
+            self._write_csv_with_header(
+                csv_path,
+                "runs.v1",
+                self._build_export_meta("runs.v1", rows),
+                rows,
+                self.RUNS_SCHEMA_V1,
+            )
 
         if self.export_json:
             json_path = self.output_dir / "runs.json"
             with open(json_path, "w") as f:
                 json.dump(runs_data, f, indent=2)
 
-    def export_engaged_intervals(self, engaged_bit: Optional[str], engaged_bus: Optional[int], engaged_mode: str, engaged_margin: float) -> Optional[str]:
+    def export_engaged_intervals(
+        self,
+        engaged_bit: Optional[str],
+        engaged_bus: Optional[int],
+        engaged_mode: str,
+        engaged_margin: float,
+    ) -> Optional[str]:
         if not (self.export_csv or self.export_json):
             return None
         csv_path = self.output_dir / "engaged_intervals.csv"
@@ -1140,8 +1182,22 @@ class CruiseControlAnalyzer:
                 self._build_export_meta("engaged_intervals.v1", rows),
                 rows,
                 [
-                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
-                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                    "address_hex",
+                    "bit_global",
+                    "byte_index",
+                    "bit_lsb",
+                    "bit_msb",
+                    "label_lsb",
+                    "label_msb",
+                    "start_abs",
+                    "start_rel",
+                    "start_mmss",
+                    "end_abs",
+                    "end_rel",
+                    "end_mmss",
+                    "duration_s",
+                    "duration_mmss",
+                    "bus",
                 ],
             )
             return str(csv_path)
@@ -1154,8 +1210,22 @@ class CruiseControlAnalyzer:
                 self._build_export_meta("engaged_intervals.v1", rows),
                 rows,
                 [
-                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
-                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                    "address_hex",
+                    "bit_global",
+                    "byte_index",
+                    "bit_lsb",
+                    "bit_msb",
+                    "label_lsb",
+                    "label_msb",
+                    "start_abs",
+                    "start_rel",
+                    "start_mmss",
+                    "end_abs",
+                    "end_rel",
+                    "end_mmss",
+                    "duration_s",
+                    "duration_mmss",
+                    "bus",
                 ],
             )
             return str(csv_path)
@@ -1167,8 +1237,22 @@ class CruiseControlAnalyzer:
                 self._build_export_meta("engaged_intervals.v1", rows),
                 rows,
                 [
-                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
-                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                    "address_hex",
+                    "bit_global",
+                    "byte_index",
+                    "bit_lsb",
+                    "bit_msb",
+                    "label_lsb",
+                    "label_msb",
+                    "start_abs",
+                    "start_rel",
+                    "start_mmss",
+                    "end_abs",
+                    "end_rel",
+                    "end_mmss",
+                    "duration_s",
+                    "duration_mmss",
+                    "bus",
                 ],
             )
             return str(csv_path)
@@ -1223,24 +1307,26 @@ class CruiseControlAnalyzer:
             bit_lsb = bit_global % 8
             bit_msb = 7 - bit_lsb
             label_lsb, label_msb = self.format_bit_labels(bit_global)
-            rows.append({
-                "address_hex": f"0x{address:03X}",
-                "bit_global": bit_global,
-                "byte_index": byte_index,
-                "bit_lsb": bit_lsb,
-                "bit_msb": bit_msb,
-                "label_lsb": label_lsb,
-                "label_msb": label_msb,
-                "start_abs": tf_start["ts_abs"],
-                "start_rel": tf_start["ts_rel"],
-                "start_mmss": tf_start["ts_mmss"],
-                "end_abs": tf_end["ts_abs"],
-                "end_rel": tf_end["ts_rel"],
-                "end_mmss": tf_end["ts_mmss"],
-                "duration_s": duration_s,
-                "duration_mmss": f"{int(duration_s // 60):02d}:{(duration_s % 60):06.3f}",
-                "bus": bus,
-            })
+            rows.append(
+                {
+                    "address_hex": f"0x{address:03X}",
+                    "bit_global": bit_global,
+                    "byte_index": byte_index,
+                    "bit_lsb": bit_lsb,
+                    "bit_msb": bit_msb,
+                    "label_lsb": label_lsb,
+                    "label_msb": label_msb,
+                    "start_abs": tf_start["ts_abs"],
+                    "start_rel": tf_start["ts_rel"],
+                    "start_mmss": tf_start["ts_mmss"],
+                    "end_abs": tf_end["ts_abs"],
+                    "end_rel": tf_end["ts_rel"],
+                    "end_mmss": tf_end["ts_mmss"],
+                    "duration_s": duration_s,
+                    "duration_mmss": f"{int(duration_s // 60):02d}:{(duration_s % 60):06.3f}",
+                    "bus": bus,
+                }
+            )
         rows.sort(key=lambda x: (x["start_abs"], x["end_abs"]))
         self._write_csv_with_header(
             csv_path,
@@ -1248,8 +1334,22 @@ class CruiseControlAnalyzer:
             self._build_export_meta("engaged_intervals.v1", rows),
             rows,
             [
-                "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
-                "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                "address_hex",
+                "bit_global",
+                "byte_index",
+                "bit_lsb",
+                "bit_msb",
+                "label_lsb",
+                "label_msb",
+                "start_abs",
+                "start_rel",
+                "start_mmss",
+                "end_abs",
+                "end_rel",
+                "end_mmss",
+                "duration_s",
+                "duration_mmss",
+                "bus",
             ],
         )
         self.engaged_intervals = intervals
@@ -1355,11 +1455,13 @@ class CruiseControlAnalyzer:
         if str(cli.get("engaged_mode") or "annotate") == "filter":
             intervals = getattr(self, "engaged_intervals", []) or []
             if intervals:
+
                 def _in_iv(ts: float) -> bool:
-                    for (s, e) in intervals:
+                    for s, e in intervals:
                         if s <= ts <= e:
                             return True
                     return False
+
                 rows = [r for r in rows if _in_iv(float(r.get("ts_abs", 0.0)))]
 
         if self.export_csv:
@@ -1377,7 +1479,11 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "timeline.v1", self._build_export_meta("timeline.v1", rows), rows, self.TIMELINE_SCHEMA_V1
+                csv_path,
+                "timeline.v1",
+                self._build_export_meta("timeline.v1", rows),
+                rows,
+                self.TIMELINE_SCHEMA_V1,
             )
 
         if self.export_json:
@@ -1411,7 +1517,9 @@ class CruiseControlAnalyzer:
 
         cli_args = (self.config_snapshot or {}).get("cli_args", {})
         if not cli_args.get("engaged_bit"):
-            empty_warnings.append("No engaged bit provided; engaged_intervals.csv will be header-only")
+            empty_warnings.append(
+                "No engaged bit provided; engaged_intervals.csv will be header-only"
+            )
         else:
             p = self.output_dir / "engaged_intervals.csv"
             try:
@@ -1612,7 +1720,7 @@ class CruiseControlAnalyzer:
         ]
         for csv_file in csv_files:
             if (self.output_dir / csv_file).exists():
-                html_content += '<a href="' + csv_file + '">' + csv_file + '</a>'
+                html_content += '<a href="' + csv_file + '">' + csv_file + "</a>"
 
         if (self.output_dir / "config_snapshot.json").exists():
             html_content += '<a href="config_snapshot.json">config_snapshot.json</a>'
@@ -1777,10 +1885,26 @@ def main():
         help="Directory to save exported files (default: current directory)",
     )
 
-    parser.add_argument("--engaged-bit", default=None, help="Bit selector for engaged intervals, e.g., 0x027:MSB B5 or 0x027:b10")
-    parser.add_argument("--engaged-bus", type=int, default=None, help="Override bus for engaged bit (optional)")
-    parser.add_argument("--engaged-mode", choices=["annotate", "filter"], default="annotate", help="Engaged interval handling mode")
-    parser.add_argument("--engaged-margin", type=float, default=0.5, help="Seconds to expand engaged intervals on both sides")
+    parser.add_argument(
+        "--engaged-bit",
+        default=None,
+        help="Bit selector for engaged intervals, e.g., 0x027:MSB B5 or 0x027:b10",
+    )
+    parser.add_argument(
+        "--engaged-bus", type=int, default=None, help="Override bus for engaged bit (optional)"
+    )
+    parser.add_argument(
+        "--engaged-mode",
+        choices=["annotate", "filter"],
+        default="annotate",
+        help="Engaged interval handling mode",
+    )
+    parser.add_argument(
+        "--engaged-margin",
+        type=float,
+        default=0.5,
+        help="Seconds to expand engaged intervals on both sides",
+    )
     args = parser.parse_args()
     try:
         repo_root = find_repo_root(args.repo_root)
