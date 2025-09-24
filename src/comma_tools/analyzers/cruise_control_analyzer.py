@@ -1164,6 +1164,8 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(runs_data, f, indent=2)
 
+        return str(csv_path) if self.export_csv else None
+
     def export_engaged_intervals(
         self,
         engaged_bit: Optional[str],

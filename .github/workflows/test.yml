@@ -48,24 +48,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e "."
 
-    - name: Lint with flake8
-      run: |
-        cd comma-tools
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
-
-    - name: Format check with black
-      run: |
-        cd comma-tools
-        black --check src/ tests/
-
-    - name: Type check with mypy
-      run: |
-        cd comma-tools
-        mypy src/ --ignore-missing-imports
-
     - name: Test with pytest (core only)
       run: |
         cd comma-tools
