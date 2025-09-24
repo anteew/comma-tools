@@ -1081,7 +1081,7 @@ class CruiseControlAnalyzer:
                     "end_rel": tf_end.get("ts_rel", 0.0),
                     "end_mmss": tf_end.get("ts_mmss", "incomplete"),
                     "duration_s": duration_s,
-                    "duration_mmss": f"{int(duration_s//60):02d}:{(duration_s%60):06.3f}",
+                    "duration_mmss": f"{int(duration_s // 60):02d}:{(duration_s % 60):06.3f}",
                     "bus": bus,
                 }
             )
@@ -1132,25 +1132,43 @@ class CruiseControlAnalyzer:
         csv_path = self.output_dir / "engaged_intervals.csv"
         rows: List[Dict[str, Any]] = []
         if not engaged_bit:
-            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
-                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
-                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
-            ])
+            self._write_csv_with_header(
+                csv_path,
+                "engaged_intervals.v1",
+                self._build_export_meta("engaged_intervals.v1", rows),
+                rows,
+                [
+                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
+                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                ],
+            )
             return str(csv_path)
         try:
             address, bit_global = self._parse_bit_selector(engaged_bit)
         except Exception:
-            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
-                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
-                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
-            ])
+            self._write_csv_with_header(
+                csv_path,
+                "engaged_intervals.v1",
+                self._build_export_meta("engaged_intervals.v1", rows),
+                rows,
+                [
+                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
+                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                ],
+            )
             return str(csv_path)
         msgs = self.can_data.get(address, [])
         if not msgs:
-            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
-                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
-                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
-            ])
+            self._write_csv_with_header(
+                csv_path,
+                "engaged_intervals.v1",
+                self._build_export_meta("engaged_intervals.v1", rows),
+                rows,
+                [
+                    "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
+                    "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+                ],
+            )
             return str(csv_path)
         bus = self.get_bus_for_address(address) if engaged_bus is None else engaged_bus
         states: List[Tuple[float, int]] = []
@@ -1218,14 +1236,20 @@ class CruiseControlAnalyzer:
                 "end_rel": tf_end["ts_rel"],
                 "end_mmss": tf_end["ts_mmss"],
                 "duration_s": duration_s,
-                "duration_mmss": f"{int(duration_s//60):02d}:{(duration_s%60):06.3f}",
+                "duration_mmss": f"{int(duration_s // 60):02d}:{(duration_s % 60):06.3f}",
                 "bus": bus,
             })
         rows.sort(key=lambda x: (x["start_abs"], x["end_abs"]))
-        self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
-            "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
-            "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
-        ])
+        self._write_csv_with_header(
+            csv_path,
+            "engaged_intervals.v1",
+            self._build_export_meta("engaged_intervals.v1", rows),
+            rows,
+            [
+                "address_hex", "bit_global", "byte_index", "bit_lsb", "bit_msb", "label_lsb", "label_msb",
+                "start_abs", "start_rel", "start_mmss", "end_abs", "end_rel", "end_mmss", "duration_s", "duration_mmss", "bus",
+            ],
+        )
         self.engaged_intervals = intervals
         return str(csv_path)
 
@@ -1397,15 +1421,15 @@ class CruiseControlAnalyzer:
             except Exception:
                 pass
 
-        _has_empty_exports = False
+        pass
         if not any(self.marker_window_analysis):
-            _has_empty_exports = True
+            pass
             empty_warnings.append("Counts by segment export will be empty")
         if not any(addr for addr in self.target_addresses.keys() if self.can_data.get(addr)):
-            _has_empty_exports = True
+            pass
             empty_warnings.append("Candidates export will be empty")
 
-        html_content = f"""<!DOCTYPE html>
+        html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1589,10 +1613,10 @@ class CruiseControlAnalyzer:
         ]
         for csv_file in csv_files:
             if (self.output_dir / csv_file).exists():
-                html_content += f'<a href="{csv_file}">{csv_file}</a>'
+                html_content += '<a href="' + csv_file + '">' + csv_file + '</a>'
 
         if (self.output_dir / "config_snapshot.json").exists():
-            html_content += f'<a href="config_snapshot.json">config_snapshot.json</a>'
+            html_content += '<a href="config_snapshot.json">config_snapshot.json</a>'
 
         html_content += """
         </div>
@@ -1668,12 +1692,11 @@ class CruiseControlAnalyzer:
             return False
 
         if self.marker_config.enabled:
-            marker_windows = self.marker_detector.detect_marker_windows()
+            self.marker_detector.detect_marker_windows()
             self.marker_window_analysis = self.marker_detector.analyze_marker_windows(
                 self.all_can_data, self.address_labels, self.compute_bit_change_stats
             )
         else:
-            _ = []
             self.marker_window_analysis = []
 
         self.find_target_speed_events(target_speed_min, target_speed_max)
@@ -1757,7 +1780,7 @@ def main():
 
     parser.add_argument("--engaged-bit", default=None, help="Bit selector for engaged intervals, e.g., 0x027:MSB B5 or 0x027:b10")
     parser.add_argument("--engaged-bus", type=int, default=None, help="Override bus for engaged bit (optional)")
-    parser.add_argument("--engaged-mode", choices=["annotate","filter"], default="annotate", help="Engaged interval handling mode")
+    parser.add_argument("--engaged-mode", choices=["annotate", "filter"], default="annotate", help="Engaged interval handling mode")
     parser.add_argument("--engaged-margin", type=float, default=0.5, help="Seconds to expand engaged intervals on both sides")
     args = parser.parse_args()
     try:
