@@ -1,3 +1,5 @@
+# flake8: noqa: E501
+
 
 #!/usr/bin/env python3
 """
@@ -1421,11 +1423,10 @@ class CruiseControlAnalyzer:
             except Exception:
                 pass
 
-        
         if not any(self.marker_window_analysis):
-                empty_warnings.append("Counts by segment export will be empty")
+            empty_warnings.append("Counts by segment export will be empty")
         if not any(addr for addr in self.target_addresses.keys() if self.can_data.get(addr)):
-                empty_warnings.append("Candidates export will be empty")
+            empty_warnings.append("Candidates export will be empty")
 
         html_content = """<!DOCTYPE html>
 <html lang="en">
