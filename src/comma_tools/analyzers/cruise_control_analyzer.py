@@ -449,6 +449,80 @@ class CruiseControlAnalyzer:
         self.export_json = export_json
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+    def _format_time_fields(self, ts_abs: float, t0: float) -> Dict[str, object]:
+        ts_rel = round(ts_abs - t0, 3)
+        minutes, seconds = divmod(ts_rel, 60)
+        ts_str = f"{int(minutes):02d}:{seconds:06.3f}"
+        return {"ts_abs": round(ts_abs, 3), "ts_rel": ts_rel, "ts_str": ts_str}
+
+    def _round_speed(self, speed_mph: float) -> float:
+        return round(speed_mph, 1)
+
+    def _dual_bit_numeric(self, bit_lsb: int, width: int = 64) -> Tuple[int, int]:
+        bit_msb = (width - 1) - bit_lsb
+        return bit_lsb, bit_msb
+
+    def _uuid4(self) -> str:
+        import uuid
+        return str(uuid.uuid4())
+
+    def _git_tool_version(self) -> str:
+        try:
+            repo_root = Path(__file__).resolve().parents[4]
+            head = (repo_root / ".git" / "HEAD").read_text().strip()
+            if head.startswith("ref:"):
+                ref = head.split(" ", 1)[1]
+                sha_path = repo_root / ".git" / ref
+                if sha_path.exists():
+                    return sha_path.read_text().strip()[:12]
+            return head[:12]
+        except Exception:
+            return "unknown"
+
+    def _hash_file_sha256(self, p: Path) -> str:
+        import hashlib
+        h = hashlib.sha256()
+        with p.open("rb") as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                h.update(chunk)
+        return "sha256:" + h.hexdigest()
+
+    def _write_csv_with_header(self, path: Path, schema_version: str, meta: Dict[str, Any], rows: List[Dict[str, Any]], columns: List[str]) -> None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        analysis_id = meta.get("analysis_id") or self._uuid4()
+        meta = dict(meta)
+        meta["schema_version"] = schema_version
+        meta["analysis_id"] = analysis_id
+        meta_json = json.dumps(meta, separators=(",", ":"))
+        with path.open("w", newline="", encoding="utf-8") as f:
+            f.write(f"# schema_version: {meta['schema_version']}\n")
+            f.write(f"# analysis_id: {analysis_id}\n")
+            if "tool_version" in meta:
+                f.write(f"# tool_version: {meta['tool_version']}\n")
+            if "input_files" in meta:
+                f.write(f"# input_files: {json.dumps(meta['input_files'])}\n")
+            if "input_hashes" in meta:
+                f.write(f"# input_hashes: {json.dumps(meta['input_hashes'])}\n")
+            if "time_origin" in meta:
+                f.write(f"# time_origin: {meta['time_origin']}\n")
+            for k in ("window_start_abs_s","window_end_abs_s","window_start_mmss","window_end_mmss","main_source","brake_source","speed_source","id_bus_map","bus_policy"):
+                if k in meta:
+                    v = meta[k]
+                    if isinstance(v, (dict, list)):
+                        v = json.dumps(v, separators=(",", ":"))
+                    f.write(f"# {k}: {v}\n")
+            if "scoring" in meta:
+                f.write(f"# scoring: {json.dumps(meta['scoring'], separators=(',', ':'))}\n")
+            f.write(f"# meta_json: {meta_json}\n")
+            writer = csv.DictWriter(f, fieldnames=columns)
+            writer.writeheader()
+            for row in rows:
+                writer.writerow({k: row.get(k) for k in columns})
+        sidecar = path.with_suffix(".analysis_meta.json")
+        with sidecar.open("w", encoding="utf-8") as jf:
+            jf.write(meta_json)
+
+
 
     def capture_config_snapshot(
         self, cli_args: Dict[str, Any], input_metadata: Dict[str, Any]
@@ -540,10 +614,8 @@ class CruiseControlAnalyzer:
 
         if self.export_csv:
             csv_path = self.output_dir / "counts_by_segment.csv"
-            with open(csv_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(segments_data)
+            meta = dict(self.config_snapshot or {})
+            self._write_csv_with_header(csv_path, "counts_by_segment.v1", meta, segments_data, fieldnames)
 
         if self.export_json:
             json_path = self.output_dir / "counts_by_segment.json"
@@ -626,10 +698,8 @@ class CruiseControlAnalyzer:
 
         if self.export_csv:
             csv_path = self.output_dir / "candidates.csv"
-            with open(csv_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(candidates_data)
+            meta = dict(self.config_snapshot or {})
+            self._write_csv_with_header(csv_path, "candidates.v1", meta, candidates_data, fieldnames)
 
         if self.export_json:
             json_path = self.output_dir / "candidates.json"
@@ -703,10 +773,8 @@ class CruiseControlAnalyzer:
 
         if self.export_csv:
             csv_path = self.output_dir / "edges.csv"
-            with open(csv_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(edges_data)
+            meta = dict(self.config_snapshot or {})
+            self._write_csv_with_header(csv_path, "edges.v1", meta, edges_data, fieldnames)
 
         if self.export_json:
             json_path = self.output_dir / "edges.json"
@@ -786,10 +854,8 @@ class CruiseControlAnalyzer:
 
         if self.export_csv:
             csv_path = self.output_dir / "runs.csv"
-            with open(csv_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(runs_data)
+            meta = dict(self.config_snapshot or {})
+            self._write_csv_with_header(csv_path, "runs.v1", meta, runs_data, fieldnames)
 
         if self.export_json:
             json_path = self.output_dir / "runs.json"
@@ -912,10 +978,8 @@ class CruiseControlAnalyzer:
 
         if self.export_csv:
             csv_path = self.output_dir / "timeline.csv"
-            with open(csv_path, "w", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(timeline_data)
+            meta = dict(self.config_snapshot or {})
+            self._write_csv_with_header(csv_path, "timeline.v1", meta, timeline_data, fieldnames)
 
         if self.export_json:
             json_path = self.output_dir / "timeline.json"
