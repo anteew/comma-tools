@@ -629,6 +629,45 @@ class CruiseControlAnalyzer:
                 scoring[k] = v
         if scoring:
             meta["scoring"] = scoring
+        cli = (self.config_snapshot or {}).get("cli_args", {}) or {}
+        meta["engaged_mode"] = str(cli.get("engaged_mode") or "annotate")
+        meta["engaged_bit"] = cli.get("engaged_bit")
+        meta["engaged_bus"] = cli.get("engaged_bus")
+        if "engaged_margin" in cli and "engaged_margin_s" not in cli:
+            meta["engaged_margin_s"] = float(cli.get("engaged_margin") or 0.0)
+        elif "engaged_margin_s" in cli:
+            meta["engaged_margin_s"] = float(cli.get("engaged_margin_s") or 0.0)
+        intervals = getattr(self, "engaged_intervals", []) or []
+        meta["engaged_intervals_count"] = len(intervals)
+        if meta["engaged_mode"] == "filter":
+            meta["candidates_scope"] = "full-window"
+        scoring_obj = meta.get("scoring", {})
+        if "chatter_penalty_start" not in scoring_obj:
+            scoring_obj["chatter_penalty_start"] = 40
+        if "chatter_penalty_slope" not in scoring_obj:
+            scoring_obj["chatter_penalty_slope"] = 0.1
+        meta["scoring"] = scoring_obj
+
+        cli = (self.config_snapshot or {}).get("cli_args", {}) or {}
+        meta["engaged_mode"] = str(cli.get("engaged_mode") or "annotate")
+        meta["engaged_bit"] = cli.get("engaged_bit")
+        meta["engaged_bus"] = cli.get("engaged_bus")
+        if "engaged_margin_s" in cli:
+            meta["engaged_margin_s"] = float(cli.get("engaged_margin_s") or 0.0)
+        elif "engaged_margin" in cli:
+            meta["engaged_margin_s"] = float(cli.get("engaged_margin") or 0.0)
+        intervals = getattr(self, "engaged_intervals", []) or []
+        meta["engaged_intervals_count"] = len(intervals)
+        if meta["engaged_mode"] == "filter":
+            meta["candidates_scope"] = "full-window"
+        scoring_obj = meta.get("scoring", {}) or {}
+        if "chatter_penalty_start" not in scoring_obj:
+            scoring_obj["chatter_penalty_start"] = 40
+        if "chatter_penalty_slope" not in scoring_obj:
+            scoring_obj["chatter_penalty_slope"] = 0.1
+        meta["scoring"] = scoring_obj
+        if schema_version == "candidates.v1":
+            meta["reserved_fields"] = ["score_engaged"]
         return meta
 
     def _parse_bit_selector(self, s: str) -> Tuple[int, int]:
@@ -838,7 +877,10 @@ class CruiseControlAnalyzer:
 
                 rises_set = frequency // 2
                 falls_end = frequency - rises_set
-                penalty = 0.0
+                scoring_cfg = (self.config_snapshot or {}).get("scoring", {}) or {}
+                chatter_start = int(scoring_cfg.get("chatter_penalty_start", 40))
+                chatter_slope = float(scoring_cfg.get("chatter_penalty_slope", 0.1))
+                penalty = max(0.0, (int(frequency) - chatter_start) * chatter_slope)
 
                 bit_global = bit_pos
                 byte_index = bit_global // 8
@@ -855,7 +897,7 @@ class CruiseControlAnalyzer:
                         "bit_msb": bit_msb,
                         "label_lsb": label_lsb,
                         "label_msb": label_msb,
-                        "score": round(score, 3),
+                        "score": round(float(rises_set + falls_end) - float(penalty), 3),
                         "rises_set": int(rises_set),
                         "falls_end": int(falls_end),
                         "toggles": int(frequency),
@@ -953,6 +995,16 @@ class CruiseControlAnalyzer:
 
         edges_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["bit_global"]))
         rows = [self._coerce_to_schema(r, self.EDGES_SCHEMA_V1) for r in edges_data]
+        cli = (self.config_snapshot or {}).get("cli_args", {}) or {}
+        if str(cli.get("engaged_mode") or "annotate") == "filter":
+            intervals = getattr(self, "engaged_intervals", []) or []
+            if intervals:
+                def _in_iv(ts: float) -> bool:
+                    for (s, e) in intervals:
+                        if s <= ts <= e:
+                            return True
+                    return False
+                rows = [r for r in rows if _in_iv(float(r.get("ts_abs", 0.0)))]
 
         if self.export_csv:
             csv_path = self.output_dir / "edges.csv"
@@ -1044,6 +1096,16 @@ class CruiseControlAnalyzer:
             )
         )
         rows = [self._coerce_to_schema(r, self.RUNS_SCHEMA_V1) for r in runs_data]
+        cli = (self.config_snapshot or {}).get("cli_args", {}) or {}
+        if str(cli.get("engaged_mode") or "annotate") == "filter":
+            intervals = getattr(self, "engaged_intervals", []) or []
+            if intervals:
+                def _overlaps(a: float, b: float) -> bool:
+                    for (s, e) in intervals:
+                        if not (b < s or a > e):
+                            return True
+                    return False
+                rows = [r for r in rows if _overlaps(float(r.get("start_abs", 0.0)), float(r.get("end_abs", 0.0)))]
 
         if self.export_csv:
             csv_path = self.output_dir / "runs.csv"
@@ -1166,6 +1228,7 @@ class CruiseControlAnalyzer:
             "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
             "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
         ])
+        self.engaged_intervals = intervals
         return str(csv_path)
 
     def export_timeline(self) -> Optional[str]:
@@ -1264,6 +1327,16 @@ class CruiseControlAnalyzer:
 
         timeline_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["event"]))
         rows = [self._coerce_to_schema(r, self.TIMELINE_SCHEMA_V1) for r in timeline_data]
+        cli = (self.config_snapshot or {}).get("cli_args", {}) or {}
+        if str(cli.get("engaged_mode") or "annotate") == "filter":
+            intervals = getattr(self, "engaged_intervals", []) or []
+            if intervals:
+                def _in_iv(ts: float) -> bool:
+                    for (s, e) in intervals:
+                        if s <= ts <= e:
+                            return True
+                    return False
+                rows = [r for r in rows if _in_iv(float(r.get("ts_abs", 0.0)))]
 
         if self.export_csv:
             csv_path = self.output_dir / "timeline.csv"
