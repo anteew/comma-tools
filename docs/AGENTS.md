@@ -45,12 +45,46 @@
 - **PR Requirements**: All PRs must include comprehensive descriptions, pass CI, and maintain documentation
 - **Code Review**: PRs are automatically reviewed for adherence to these standards
 
-### Pre-Commit Checklist
-1. **Run Local Tests**: Verify all functionality works as expected
-2. **Check Documentation**: Ensure Sphinx can build docs without errors (`sphinx-build -b html docs/ docs/_build/html`)
-3. **Verify Type Hints**: All new functions have complete type annotations
-4. **Update Dependencies**: If adding packages, update `pyproject.toml` and bootstrap requirements
-5. **Test Real Scenarios**: Use actual log files when possible for validation
+### Pre-Push Linting Checklist
+**Run these commands locally before pushing to catch CI failures early:**
+
+1. **Syntax & Import Errors** (must pass):
+   ```bash
+   flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+   ```
+
+2. **Code Formatting** (must pass):
+   ```bash
+   black --check src/ tests/
+   # If formatting issues found, fix with: black src/ tests/
+   ```
+
+3. **Type Checking** (must pass):
+   ```bash
+   mypy src/ --ignore-missing-imports
+   ```
+
+4. **Code Quality Warnings** (informational):
+   ```bash
+   flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+   ```
+
+5. **Run Local Tests**: Verify all functionality works as expected
+6. **Check Documentation**: Ensure Sphinx can build docs without errors (`sphinx-build -b html docs/ docs/_build/html`)
+7. **Verify Type Hints**: All new functions have complete type annotations
+8. **Update Dependencies**: If adding packages, update `pyproject.toml` and bootstrap requirements
+9. **Test Real Scenarios**: Use actual log files when possible for validation
+
+### Quick Pre-Push Command Sequence
+```bash
+# Run all critical checks in sequence
+flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics && \
+black --check src/ tests/ && \
+mypy src/ --ignore-missing-imports && \
+echo "✅ All linting checks passed! Ready to push."
+```
+
+**Pro tip**: Save CI cycles by running these locally before every push. Most failures can be caught and fixed in seconds locally rather than waiting for CI.
 
 ### Documentation Deployment
 - **Automatic Deployment**: Docs auto-deploy to https://anteew.github.io/comma-tools/ on main branch merges
