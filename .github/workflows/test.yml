@@ -11,7 +11,7 @@ on:
       - 'knowledge/**'
 
 jobs:
-  test:
+  test-core:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -46,6 +46,82 @@ jobs:
       run: |
         cd comma-tools
         python -m pip install --upgrade pip
+        pip install -e ".[test]"
+
+    - name: Test with pytest (core only)
+      run: |
+        cd comma-tools
+        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov -k "not test_plotting"
+
+    - name: Integration test with dependency bootstrap
+      run: |
+        cd comma-tools
+        # Test that the analyzer can bootstrap its dependencies
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+        from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
+        repo_root = find_repo_root()
+        deps_dir = resolve_deps_dir(repo_root, None)
+        prepare_environment(repo_root, deps_dir)
+        print('✓ Environment bootstrap successful')
+        "
+
+    - name: Integration tests (real log fixture)
+      env:
+        CAPNPC_IMPORT_PATH: ${{ github.workspace }}/openpilot/cereal
+      run: |
+        cd comma-tools
+        pytest tests/integration -v -m integration
+
+    - name: Upload HTML coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-html
+        path: comma-tools/htmlcov
+        retention-days: 7
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./comma-tools/coverage.xml
+        fail_ci_if_error: false
+
+  test-visualization:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12']
+
+    steps:
+    - name: Checkout comma-tools
+      uses: actions/checkout@v4
+      with:
+        path: comma-tools
+        lfs: true
+
+    - name: Checkout openpilot
+      uses: actions/checkout@v4
+      with:
+        repository: commaai/openpilot
+        path: openpilot
+        submodules: recursive
+
+    - name: Ensure openpilot submodules
+      run: |
+        cd openpilot
+        git submodule update --init --recursive
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies with visualization
+      run: |
+        cd comma-tools
+        python -m pip install --upgrade pip
         pip install -e ".[dev]"
 
     - name: Lint with flake8
@@ -66,7 +142,9 @@ jobs:
         cd comma-tools
         mypy src/ --ignore-missing-imports
 
-    - name: Test with pytest
+    - name: Test with pytest (including visualization)
+      env:
+        MPLBACKEND: Agg
       run: |
         cd comma-tools
         pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov
@@ -95,7 +173,7 @@ jobs:
     - name: Upload HTML coverage artifact
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-html
+        name: coverage-html-viz
         path: comma-tools/htmlcov
         retention-days: 7
 

@@ -57,6 +57,44 @@
 - **Local Preview**: Build docs locally to preview changes before committing
 - **API Reference**: New modules automatically appear in API docs via Sphinx autodoc
 - **Examples**: Include usage examples in both docstrings and `docs/examples.rst`
+### Artifact Schemas (canonical, versioned)
+
+- counts_by_segment.v1
+  - Columns: address_hex, pre_count, window_count, post_count, uniq_pre, uniq_window, uniq_post, delta, bus
+  - Sorting: delta desc, window_count desc, address_hex asc
+
+- candidates.v1
+  - Columns: address_hex, bit_global_lsb, bit_global_msb, score, rises_set, falls_end, penalty, bus
+  - Sorting: score desc, address_hex asc, bit_global_lsb asc
+
+- edges.v1
+  - Columns: address_hex, bit_global_lsb, bit_global_msb, ts_abs, ts_rel, ts_str, edge_type, bus
+  - Sorting: ts_abs asc, address_hex asc, bit_global_lsb asc
+
+- runs.v1
+  - Columns: address_hex, bit_global_lsb, bit_global_msb, start_ts_abs, start_ts_rel, start_ts_str, end_ts_abs, end_ts_rel, end_ts_str, duration_s, bus
+  - Sorting: duration_s desc, address_hex asc, bit_global_lsb asc
+
+- timeline.v1
+  - Columns: ts_abs, ts_rel, ts_str, address_hex, bit_global_lsb, bit_global_msb, event, value, bus
+  - Sorting: ts_abs asc, address_hex asc, event asc
+
+Time fields:
+- All time-bearing artifacts include absolute seconds (ts_abs), relative seconds (ts_rel) and mm:ss.mmm string (ts_str). Relative time origin defaults to window_start.
+
+Bit labels:
+- Dual representation is provided: bit_global_lsb and bit_global_msb. MSB index is computed as (width-1 - LSB).
+
+CSV Header Metadata:
+- Each CSV begins with a comment-prefixed metadata block including schema_version, analysis_id (UUIDv4), tool_version, input_files, input_hashes (sha256), time_origin, window_start/end (abs_s and mm:ss), gate sources (main_source, brake_source, speed_source), id_bus_map, bus_policy, scoring.
+- A compact JSON copy is provided in `# meta_json: {...}` and duplicated in a sidecar `*.analysis_meta.json`.
+
+Rounding:
+- speed_mph rounded to 1 decimal; ts_rel and duration_s rounded to 3 decimals.
+
+Change policy:
+- Bump schema version on breaking changes (e.g., edges.v2). CI validates emitter column names against docs.
+
 
 ## 🔧 DEVELOPMENT ENVIRONMENT
 

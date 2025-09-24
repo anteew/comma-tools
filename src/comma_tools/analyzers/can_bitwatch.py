@@ -229,18 +229,9 @@ def detect_edges_and_candidates(rows, watch: List[WatchBit], window_start: float
 
     # Candidates: bits that toggle only in window (and at least once)
     candidates = []
-    for (addr, gidx), times in toggles_by_bit.items():
-        segs = set()
-        for t in times:
-            # Find segment by nearest row (approx)
-            # We can just infer by comparing to window start and end from rows
-            pass
-        # We'll compute segment lookup using nearest row timestamp
-        # Build index:
+
     # Build timestamp->segment quick map (approx by latest <= t)
-    ts_seg = []
-    for r in rows_sorted:
-        ts_seg.append((r["timestamp"], r["segment"]))
+    ts_seg = [(r["timestamp"], r["segment"]) for r in rows_sorted]
     ts_seg.sort()
 
     def seg_at(t: float) -> str:

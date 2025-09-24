@@ -1,7 +1,18 @@
 """Plotting utilities for automotive data visualization."""
 
-import matplotlib.pyplot as plt
 from typing import List, Dict, Any, Optional
+
+
+def _ensure_matplotlib():
+    """Lazy import matplotlib with helpful error message if not available."""
+    try:
+        import matplotlib.pyplot as plt
+
+        return plt
+    except ImportError:
+        raise ImportError(
+            "Plotting requires the 'plot' extra. Install with: pip install comma-tools[plot]"
+        )
 
 
 class SpeedTimelinePlotter:
@@ -40,6 +51,7 @@ class SpeedTimelinePlotter:
         timestamps = [d["timestamp"] for d in speed_data]
         speeds = [d["speed_mph"] for d in speed_data]
 
+        plt = _ensure_matplotlib()
         plt.figure(figsize=self.figsize)
         plt.plot(timestamps, speeds, "b-", linewidth=1, alpha=0.7, label="Vehicle Speed")
 
@@ -106,6 +118,7 @@ class SpeedTimelinePlotter:
         if not values:
             raise ValueError(f"Signal '{signal_name}' not found in data")
 
+        plt = _ensure_matplotlib()
         plt.figure(figsize=self.figsize)
         plt.plot(timestamps[: len(values)], values, "b-", linewidth=1, alpha=0.7, label=signal_name)
 
@@ -152,6 +165,7 @@ class SpeedTimelinePlotter:
         if not signals:
             raise ValueError("No signals provided")
 
+        plt = _ensure_matplotlib()
         num_signals = len(signals)
         fig, axes = plt.subplots(
             num_signals, 1, figsize=(self.figsize[0], subplot_height * num_signals), sharex=True
