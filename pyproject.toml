@@ -35,6 +35,10 @@ dependencies = [
 plot = [
     "matplotlib>=3.5.0",
 ]
+test = [
+    "pytest>=6.0",
+    "pytest-cov",
+]
 dev = [
     "pytest>=6.0",
     "pytest-cov",
