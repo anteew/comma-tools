@@ -2,3 +2,6 @@
 venv/
 # Sphinx documentation
 docs/_build/
+# Build artifacts
+src/comma_tools.egg-info/
+*.egg-info/

@@ -85,7 +85,7 @@ async def get_capabilities():
 
 
 @app.post("/v1/runs", response_model=Run, status_code=201)
-async def create_run(request: CreateRunRequest):
+async def create_run(request: CreateRunRequest, user: str = Depends(get_current_user)):
     """Create a new batch analyzer run."""
 
     try:
@@ -216,7 +216,7 @@ async def get_run_logs(run_id: str):
 
 
 @app.delete("/v1/runs/{run_id}")
-async def cancel_run(run_id: str):
+async def cancel_run(run_id: str, user: str = Depends(get_current_user)):
     """Cancel a running job."""
 
     run_data = db.get_run(run_id)
@@ -234,7 +234,7 @@ async def cancel_run(run_id: str):
 
 
 @app.post("/v1/monitors", response_model=Monitor, status_code=201)
-async def create_monitor(request: CreateMonitorRequest):
+async def create_monitor(request: CreateMonitorRequest, user: str = Depends(get_current_user)):
     """Start a new realtime monitor."""
 
     if not config.allow_hardware:
@@ -347,7 +347,7 @@ async def monitor_stream(websocket: WebSocket, monitor_id: str, token: str):
 
 
 @app.delete("/v1/monitors/{monitor_id}")
-async def stop_monitor(monitor_id: str):
+async def stop_monitor(monitor_id: str, user: str = Depends(get_current_user)):
     """Stop a monitor."""
 
     monitor_data = db.get_monitor(monitor_id)
