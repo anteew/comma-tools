@@ -579,6 +579,8 @@ class CruiseControlAnalyzer:
         with p.open("rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
                 h.update(chunk)
+        return "sha256:" + h.hexdigest()
+
     def _build_export_meta(self, schema_version: str, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         meta = dict(self.config_snapshot or {})
         meta["tool_version"] = self._git_tool_version()
@@ -628,7 +630,26 @@ class CruiseControlAnalyzer:
             meta["scoring"] = scoring
         return meta
 
-        return "sha256:" + h.hexdigest()
+    def _parse_bit_selector(self, s: str) -> Tuple[int, int]:
+        if ":" not in s:
+            raise ValueError("Expected format 0xXXX:MSB Bbb or 0xXXX:bNN")
+        addr_str, bit_part = s.split(":", 1)
+        address = int(addr_str, 16)
+        bit_part = bit_part.strip()
+        if bit_part.startswith("MSB"):
+            parts = bit_part.split()
+            if len(parts) != 2 or not parts[1].startswith("B"):
+                raise ValueError("MSB format must be 'MSB Bbb'")
+            b = parts[1][1:]
+            if not b.isdigit():
+                raise ValueError("Invalid MSB bit index")
+            bit_msb = int(b)
+            bit_lsb = (64 - 1) - bit_msb
+        elif bit_part.startswith("b") and bit_part[1:].isdigit():
+            bit_lsb = int(bit_part[1:])
+        else:
+            raise ValueError("Bit spec must be MSB Bbb or bNN")
+        return address, bit_lsb
 
     def _write_csv_with_header(
         self,
@@ -1043,6 +1064,99 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(runs_data, f, indent=2)
 
+    def export_engaged_intervals(self, engaged_bit: Optional[str], engaged_bus: Optional[int], engaged_mode: str, engaged_margin: float) -> Optional[str]:
+        if not (self.export_csv or self.export_json):
+            return None
+        csv_path = self.output_dir / "engaged_intervals.csv"
+        rows: List[Dict[str, Any]] = []
+        if not engaged_bit:
+            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
+                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
+                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
+            ])
+            return str(csv_path)
+        try:
+            address, bit_global = self._parse_bit_selector(engaged_bit)
+        except Exception:
+            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
+                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
+                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
+            ])
+            return str(csv_path)
+        msgs = self.can_data.get(address, [])
+        if not msgs:
+            self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
+                "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
+                "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
+            ])
+            return str(csv_path)
+        bus = self.get_bus_for_address(address) if engaged_bus is None else engaged_bus
+        states: List[Tuple[float, int]] = []
+        for m in msgs:
+            ts = float(m.get("timestamp", 0.0))
+            data: bytes = m.get("data", b"")
+            byte_index = bit_global // 8
+            bit_mask = 1 << (bit_global % 8)
+            val = 0
+            if isinstance(data, (bytes, bytearray)) and byte_index < len(data):
+                val = 1 if (data[byte_index] & bit_mask) != 0 else 0
+            states.append((ts, val))
+        states.sort(key=lambda x: x[0])
+        intervals: List[Tuple[float, float]] = []
+        active = False
+        start_t = 0.0
+        for i, (ts, val) in enumerate(states):
+            if not active and val == 1:
+                active = True
+                start_t = ts
+            elif active and val == 0:
+                stop_t = ts
+                intervals.append((start_t, stop_t))
+                active = False
+        if active and states:
+            intervals.append((start_t, states[-1][0]))
+        margin = max(0.0, engaged_margin or 0.0)
+        merged: List[Tuple[float, float]] = []
+        for s, e in intervals:
+            s -= margin
+            e += margin
+            if not merged or s > merged[-1][1]:
+                merged.append((s, e))
+            else:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], e))
+        for s, e in merged:
+            tf_start = self._format_time_fields(s, self.window_start_time)
+            tf_end = self._format_time_fields(e, self.window_start_time)
+            duration_s = round(max(0.0, e - s), 3)
+            byte_index = bit_global // 8
+            bit_lsb = bit_global % 8
+            bit_msb = 7 - bit_lsb
+            label_lsb, label_msb = self.format_bit_labels(bit_global)
+            rows.append({
+                "address_hex": f"0x{address:03X}",
+                "bit_global": bit_global,
+                "byte_index": byte_index,
+                "bit_lsb": bit_lsb,
+                "bit_msb": bit_msb,
+                "label_lsb": label_lsb,
+                "label_msb": label_msb,
+                "start_abs": tf_start["ts_abs"],
+                "start_rel": tf_start["ts_rel"],
+                "start_mmss": tf_start["ts_mmss"],
+                "end_abs": tf_end["ts_abs"],
+                "end_rel": tf_end["ts_rel"],
+                "end_mmss": tf_end["ts_mmss"],
+                "duration_s": duration_s,
+                "duration_mmss": f"{int(duration_s//60):02d}:{(duration_s%60):06.3f}",
+                "bus": bus,
+            })
+        rows.sort(key=lambda x: (x["start_abs"], x["end_abs"]))
+        self._write_csv_with_header(csv_path, "engaged_intervals.v1", self._build_export_meta("engaged_intervals.v1", rows), rows, [
+            "address_hex","bit_global","byte_index","bit_lsb","bit_msb","label_lsb","label_msb",
+            "start_abs","start_rel","start_mmss","end_abs","end_rel","end_mmss","duration_s","duration_mmss","bus"
+        ])
+        return str(csv_path)
+
         return str(csv_path if self.export_csv else json_path)
 
     def export_timeline(self) -> Optional[str]:
@@ -1377,6 +1491,7 @@ class CruiseControlAnalyzer:
             "edges.csv",
             "runs.csv",
             "timeline.csv",
+            "engaged_intervals.csv",
         ]
         for csv_file in csv_files:
             if (self.output_dir / csv_file).exists():
@@ -1428,6 +1543,13 @@ class CruiseControlAnalyzer:
         results["edges"] = self.export_edges()
         results["runs"] = self.export_runs()
         results["timeline"] = self.export_timeline()
+        cli = (self.config_snapshot or {}).get("cli_args", {})
+        results["engaged_intervals"] = self.export_engaged_intervals(
+            cli.get("engaged_bit"),
+            cli.get("engaged_bus"),
+            cli.get("engaged_mode", "annotate"),
+            float(cli.get("engaged_margin", 0.5) or 0.0),
+        )
 
         if self.config_snapshot:
             config_path = self.output_dir / "config_snapshot.json"
@@ -1539,6 +1661,10 @@ def main():
         help="Directory to save exported files (default: current directory)",
     )
 
+    parser.add_argument("--engaged-bit", default=None, help="Bit selector for engaged intervals, e.g., 0x027:MSB B5 or 0x027:b10")
+    parser.add_argument("--engaged-bus", type=int, default=None, help="Override bus for engaged bit (optional)")
+    parser.add_argument("--engaged-mode", choices=["annotate","filter"], default="annotate", help="Engaged interval handling mode")
+    parser.add_argument("--engaged-margin", type=float, default=0.5, help="Seconds to expand engaged intervals on both sides")
     args = parser.parse_args()
     try:
         repo_root = find_repo_root(args.repo_root)
@@ -1625,6 +1751,10 @@ def main():
         "export_csv": args.export_csv,
         "export_json": args.export_json,
         "output_dir": args.output_dir,
+        "engaged_bit": args.engaged_bit,
+        "engaged_bus": args.engaged_bus,
+        "engaged_mode": args.engaged_mode,
+        "engaged_margin": args.engaged_margin,
     }
 
     input_metadata = {
