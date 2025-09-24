@@ -685,7 +685,13 @@ class CruiseControlAnalyzer:
             meta = dict(self.config_snapshot or {})
             if "gate_sources" in meta:
                 gs = meta.get("gate_sources", {})
-                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+                meta.update(
+                    {
+                        k: v
+                        for k, v in gs.items()
+                        if k in ("main_source", "brake_source", "speed_source")
+                    }
+                )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
@@ -755,7 +761,13 @@ class CruiseControlAnalyzer:
             meta = dict(self.config_snapshot or {})
             if "gate_sources" in meta:
                 gs = meta.get("gate_sources", {})
-                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+                meta.update(
+                    {
+                        k: v
+                        for k, v in gs.items()
+                        if k in ("main_source", "brake_source", "speed_source")
+                    }
+                )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
@@ -822,7 +834,13 @@ class CruiseControlAnalyzer:
             meta = dict(self.config_snapshot or {})
             if "gate_sources" in meta:
                 gs = meta.get("gate_sources", {})
-                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+                meta.update(
+                    {
+                        k: v
+                        for k, v in gs.items()
+                        if k in ("main_source", "brake_source", "speed_source")
+                    }
+                )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(csv_path, "edges.v1", meta, rows, self.EDGES_SCHEMA_V1)
@@ -891,7 +909,13 @@ class CruiseControlAnalyzer:
             meta = dict(self.config_snapshot or {})
             if "gate_sources" in meta:
                 gs = meta.get("gate_sources", {})
-                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+                meta.update(
+                    {
+                        k: v
+                        for k, v in gs.items()
+                        if k in ("main_source", "brake_source", "speed_source")
+                    }
+                )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(csv_path, "runs.v1", meta, rows, self.RUNS_SCHEMA_V1)
@@ -998,10 +1022,18 @@ class CruiseControlAnalyzer:
             meta = dict(self.config_snapshot or {})
             if "gate_sources" in meta:
                 gs = meta.get("gate_sources", {})
-                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+                meta.update(
+                    {
+                        k: v
+                        for k, v in gs.items()
+                        if k in ("main_source", "brake_source", "speed_source")
+                    }
+                )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
-            self._write_csv_with_header(csv_path, "timeline.v1", meta, rows, self.TIMELINE_SCHEMA_V1)
+            self._write_csv_with_header(
+                csv_path, "timeline.v1", meta, rows, self.TIMELINE_SCHEMA_V1
+            )
 
         if self.export_json:
             json_path = self.output_dir / "timeline.json"
