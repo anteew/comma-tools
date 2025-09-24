@@ -73,6 +73,63 @@ class CruiseControlAnalyzer:
         self.export_json: bool = False
         self.output_dir: Path = Path(".")
         self.config_snapshot: Dict[str, Any] = {}
+        self.COUNTS_BY_SEGMENT_SCHEMA_V1 = [
+            "address_hex",
+            "pre_count",
+            "window_count",
+            "post_count",
+            "uniq_pre",
+            "uniq_window",
+            "uniq_post",
+            "delta",
+            "bus",
+        ]
+        self.CANDIDATES_SCHEMA_V1 = [
+            "address_hex",
+            "bit_global_lsb",
+            "bit_global_msb",
+            "score",
+            "rises_set",
+            "falls_end",
+            "penalty",
+            "bus",
+        ]
+        self.EDGES_SCHEMA_V1 = [
+            "address_hex",
+            "bit_global_lsb",
+            "bit_global_msb",
+            "ts_abs",
+            "ts_rel",
+            "ts_str",
+            "edge_type",
+            "speed_mph",
+            "bus",
+        ]
+        self.RUNS_SCHEMA_V1 = [
+            "address_hex",
+            "bit_global_lsb",
+            "bit_global_msb",
+            "start_ts_abs",
+            "start_ts_rel",
+            "start_ts_str",
+            "end_ts_abs",
+            "end_ts_rel",
+            "end_ts_str",
+            "duration_s",
+            "bus",
+        ]
+        self.TIMELINE_SCHEMA_V1 = [
+            "ts_abs",
+            "ts_rel",
+            "ts_str",
+            "address_hex",
+            "bit_global_lsb",
+            "bit_global_msb",
+            "event",
+            "value",
+            "speed_mph",
+            "bus",
+        ]
 
     def parse_log_file(self):
         """Parse the rlog.zst file and extract speed and CAN data"""
@@ -541,6 +598,9 @@ class CruiseControlAnalyzer:
         sidecar = path.with_suffix(".analysis_meta.json")
         with sidecar.open("w", encoding="utf-8") as jf:
             jf.write(meta_json)
+
+    def _coerce_to_schema(self, row: Dict[str, Any], columns: List[str]) -> Dict[str, Any]:
+        return {k: row.get(k) for k in columns}
 
     def capture_config_snapshot(
         self, cli_args: Dict[str, Any], input_metadata: Dict[str, Any]
