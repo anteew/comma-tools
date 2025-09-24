@@ -10,7 +10,7 @@ import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Any
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -238,7 +238,7 @@ class LogDownloader:
         if not route_dir.exists():
             return
 
-        index_data = {
+        index_data: Dict[str, Any] = {
             "route_name": route_name,
             "dongle_id": dongle_id,
             "route_timestamp": route_timestamp,
