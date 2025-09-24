@@ -459,15 +459,18 @@ class CruiseControlAnalyzer:
                     writer.writeheader()
                     writer.writerows(segments_data)
                 else:
-                    writer = csv.DictWriter(f, fieldnames=[
-                        "segment_id",
-                        "address", 
-                        "name",
-                        "pre_count",
-                        "window_count",
-                        "post_count",
-                        "delta"
-                    ])
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "segment_id",
+                            "address",
+                            "name",
+                            "pre_count",
+                            "window_count",
+                            "post_count",
+                            "delta",
+                        ],
+                    )
                     writer.writeheader()
 
         if self.export_json:
@@ -520,15 +523,18 @@ class CruiseControlAnalyzer:
                     writer.writeheader()
                     writer.writerows(candidates_data)
                 else:
-                    writer = csv.DictWriter(f, fieldnames=[
-                        "address",
-                        "name",
-                        "bit_position", 
-                        "frequency",
-                        "score",
-                        "label",
-                        "total_messages"
-                    ])
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "address",
+                            "name",
+                            "bit_position",
+                            "frequency",
+                            "score",
+                            "label",
+                            "total_messages",
+                        ],
+                    )
                     writer.writeheader()
 
         if self.export_json:
@@ -581,15 +587,18 @@ class CruiseControlAnalyzer:
                     writer.writeheader()
                     writer.writerows(edges_data)
                 else:
-                    writer = csv.DictWriter(f, fieldnames=[
-                        "timestamp",
-                        "address",
-                        "bit_position",
-                        "edge_type", 
-                        "speed_mph",
-                        "main_status",
-                        "brake_status"
-                    ])
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "timestamp",
+                            "address",
+                            "bit_position",
+                            "edge_type",
+                            "speed_mph",
+                            "main_status",
+                            "brake_status",
+                        ],
+                    )
                     writer.writeheader()
 
         if self.export_json:
@@ -652,18 +661,21 @@ class CruiseControlAnalyzer:
                     writer.writeheader()
                     writer.writerows(runs_data)
                 else:
-                    writer = csv.DictWriter(f, fieldnames=[
-                        "run_id",
-                        "start_time",
-                        "end_time",
-                        "duration",
-                        "window_start", 
-                        "window_end",
-                        "window_span",
-                        "partial",
-                        "start_timestamp",
-                        "end_timestamp"
-                    ])
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "run_id",
+                            "start_time",
+                            "end_time",
+                            "duration",
+                            "window_start",
+                            "window_end",
+                            "window_span",
+                            "partial",
+                            "start_timestamp",
+                            "end_timestamp",
+                        ],
+                    )
                     writer.writeheader()
 
         if self.export_json:
@@ -748,13 +760,16 @@ class CruiseControlAnalyzer:
                     writer.writeheader()
                     writer.writerows(timeline_data)
                 else:
-                    writer = csv.DictWriter(f, fieldnames=[
-                        "timestamp", 
-                        "raw_timestamp",
-                        "event_type",
-                        "description", 
-                        "speed_mph"
-                    ])
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "timestamp",
+                            "raw_timestamp",
+                            "event_type",
+                            "description",
+                            "speed_mph",
+                        ],
+                    )
                     writer.writeheader()
 
         if self.export_json:
