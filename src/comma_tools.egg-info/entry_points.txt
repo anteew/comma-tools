@@ -1,4 +1,6 @@
 [console_scripts]
 can-bitwatch = comma_tools.analyzers.can_bitwatch:main
+comma-connect-dl = comma_tools.sources.connect.cli:main
 cruise-control-analyzer = comma_tools.analyzers.cruise_control_analyzer:main
+cts-lite = cts_lite.main:cli_main
 rlog-to-csv = comma_tools.analyzers.rlog_to_csv:main
