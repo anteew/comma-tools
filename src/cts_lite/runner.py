@@ -187,7 +187,7 @@ class JobRunner:
 
         try:
             adapter = self._realtime_adapters[tool_id]
-
+            
             event_queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=1000)
 
             adapter.start(params, event_queue)

@@ -83,7 +83,7 @@ class BatchAdapter(ABC):
         if return_code != 0:
             error_msg = f"Tool exited with code {return_code}"
             if output_lines:
-                last_line: str = output_lines[-1]
+                last_line = str(output_lines[-1])
                 error_msg += f": {last_line}"
             result["error"] = error_msg
 
