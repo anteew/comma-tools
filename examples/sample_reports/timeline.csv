@@ -1,0 +1,20 @@
+# schema_version: timeline.v1
+# analysis_id: e3e5885f-a3dc-4b17-904e-5f88f6e45029
+# tool_version: unknown
+# time_origin: window_start
+# window_start_abs_s: 0.0
+# window_end_abs_s: 0.0
+# window_start_mmss: 00:00.000
+# window_end_mmss: 00:00.000
+# main_source: 0x241:B4b5 (MSB)
+# brake_source: carState.brakePressed
+# speed_source: carState.vEgo
+# id_bus_map: {"0x027":0}
+# bus_policy: auto=max-frames
+# scoring: {"chatter_penalty_start":40,"chatter_penalty_slope":0.1}
+# meta_json: {"timestamp":"2025-09-24T13:49:13.801266","cli_args":{"log_file":"tests/data/known_good.rlog.zst","speed_min":55.0,"speed_max":56.0,"repo_root":null,"deps_dir":null,"install_missing_deps":true,"marker_type":"blinkers","marker_pre":1.5,"marker_post":1.5,"marker_timeout":15.0,"export_csv":true,"export_json":true,"output_dir":"test_export_output","engaged_bit":null,"engaged_bus":null,"engaged_mode":"annotate","engaged_margin":0.5},"input_metadata":{"file_path":"tests/data/known_good.rlog.zst","file_size":8577255,"file_extension":".zst"},"gate_sources":{"main_source":"0x241:B4b5 (MSB)","brake_source":"carState.brakePressed","speed_source":"carState.vEgo"},"bus_selection_policy":"auto=max-frames","analyzer_version":"0.1.0","marker_config":{"marker_type":"blinkers","pre_time":1.5,"post_time":1.5,"timeout":15.0,"enabled":true},"tool_version":"unknown","schema_version":"timeline.v1","time_origin":"window_start","window_start_abs_s":0.0,"window_end_abs_s":0.0,"window_start_mmss":"00:00.000","window_end_mmss":"00:00.000","main_source":"0x241:B4b5 (MSB)","brake_source":"carState.brakePressed","speed_source":"carState.vEgo","bus_policy":"auto=max-frames","id_bus_map":{"0x027":0},"engaged_mode":"annotate","engaged_bit":null,"engaged_bus":null,"engaged_margin_s":0.5,"engaged_intervals_count":0,"scoring":{"chatter_penalty_start":40,"chatter_penalty_slope":0.1},"analysis_id":"e3e5885f-a3dc-4b17-904e-5f88f6e45029"}
+ts_abs,ts_rel,ts_mmss,address_hex,bit_global,byte_index,bit_lsb,bit_msb,label_lsb,label_msb,event,value,speed_mph,bus
+58919.678,58919.678,981:59.678,0x027,43,5,3,4,Byte5 bit3 (LSB),MSB B5b4,marker_start,,0.0,0
+58919.877,58919.877,981:59.877,0x027,43,5,3,4,Byte5 bit3 (LSB),MSB B5b4,marker_end,,0.0,0
+58944.047,58944.047,982:24.047,0x027,43,5,3,4,Byte5 bit3 (LSB),MSB B5b4,marker_start,,0.0,0
+58944.097,58944.097,982:24.097,0x027,43,5,3,4,Byte5 bit3 (LSB),MSB B5b4,marker_end,,0.0,0

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comma-tools"
-version = "0.1.0"
+version = "0.8.0"
 description = "Debugging and analysis tools for openpilot autonomous driving system"
 readme = "README.md"
 requires-python = ">=3.8"
