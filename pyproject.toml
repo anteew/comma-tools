@@ -35,6 +35,9 @@ dependencies = [
 plot = [
     "matplotlib>=3.5.0",
 ]
+connect = [
+    "requests>=2.25.0",
+]
 test = [
     "pytest>=6.0",
     "pytest-cov",
@@ -46,6 +49,7 @@ dev = [
     "flake8",
     "mypy",
     "matplotlib>=3.5.0",
+    "requests>=2.25.0",
 ]
 docs = [
     "sphinx>=4.0",
@@ -58,6 +62,7 @@ docs = [
 cruise-control-analyzer = "comma_tools.analyzers.cruise_control_analyzer:main"
 rlog-to-csv = "comma_tools.analyzers.rlog_to_csv:main"
 can-bitwatch = "comma_tools.analyzers.can_bitwatch:main"
+comma-connect-dl = "comma_tools.sources.connect.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
