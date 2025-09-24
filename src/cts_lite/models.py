@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 class InputRef(BaseModel):
     """Reference to input data for a run."""
+
     kind: Literal["path", "upload"]
     path: Optional[str] = None
     id: Optional[str] = None  # upload id
@@ -17,6 +18,7 @@ class InputRef(BaseModel):
 
 class ArtifactRef(BaseModel):
     """Reference to an output artifact."""
+
     id: str
     name: str
     media_type: str
@@ -28,6 +30,7 @@ class ArtifactRef(BaseModel):
 
 class RunStatus(str, Enum):
     """Status of a batch run."""
+
     queued = "queued"
     running = "running"
     succeeded = "succeeded"
@@ -37,6 +40,7 @@ class RunStatus(str, Enum):
 
 class Run(BaseModel):
     """A batch analyzer run."""
+
     id: str
     tool_id: str
     version: Optional[str] = None
@@ -53,6 +57,7 @@ class Run(BaseModel):
 
 class MonitorStatus(str, Enum):
     """Status of a realtime monitor."""
+
     starting = "starting"
     running = "running"
     stopped = "stopped"
@@ -61,6 +66,7 @@ class MonitorStatus(str, Enum):
 
 class Monitor(BaseModel):
     """A realtime monitor session."""
+
     id: str
     tool_id: str
     version: Optional[str] = None
@@ -71,6 +77,7 @@ class Monitor(BaseModel):
 
 class ToolKind(str, Enum):
     """Type of tool."""
+
     analyzer = "analyzer"
     monitor = "monitor"
     utility = "utility"
@@ -78,6 +85,7 @@ class ToolKind(str, Enum):
 
 class ToolCapability(BaseModel):
     """Tool capability description."""
+
     tool_id: str
     kind: ToolKind
     version: Optional[str] = None
@@ -89,6 +97,7 @@ class ToolCapability(BaseModel):
 
 class CreateRunRequest(BaseModel):
     """Request to create a new run."""
+
     tool_id: str
     params: Dict[str, Any] = Field(default_factory=dict)
     inputs: List[InputRef] = Field(default_factory=list)
@@ -96,12 +105,14 @@ class CreateRunRequest(BaseModel):
 
 class CreateMonitorRequest(BaseModel):
     """Request to create a new monitor."""
+
     tool_id: str
     params: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ExecRequest(BaseModel):
     """Request to execute a utility function."""
+
     tool_id: str
     params: Dict[str, Any] = Field(default_factory=dict)
     timeout: int = 10
@@ -109,6 +120,7 @@ class ExecRequest(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: Literal["ok", "degraded", "error"]
     checks: Dict[str, Any]
     timestamp: datetime
@@ -116,12 +128,14 @@ class HealthResponse(BaseModel):
 
 class VersionResponse(BaseModel):
     """Version information response."""
+
     service_version: str
     tool_versions: Dict[str, str]
 
 
 class CruiseControlAnalyzerParams(BaseModel):
     """Parameters for cruise control analyzer."""
+
     speed_min: float = 55.0
     speed_max: float = 56.0
     marker_type: str = "blinkers"
@@ -137,6 +151,7 @@ class CruiseControlAnalyzerParams(BaseModel):
 
 class RlogToCsvParams(BaseModel):
     """Parameters for rlog to CSV converter."""
+
     window_start: Optional[float] = None
     window_dur: Optional[float] = None
     repo_root: Optional[str] = None
@@ -144,20 +159,24 @@ class RlogToCsvParams(BaseModel):
 
 class CanBitwatchParams(BaseModel):
     """Parameters for CAN bitwatch analyzer."""
+
     output_prefix: str = "analysis"
     watch: List[str] = Field(default_factory=list)  # bit specifications like "0x027:B4b5"
 
 
 class HybridRxTraceParams(BaseModel):
     """Parameters for hybrid RX trace monitor."""
+
     pass  # No parameters for this monitor
 
 
 class CanBusCheckParams(BaseModel):
     """Parameters for CAN bus check monitor."""
+
     sample_seconds: float = 5.0
 
 
 class PandaStateParams(BaseModel):
     """Parameters for panda state monitor."""
+
     pass  # No parameters for this monitor
