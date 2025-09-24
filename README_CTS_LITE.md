@@ -67,9 +67,10 @@ curl http://127.0.0.1:8080/v1/capabilities
 ### Run Batch Analyzer
 
 ```bash
-# Start cruise control analysis
+# Start cruise control analysis (requires authentication if CTS_API_KEY is set)
 curl -X POST http://127.0.0.1:8080/v1/runs \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-secret-key" \
   -d '{
     "tool_id": "cruise-control-analyzer",
     "params": {
@@ -93,9 +94,10 @@ curl -N http://127.0.0.1:8080/v1/runs/{run_id}/logs
 ### Start Realtime Monitor
 
 ```bash
-# Start panda state monitor
+# Start panda state monitor (requires authentication if CTS_API_KEY is set)
 curl -X POST http://127.0.0.1:8080/v1/monitors \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-secret-key" \
   -d '{
     "tool_id": "panda-state",
     "params": {}
@@ -177,7 +179,10 @@ python -m cts_lite.main --reload
 
 ## Security
 
-- **Optional Authentication**: Bearer token authentication via `CTS_API_KEY`
+- **Bearer Authentication**: Mutating endpoints (POST/DELETE) require Bearer token authentication via `CTS_API_KEY` environment variable
+  - Required for: `POST /v1/runs`, `DELETE /v1/runs/{id}`, `POST /v1/monitors`, `DELETE /v1/monitors/{id}`
+  - Read-only endpoints remain public: `GET /v1/capabilities`, `GET /v1/runs/{id}`, `GET /v1/health`, etc.
+  - Include `Authorization: Bearer <your-api-key>` header for authenticated requests
 - **CORS Support**: Configurable cross-origin resource sharing
 - **Hardware Guards**: Optional hardware access controls
 - **Process Isolation**: Subprocess execution prevents service crashes
