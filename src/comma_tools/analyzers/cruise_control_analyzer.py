@@ -75,14 +75,14 @@ class CruiseControlAnalyzer:
         self.config_snapshot: Dict[str, Any] = {}
         self.COUNTS_BY_SEGMENT_SCHEMA_V1 = [
             "address_hex",
+            "bus",
             "pre_count",
             "window_count",
             "post_count",
+            "delta",
             "uniq_pre",
             "uniq_window",
             "uniq_post",
-            "delta",
-            "bus",
         ]
         self.CANDIDATES_SCHEMA_V1 = [
             "address_hex",
@@ -95,6 +95,7 @@ class CruiseControlAnalyzer:
             "score",
             "rises_set",
             "falls_end",
+            "toggles",
             "penalty",
             "bus",
         ]
@@ -780,7 +781,7 @@ class CruiseControlAnalyzer:
                     }
                 )
 
-        segments_data.sort(key=lambda x: (-x["delta"], -x["window_count"], x["address_hex"]))
+        segments_data.sort(key=lambda x: (-int(x.get("delta", 0)), -int(x.get("window_count", 0)), str(x.get("address_hex", ""))))
 
         rows = [self._coerce_to_schema(r, self.COUNTS_BY_SEGMENT_SCHEMA_V1) for r in segments_data]
 
@@ -807,7 +808,7 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(segments_data, f, indent=2)
 
-        return str(csv_path if self.export_csv else json_path)
+        return str(csv_path)
 
     def export_candidates(self) -> Optional[str]:
         """Export candidate bits with scores and labels.
@@ -857,6 +858,7 @@ class CruiseControlAnalyzer:
                         "score": round(score, 3),
                         "rises_set": int(rises_set),
                         "falls_end": int(falls_end),
+                        "toggles": int(frequency),
                         "penalty": round(penalty, 3),
                         "bus": bus,
                     }
@@ -895,7 +897,7 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(candidates_data, f, indent=2)
 
-        return str(csv_path if self.export_csv else json_path)
+        return str(csv_path)
 
     def export_edges(self) -> Optional[str]:
         """Export edge events (per watched bit: ts, rise/fall, mph, main, brake).
@@ -973,7 +975,7 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(edges_data, f, indent=2)
 
-        return str(csv_path if self.export_csv else json_path)
+        return str(csv_path)
 
     def export_runs(self) -> Optional[str]:
         """Export run intervals (start/end/duration mm:ss.mmm).
@@ -1166,8 +1168,6 @@ class CruiseControlAnalyzer:
         ])
         return str(csv_path)
 
-        return str(csv_path if self.export_csv else json_path)
-
     def export_timeline(self) -> Optional[str]:
         """Export human-readable timeline summary.
 
@@ -1288,7 +1288,7 @@ class CruiseControlAnalyzer:
             with open(json_path, "w") as f:
                 json.dump(timeline_data, f, indent=2)
 
-        return str(csv_path if self.export_csv else json_path)
+        return str(csv_path)
 
     def generate_html_report(self) -> Optional[str]:
         """Generate comprehensive HTML report with analysis results.
@@ -1311,6 +1311,20 @@ class CruiseControlAnalyzer:
             empty_warnings.append("No target speed events found - check speed data quality")
         if not self.can_data:
             empty_warnings.append("No CAN data available - check log file format")
+
+        cli_args = (self.config_snapshot or {}).get("cli_args", {})
+        if not cli_args.get("engaged_bit"):
+            empty_warnings.append("No engaged bit provided; engaged_intervals.csv will be header-only")
+        else:
+            p = self.output_dir / "engaged_intervals.csv"
+            try:
+                if p.exists():
+                    with p.open("r", encoding="utf-8") as f:
+                        data_lines = [ln for ln in f if not ln.startswith("#")]
+                    if len(data_lines) <= 1:
+                        empty_warnings.append("No engaged intervals detected")
+            except Exception:
+                pass
 
         has_empty_exports = False
         if not any(self.marker_window_analysis):
