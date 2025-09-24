@@ -151,7 +151,7 @@ Each CSV begins with comment lines (starting with `#`) containing:
 - `window_start/end_mmss`: Human-readable time format (mm:ss.mmm)
 
 **Signal Sources**
-- `main_source`: Primary signal for analysis (e.g., steering torque)
+- `main_source`: Configured gate signal for analysis (often cruise control engaged state like 0x027:MSB B4b5 on Subaru)
 - `brake_source`: Brake signal identification with bit specification
 - `speed_source`: Speed calculation method and source address
 
