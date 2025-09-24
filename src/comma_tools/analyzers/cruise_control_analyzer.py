@@ -1093,13 +1093,22 @@ class CruiseControlAnalyzer:
         bus = self.get_bus_for_address(address) if engaged_bus is None else engaged_bus
         states: List[Tuple[float, int]] = []
         for m in msgs:
-            ts = float(m.get("timestamp", 0.0))
-            data: bytes = m.get("data", b"")
+            ts_obj = m.get("timestamp", 0.0)
+            try:
+                ts = float(cast(float, ts_obj))
+            except Exception:
+                ts = 0.0
+            data_obj = m.get("data", b"")
+            data_bytes: bytes
+            if isinstance(data_obj, (bytes, bytearray)):
+                data_bytes = bytes(data_obj)
+            else:
+                data_bytes = b""
             byte_index = bit_global // 8
             bit_mask = 1 << (bit_global % 8)
             val = 0
-            if isinstance(data, (bytes, bytearray)) and byte_index < len(data):
-                val = 1 if (data[byte_index] & bit_mask) != 0 else 0
+            if byte_index < len(data_bytes):
+                val = 1 if (data_bytes[byte_index] & bit_mask) != 0 else 0
             states.append((ts, val))
         states.sort(key=lambda x: x[0])
         intervals: List[Tuple[float, float]] = []
