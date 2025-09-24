@@ -75,6 +75,27 @@ python -m comma_tools.monitors.hybrid_rx_trace
 python -m comma_tools.monitors.can_bus_check
 ```
 
+### Download logs from Connect
+
+The `comma-connect-dl` tool downloads log files directly from connect.comma.ai with resume capability and idempotent behavior.
+
+```bash
+# Download logs using a connect URL
+comma-connect-dl --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --cameras
+
+# Download using canonical route name
+comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
+
+# Download all file types with custom settings
+comma-connect-dl --url https://connect.comma.ai/... --logs --qlogs --cameras --parallel 8 --verbose
+```
+
+**Authentication:** Requires JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
+
+**File Layout:** Downloads are organized as `<dest>/<dongle_id>/<YYYY-MM-DD--HH-MM-SS>/<segment>/<filename>` for compatibility with existing analyzers.
+
+**Note:** Log retention is 3 days (1 year with comma prime). Connect URLs are resolved by searching device segments within a configurable time window (default 7 days).
+
 ## Development
 
 ```bash
