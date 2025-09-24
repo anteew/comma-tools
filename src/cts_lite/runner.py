@@ -186,10 +186,9 @@ class JobRunner:
                 raise RuntimeError(f"Device {device_key} is already in use")
 
         try:
-            adapter_class = type(self._realtime_adapters[tool_id])
-            adapter = adapter_class()
+            adapter = self._realtime_adapters[tool_id]
 
-            event_queue = asyncio.Queue(maxsize=1000)
+            event_queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=1000)
 
             adapter.start(params, event_queue)
 

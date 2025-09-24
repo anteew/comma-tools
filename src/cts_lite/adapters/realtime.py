@@ -171,7 +171,7 @@ class CanBusCheckAdapter(RealtimeAdapter):
         if "addr=" in line and "bus=" in line and "count=" in line:
             try:
                 parts = line.split()
-                data = {}
+                data: Dict[str, Any] = {}
                 for part in parts:
                     if "=" in part:
                         key, value = part.split("=", 1)

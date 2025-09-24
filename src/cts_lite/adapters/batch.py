@@ -53,7 +53,7 @@ class BatchAdapter(ABC):
             env=self._get_environment(),
         )
 
-        output_lines = []
+        output_lines: List[str] = []
         if process.stdout:
             while True:
                 line = process.stdout.readline()
@@ -74,16 +74,18 @@ class BatchAdapter(ABC):
 
         artifacts = self.find_artifacts(work_dir)
 
-        result = {
+        result: Dict[str, Any] = {
             "return_code": return_code,
             "output_lines": output_lines,
             "artifacts": [str(p) for p in artifacts],
         }
 
         if return_code != 0:
-            result["error"] = f"Tool exited with code {return_code}"
+            error_msg = f"Tool exited with code {return_code}"
             if output_lines:
-                result["error"] += f": {output_lines[-1]}"
+                last_line: str = output_lines[-1]
+                error_msg += f": {last_line}"
+            result["error"] = error_msg
 
         return result
 
@@ -109,8 +111,8 @@ class CruiseControlAnalyzerAdapter(BatchAdapter):
         if not inputs or inputs[0].kind != "path":
             raise ValueError("Cruise control analyzer requires a path input")
 
-        log_file = inputs[0].path
-        cmd = [
+        log_file = str(inputs[0].path)
+        cmd: List[str] = [
             sys.executable,
             "-m",
             "comma_tools.analyzers.cruise_control_analyzer",
@@ -120,7 +122,7 @@ class CruiseControlAnalyzerAdapter(BatchAdapter):
             "--speed-max",
             str(params.get("speed_max", 56.0)),
             "--marker-type",
-            params.get("marker_type", "blinkers"),
+            str(params.get("marker_type", "blinkers")),
             "--marker-pre",
             str(params.get("marker_pre", 5.0)),
             "--marker-post",
@@ -136,10 +138,12 @@ class CruiseControlAnalyzerAdapter(BatchAdapter):
             cmd.extend(["--export-json", "--output-dir", str(work_dir)])
 
         if params.get("repo_root"):
-            cmd.extend(["--repo-root", params["repo_root"]])
+            repo_root = str(params["repo_root"])
+            cmd.extend(["--repo-root", repo_root])
 
         if params.get("deps_dir"):
-            cmd.extend(["--deps-dir", params["deps_dir"]])
+            deps_dir = str(params["deps_dir"])
+            cmd.extend(["--deps-dir", deps_dir])
 
         if params.get("install_missing_deps", False):
             cmd.append("--install-missing-deps")
@@ -165,7 +169,7 @@ class CruiseControlAnalyzerAdapter(BatchAdapter):
 
     def find_artifacts(self, work_dir: Path) -> List[Path]:
         """Find artifacts from cruise control analyzer."""
-        artifacts = []
+        artifacts: List[Path] = []
 
         patterns = [
             "*.html",
@@ -195,10 +199,10 @@ class RlogToCsvAdapter(BatchAdapter):
         if not inputs or inputs[0].kind != "path":
             raise ValueError("rlog-to-csv requires a path input")
 
-        log_file = inputs[0].path
+        log_file = str(inputs[0].path)
         output_file = work_dir / "output.csv"
 
-        cmd = [
+        cmd: List[str] = [
             sys.executable,
             "-m",
             "comma_tools.analyzers.rlog_to_csv",
@@ -215,7 +219,8 @@ class RlogToCsvAdapter(BatchAdapter):
             cmd.extend(["--window-dur", str(params["window_dur"])])
 
         if params.get("repo_root"):
-            cmd.extend(["--repo-root", params["repo_root"]])
+            repo_root = str(params["repo_root"])
+            cmd.extend(["--repo-root", repo_root])
 
         return cmd
 
@@ -243,10 +248,10 @@ class CanBitwatchAdapter(BatchAdapter):
         if not inputs or inputs[0].kind != "path":
             raise ValueError("can-bitwatch requires a CSV input")
 
-        csv_file = inputs[0].path
+        csv_file = str(inputs[0].path)
         output_prefix = work_dir / params.get("output_prefix", "analysis")
 
-        cmd = [
+        cmd: List[str] = [
             sys.executable,
             "-m",
             "comma_tools.analyzers.can_bitwatch",
@@ -257,7 +262,9 @@ class CanBitwatchAdapter(BatchAdapter):
         ]
 
         for watch_spec in params.get("watch", []):
-            cmd.extend(["--watch", watch_spec])
+            if watch_spec:
+                watch_str = str(watch_spec)
+                cmd.extend(["--watch", watch_str])
 
         return cmd
 
@@ -269,7 +276,7 @@ class CanBitwatchAdapter(BatchAdapter):
 
     def find_artifacts(self, work_dir: Path) -> List[Path]:
         """Find artifacts from CAN bitwatch analyzer."""
-        artifacts = []
+        artifacts: List[Path] = []
         patterns = ["*.csv", "*.json"]
 
         for pattern in patterns:
