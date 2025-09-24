@@ -678,23 +678,18 @@ class CruiseControlAnalyzer:
 
         segments_data.sort(key=lambda x: (-x["delta"], -x["window_count"], x["address_hex"]))
 
-        fieldnames = [
-            "address_hex",
-            "bus",
-            "pre_count",
-            "window_count",
-            "post_count",
-            "delta",
-            "uniq_pre",
-            "uniq_window",
-            "uniq_post",
-        ]
+        rows = [self._coerce_to_schema(r, self.COUNTS_BY_SEGMENT_SCHEMA_V1) for r in segments_data]
 
         if self.export_csv:
             csv_path = self.output_dir / "counts_by_segment.csv"
             meta = dict(self.config_snapshot or {})
+            if "gate_sources" in meta:
+                gs = meta.get("gate_sources", {})
+                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+            if "bus_selection_policy" in meta:
+                meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "counts_by_segment.v1", meta, segments_data, fieldnames
+                csv_path, "counts_by_segment.v1", meta, rows, self.COUNTS_BY_SEGMENT_SCHEMA_V1
             )
 
         if self.export_json:
@@ -730,57 +725,41 @@ class CruiseControlAnalyzer:
                 total_messages = stats["message_count"]
                 score = frequency / total_messages if total_messages > 0 else 0.0
 
-                rises_set = frequency // 2  # Approximate rises
-                falls_end = frequency - rises_set  # Approximate falls
-                toggles = frequency
-                penalty = 0.0  # No penalty for mock data
+                rises_set = frequency // 2
+                falls_end = frequency - rises_set
+                penalty = 0.0
 
-                byte_index = bit_pos // 8
                 bit_lsb = bit_pos % 8
-                bit_msb = 7 - bit_lsb
-                label_lsb, label_msb = self.format_bit_labels(bit_pos)
+                bit_lsb_global = bit_pos
+                bit_lsb_idx, bit_msb_idx = self._dual_bit_numeric(bit_lsb_global, width=64)
 
                 candidates_data.append(
                     {
                         "address_hex": f"0x{address:03X}",
-                        "bus": bus,
-                        "bit_global": bit_pos,
-                        "byte_index": byte_index,
-                        "bit_lsb": bit_lsb,
-                        "bit_msb": bit_msb,
-                        "label_lsb": label_lsb,
-                        "label_msb": label_msb,
+                        "bit_global_lsb": bit_lsb_idx,
+                        "bit_global_msb": bit_msb_idx,
                         "score": round(score, 3),
-                        "rises_set": rises_set,
-                        "falls_end": falls_end,
-                        "toggles": toggles,
+                        "rises_set": int(rises_set),
+                        "falls_end": int(falls_end),
                         "penalty": round(penalty, 3),
+                        "bus": bus,
                     }
                 )
 
-        candidates_data.sort(key=lambda x: (-x["score"], x["address_hex"], x["bit_global"]))
+        candidates_data.sort(key=lambda x: (-x["score"], x["address_hex"], x["bit_global_lsb"]))
 
-        fieldnames = [
-            "address_hex",
-            "bus",
-            "bit_global",
-            "byte_index",
-            "bit_lsb",
-            "bit_msb",
-            "label_lsb",
-            "label_msb",
-            "score",
-            "rises_set",
-            "falls_end",
-            "toggles",
-            "penalty",
-        ]
+        rows = [self._coerce_to_schema(r, self.CANDIDATES_SCHEMA_V1) for r in candidates_data]
 
         if self.export_csv:
             csv_path = self.output_dir / "candidates.csv"
             meta = dict(self.config_snapshot or {})
+            if "gate_sources" in meta:
+                gs = meta.get("gate_sources", {})
+                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+            if "bus_selection_policy" in meta:
+                meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "candidates.v1", meta, candidates_data, fieldnames
+                csv_path, "candidates.v1", meta, rows, self.CANDIDATES_SCHEMA_V1
             )
 
         if self.export_json:
@@ -813,50 +792,40 @@ class CruiseControlAnalyzer:
                         speed_mph = speed_entry["speed_mph"]
                         break
 
-                ts_abs, ts_rel, ts_mmss = self.format_time_triple(timestamp)
+                tf = self._format_time_fields(timestamp, self.window_start_time)
 
-                bit_global = 43  # Set button bit
-                label_lsb, label_msb = self.format_bit_labels(bit_global)
+                bit_global_lsb = 43
+                _, bit_global_msb = self._dual_bit_numeric(bit_global_lsb, width=64)
 
                 address = self.decoder.CRUISE_BUTTONS_ADDR
                 bus = self.get_bus_for_address(address)
 
                 edges_data.append(
                     {
-                        "ts_abs": ts_abs,
-                        "ts_rel": ts_rel,
-                        "ts_mmss": ts_mmss,
                         "address_hex": f"0x{address:03X}",
+                        "bit_global_lsb": bit_global_lsb,
+                        "bit_global_msb": bit_global_msb,
+                        "ts_abs": tf["ts_abs"],
+                        "ts_rel": tf["ts_rel"],
+                        "ts_str": tf["ts_str"],
+                        "edge_type": "rise",
+                        "speed_mph": self._round_speed(speed_mph),
                         "bus": bus,
-                        "bit_global": bit_global,
-                        "label_lsb": label_lsb,
-                        "label_msb": label_msb,
-                        "edge": "rise",
-                        "speed_mph": round(speed_mph, 1),
-                        "main_state": 0,  # Would need main signal analysis
-                        "brake_state": 0,  # Would need brake signal analysis
                     }
                 )
 
-        fieldnames = [
-            "ts_abs",
-            "ts_rel",
-            "ts_mmss",
-            "address_hex",
-            "bus",
-            "bit_global",
-            "label_lsb",
-            "label_msb",
-            "edge",
-            "speed_mph",
-            "main_state",
-            "brake_state",
-        ]
+        edges_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["bit_global_lsb"]))
+        rows = [self._coerce_to_schema(r, self.EDGES_SCHEMA_V1) for r in edges_data]
 
         if self.export_csv:
             csv_path = self.output_dir / "edges.csv"
             meta = dict(self.config_snapshot or {})
-            self._write_csv_with_header(csv_path, "edges.v1", meta, edges_data, fieldnames)
+            if "gate_sources" in meta:
+                gs = meta.get("gate_sources", {})
+                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+            if "bus_selection_policy" in meta:
+                meta["bus_policy"] = meta.pop("bus_selection_policy")
+            self._write_csv_with_header(csv_path, "edges.v1", meta, rows, self.EDGES_SCHEMA_V1)
 
         if self.export_json:
             json_path = self.output_dir / "edges.json"
@@ -890,54 +859,42 @@ class CruiseControlAnalyzer:
             bit_global = 43  # Example bit position
             label_lsb, label_msb = self.format_bit_labels(bit_global)
 
-            start_abs, start_rel, start_mmss = self.format_time_triple(start_time)
-            end_abs, end_rel, end_mmss = (
-                self.format_time_triple(stop_time) if not partial else (0.0, 0.0, "incomplete")
-            )
+            tf_start = self._format_time_fields(start_time, self.window_start_time)
+            if not partial:
+                tf_end = self._format_time_fields(stop_time, self.window_start_time)
+            else:
+                tf_end = {"ts_abs": 0.0, "ts_rel": 0.0, "ts_str": "incomplete"}
 
             duration_s = round(max(0.0, stop_time - start_time) if not partial else 0.0, 3)
-            duration_minutes = int(duration_s // 60)
-            duration_seconds = duration_s % 60
-            duration_mmss = f"{duration_minutes:02d}:{duration_seconds:06.3f}"
 
             runs_data.append(
                 {
                     "address_hex": f"0x{address:03X}",
-                    "bus": bus,
-                    "bit_global": bit_global,
-                    "label_lsb": label_lsb,
-                    "label_msb": label_msb,
-                    "start_abs": start_abs,
-                    "end_abs": end_abs,
-                    "start_rel": start_rel,
-                    "end_rel": end_rel,
-                    "start_mmss": start_mmss,
-                    "end_mmss": end_mmss,
+                    "bit_global_lsb": bit_global,
+                    "bit_global_msb": self._dual_bit_numeric(bit_global, width=64)[1],
+                    "start_ts_abs": tf_start["ts_abs"],
+                    "start_ts_rel": tf_start["ts_rel"],
+                    "start_ts_str": tf_start["ts_str"],
+                    "end_ts_abs": tf_end["ts_abs"],
+                    "end_ts_rel": tf_end["ts_rel"],
+                    "end_ts_str": tf_end["ts_str"],
                     "duration_s": duration_s,
-                    "duration_mmss": duration_mmss,
+                    "bus": bus,
                 }
             )
 
-        fieldnames = [
-            "address_hex",
-            "bus",
-            "bit_global",
-            "label_lsb",
-            "label_msb",
-            "start_abs",
-            "end_abs",
-            "start_rel",
-            "end_rel",
-            "start_mmss",
-            "end_mmss",
-            "duration_s",
-            "duration_mmss",
-        ]
+        runs_data.sort(key=lambda x: (-x["duration_s"], x["address_hex"], x["bit_global_lsb"]))
+        rows = [self._coerce_to_schema(r, self.RUNS_SCHEMA_V1) for r in runs_data]
 
         if self.export_csv:
             csv_path = self.output_dir / "runs.csv"
             meta = dict(self.config_snapshot or {})
-            self._write_csv_with_header(csv_path, "runs.v1", meta, runs_data, fieldnames)
+            if "gate_sources" in meta:
+                gs = meta.get("gate_sources", {})
+                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+            if "bus_selection_policy" in meta:
+                meta["bus_policy"] = meta.pop("bus_selection_policy")
+            self._write_csv_with_header(csv_path, "runs.v1", meta, rows, self.RUNS_SCHEMA_V1)
 
         if self.export_json:
             json_path = self.output_dir / "runs.json"
@@ -1012,56 +969,39 @@ class CruiseControlAnalyzer:
             event_typed: Dict[str, Any] = cast(Dict[str, Any], event)
             timestamp = event_typed["timestamp"]
             address = event_typed["address"]
-            bit_global = event_typed["bit_global"]
+            bit_global_lsb = event_typed["bit_global"]
+            _, bit_global_msb = self._dual_bit_numeric(bit_global_lsb, width=64)
 
-            start_abs, start_rel, start_mmss = self.format_time_triple(timestamp)
-            end_abs, end_rel, end_mmss = self.format_time_triple(timestamp)  # Same for point events
-
-            label_lsb, label_msb = self.format_bit_labels(bit_global)
-
-            duration_s = 0.0
-            duration_mmss = "00:00.000"
-
+            tf = self._format_time_fields(timestamp, self.window_start_time)
             bus = self.get_bus_for_address(address)
 
             timeline_data.append(
                 {
-                    "event_name": event_typed["event_name"],
+                    "ts_abs": tf["ts_abs"],
+                    "ts_rel": tf["ts_rel"],
+                    "ts_str": tf["ts_str"],
                     "address_hex": f"0x{address:03X}",
+                    "bit_global_lsb": bit_global_lsb,
+                    "bit_global_msb": bit_global_msb,
+                    "event": event_typed["event_name"],
+                    "value": "",
+                    "speed_mph": 0.0,
                     "bus": bus,
-                    "label_msb": label_msb,
-                    "label_lsb": label_lsb,
-                    "start_abs": start_abs,
-                    "start_rel": start_rel,
-                    "start_mmss": start_mmss,
-                    "end_abs": end_abs,
-                    "end_rel": end_rel,
-                    "end_mmss": end_mmss,
-                    "duration_s": duration_s,
-                    "duration_mmss": duration_mmss,
                 }
             )
 
-        fieldnames = [
-            "event_name",
-            "address_hex",
-            "bus",
-            "label_msb",
-            "label_lsb",
-            "start_abs",
-            "start_rel",
-            "start_mmss",
-            "end_abs",
-            "end_rel",
-            "end_mmss",
-            "duration_s",
-            "duration_mmss",
-        ]
+        timeline_data.sort(key=lambda x: (x["ts_abs"], x["address_hex"], x["event"]))
+        rows = [self._coerce_to_schema(r, self.TIMELINE_SCHEMA_V1) for r in timeline_data]
 
         if self.export_csv:
             csv_path = self.output_dir / "timeline.csv"
             meta = dict(self.config_snapshot or {})
-            self._write_csv_with_header(csv_path, "timeline.v1", meta, timeline_data, fieldnames)
+            if "gate_sources" in meta:
+                gs = meta.get("gate_sources", {})
+                meta.update({k: v for k, v in gs.items() if k in ("main_source", "brake_source", "speed_source")})
+            if "bus_selection_policy" in meta:
+                meta["bus_policy"] = meta.pop("bus_selection_policy")
+            self._write_csv_with_header(csv_path, "timeline.v1", meta, rows, self.TIMELINE_SCHEMA_V1)
 
         if self.export_json:
             json_path = self.output_dir / "timeline.json"
