@@ -579,6 +579,55 @@ class CruiseControlAnalyzer:
         with p.open("rb") as f:
             for chunk in iter(lambda: f.read(8192), b""):
                 h.update(chunk)
+    def _build_export_meta(self, schema_version: str, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+        meta = dict(self.config_snapshot or {})
+        meta["tool_version"] = self._git_tool_version()
+        meta["schema_version"] = schema_version
+        time_origin = "window_start"
+        window_start_abs = float(getattr(self, "window_start_time", 0.0) or 0.0)
+        window_end_abs = float(getattr(self, "window_end_time", 0.0) or 0.0)
+        def _mmss(val: float) -> str:
+            m, s = divmod(round(val, 3), 60)
+            return f"{int(m):02d}:{s:06.3f}"
+        meta["time_origin"] = time_origin
+        meta["window_start_abs_s"] = round(window_start_abs, 3)
+        meta["window_end_abs_s"] = round(window_end_abs, 3)
+        meta["window_start_mmss"] = _mmss(max(0.0, 0.0))
+        meta["window_end_mmss"] = _mmss(max(0.0, window_end_abs - window_start_abs))
+        if "gate_sources" in meta:
+            gs = meta.get("gate_sources", {})
+            for k in ("main_source", "brake_source", "speed_source"):
+                if k in gs:
+                    meta[k] = gs[k]
+        if "bus_selection_policy" in meta:
+            meta["bus_policy"] = meta.get("bus_selection_policy")
+        id_bus_map: Dict[str, int] = {}
+        for r in rows:
+            addr_hex = r.get("address_hex")
+            bus = r.get("bus")
+            if addr_hex is not None and bus is not None:
+                id_bus_map[str(addr_hex)] = int(bus)
+        if id_bus_map:
+            meta["id_bus_map"] = id_bus_map
+        input_meta = (self.config_snapshot or {}).get("input_metadata") or {}
+        if input_meta:
+            path_str = input_meta.get("path") or input_meta.get("file") or ""
+            if path_str:
+                p = Path(path_str)
+                meta["input_files"] = [str(p.name)]
+                try:
+                    meta["input_hashes"] = [self._hash_file_sha256(p)]
+                except Exception:
+                    meta["input_hashes"] = []
+        scoring = {}
+        for k in ("set_speed_min_mph","set_speed_max_mph","fall_window_s"):
+            v = (self.config_snapshot or {}).get("scoring", {}).get(k)
+            if v is not None:
+                scoring[k] = v
+        if scoring:
+            meta["scoring"] = scoring
+        return meta
+
         return "sha256:" + h.hexdigest()
 
     def _write_csv_with_header(
@@ -729,7 +778,7 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "counts_by_segment.v1", meta, rows, self.COUNTS_BY_SEGMENT_SCHEMA_V1
+                csv_path, "counts_by_segment.v1", self._build_export_meta("counts_by_segment.v1", rows), rows, self.COUNTS_BY_SEGMENT_SCHEMA_V1
             )
 
         if self.export_json:
@@ -817,7 +866,7 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "candidates.v1", meta, rows, self.CANDIDATES_SCHEMA_V1
+                csv_path, "candidates.v1", self._build_export_meta("candidates.v1", rows), rows, self.CANDIDATES_SCHEMA_V1
             )
 
         if self.export_json:
@@ -896,7 +945,7 @@ class CruiseControlAnalyzer:
                 )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
-            self._write_csv_with_header(csv_path, "edges.v1", meta, rows, self.EDGES_SCHEMA_V1)
+            self._write_csv_with_header(csv_path, "edges.v1", self._build_export_meta("edges.v1", rows), rows, self.EDGES_SCHEMA_V1)
 
         if self.export_json:
             json_path = self.output_dir / "edges.json"
@@ -987,7 +1036,7 @@ class CruiseControlAnalyzer:
                 )
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
-            self._write_csv_with_header(csv_path, "runs.v1", meta, rows, self.RUNS_SCHEMA_V1)
+            self._write_csv_with_header(csv_path, "runs.v1", self._build_export_meta("runs.v1", rows), rows, self.RUNS_SCHEMA_V1)
 
         if self.export_json:
             json_path = self.output_dir / "runs.json"
@@ -1108,7 +1157,7 @@ class CruiseControlAnalyzer:
             if "bus_selection_policy" in meta:
                 meta["bus_policy"] = meta.pop("bus_selection_policy")
             self._write_csv_with_header(
-                csv_path, "timeline.v1", meta, rows, self.TIMELINE_SCHEMA_V1
+                csv_path, "timeline.v1", self._build_export_meta("timeline.v1", rows), rows, self.TIMELINE_SCHEMA_V1
             )
 
         if self.export_json:
