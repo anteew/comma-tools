@@ -7,7 +7,36 @@ Debugging and analysis tools for the openpilot autonomous driving system.
 
 This repository contains a collection of debugging and analysis tools for the openpilot autonomous driving system. The tools are primarily focused on Controller Area Network (CAN) bus analysis, safety system monitoring, and vehicle behavior debugging.
 
-## Installation
+## Quick Start from Source
+
+**🚀 Run tools directly without pip installation!** comma-tools is designed to work seamlessly with custom openpilot forks without requiring system-wide package installation.
+
+```bash
+# Clone the repository
+git clone https://github.com/anteew/comma-tools.git
+cd comma-tools
+
+# Run any tool directly from source
+export PYTHONPATH=src
+
+# Get help for any tool
+python3 -m comma_tools.analyzers.cruise_control_analyzer --help
+python3 -m comma_tools.sources.connect.cli --help
+python3 -m comma_tools.analyzers.can_bitwatch --help
+
+# First-time analysis with automatic dependency installation
+python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst --install-missing-deps
+
+# Subsequent runs (dependencies cached locally)
+python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst
+```
+
+**Why no pip install required?**
+- **Custom openpilot compatibility**: Works with your modified openpilot fork automatically
+- **Local dependencies**: Downloads packages to `comma-depends/` directory, not system-wide
+- **Zero conflicts**: No interference with existing Python environments
+
+## Installation (Alternative)
 
 ```bash
 # Clone the repository
@@ -44,50 +73,73 @@ pip install -e ".[dev]"
 
 ### Cruise Control Analyzer
 
+**From source (recommended):**
 ```bash
-# Analyze a log file (first run - installs dependencies)
-cruise-control-analyzer /path/to/logfile.zst --install-missing-deps
+export PYTHONPATH=src
+
+# First run - installs dependencies locally
+python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst --install-missing-deps
 
 # Subsequent runs
-cruise-control-analyzer /path/to/logfile.zst
+python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst
 
 # With custom speed range
-cruise-control-analyzer /path/to/logfile.zst --speed-min 50 --speed-max 60
+python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst --speed-min 50 --speed-max 60
+```
+
+**Or if installed via pip:**
+```bash
+cruise-control-analyzer /path/to/logfile.zst --install-missing-deps
 ```
 
 ### CAN Analysis Tools
 
 ```bash
+export PYTHONPATH=src
+
 # Convert rlog to CSV for analysis
-rlog-to-csv --rlog /path/to/logfile.zst --out output.csv --window-start 100.0 --window-dur 30.0
+python3 -m comma_tools.analyzers.rlog_to_csv --rlog /path/to/logfile.zst --out output.csv --window-start 100.0 --window-dur 30.0
 
 # Analyze CAN bit patterns
-can-bitwatch --csv output.csv --output-prefix analysis/results --watch 0x027:B4b5 0x321:B5b1
+python3 -m comma_tools.analyzers.can_bitwatch --csv output.csv --output-prefix analysis/results --watch 0x027:B4b5 0x321:B5b1
 ```
 
 ### Real-time Monitoring
 
 ```bash
-# Monitor Panda safety states
-python -m comma_tools.monitors.hybrid_rx_trace
+export PYTHONPATH=src
 
-# Check CAN bus activity
-python -m comma_tools.monitors.can_bus_check
+# Monitor Panda safety states (requires Panda device)
+python3 -m comma_tools.monitors.hybrid_rx_trace
+
+# Check CAN bus activity (requires Panda device)
+python3 -m comma_tools.monitors.can_bus_check
 ```
 
 ### Download logs from Connect
 
-The `comma-connect-dl` tool downloads log files directly from connect.comma.ai with resume capability and idempotent behavior.
+The connect downloader downloads log files directly from connect.comma.ai with resume capability and idempotent behavior.
 
+**From source (recommended):**
 ```bash
+export PYTHONPATH=src
+
 # Download logs using a connect URL
-comma-connect-dl --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --cameras
+python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --cameras
 
 # Download using canonical route name
-comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
+python3 -m comma_tools.sources.connect.cli --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
 
 # Download all file types with custom settings
-comma-connect-dl --url https://connect.comma.ai/... --logs --qlogs --cameras --parallel 8 --verbose
+python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/... --logs --qlogs --cameras --parallel 8 --verbose
+
+# Dry run to see what would be downloaded
+python3 -m comma_tools.sources.connect.cli --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dry-run
+```
+
+**Or if installed via pip:**
+```bash
+comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
 ```
 
 **Authentication:** Requires JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
@@ -95,6 +147,38 @@ comma-connect-dl --url https://connect.comma.ai/... --logs --qlogs --cameras --p
 **File Layout:** Downloads are organized as `<dest>/<dongle_id>/<YYYY-MM-DD--HH-MM-SS>/<segment>/<filename>` for compatibility with existing analyzers.
 
 **Note:** Log retention is 3 days (1 year with comma prime). Connect URLs are resolved by searching device segments within a configurable time window (default 7 days).
+
+## Dependency Management
+
+comma-tools uses a sophisticated **pip-free dependency system** designed for compatibility with custom openpilot forks:
+
+### How it works:
+- **Automatic openpilot discovery**: Finds your openpilot fork automatically (expects `openpilot/` directory alongside `comma-tools/`)
+- **Local dependency installation**: `--install-missing-deps` downloads packages to `comma-depends/` directory only
+- **Dynamic path management**: Adds dependencies to Python path at runtime without system-wide installation
+- **Zero pip conflicts**: Works in any Python environment without affecting system packages
+
+### Troubleshooting:
+```bash
+# If openpilot isn't found automatically
+python3 -m comma_tools.analyzers.cruise_control_analyzer logfile.zst --repo-root /path/to/parent-directory
+
+# Force dependency reinstall
+rm -rf comma-depends/
+python3 -m comma_tools.analyzers.cruise_control_analyzer logfile.zst --install-missing-deps
+
+# Check what dependencies would be installed
+python3 -m comma_tools.analyzers.cruise_control_analyzer --help
+```
+
+### Expected directory structure:
+```
+parent-directory/
+├── openpilot/          # Your custom openpilot fork
+└── comma-tools/        # This repository
+    ├── comma-depends/  # Auto-created for local packages
+    └── src/            # Source code
+```
 
 ## Development
 
