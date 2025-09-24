@@ -150,6 +150,28 @@ Notes:
 - Ensure Git LFS is installed locally to fetch the fixture (`git lfs install`).
 - To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
 
+For more detailed information, see the [full documentation](https://anteew.github.io/comma-tools/).
+
+## Release Notes
+
+### v0.8.0 - Exports/Reporting v1
+
+Major release adding comprehensive CSV/JSON export functionality and HTML report generation. See [CHANGELOG.md](CHANGELOG.md) for complete details.
+
+**New Export Features:**
+- Professional CSV exports with versioned schemas
+- JSON exports with parallel data structure  
+- HTML analysis reports with embedded styling
+- Metadata headers with analysis reproducibility
+- Engaged interval processing and filtering
+
+**Usage:**
+```bash
+cruise-control-analyzer logfile.zst --export-csv --export-json --output-dir results/
+```
+
+See [examples/sample_reports/](examples/sample_reports/) for example outputs.
+
 ## License
 
 MIT License - see LICENSE file for details.

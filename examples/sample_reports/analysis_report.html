@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cruise Control Analysis Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+        .header {{ background: #f4f4f4; padding: 20px; border-radius: 5px; margin-bottom: 30px; }}
+        .section {{ margin-bottom: 30px; }}
+        .section h2 {{ color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }}
+        .section h3 {{ color: #555; }}
+        .key-findings {{ background: #e8f5e8; padding: 15px; border-radius: 5px; }}
+        .recommendations {{ background: #fff3cd; padding: 15px; border-radius: 5px; }}
+        .data-table {{ width: 100%; border-collapse: collapse; margin: 15px 0; }}
+        .data-table th, .data-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+        .data-table th {{ background-color: #f2f2f2; }}
+        .file-links {{ background: #f8f9fa; padding: 15px; border-radius: 5px; }}
+        .file-links a {{ display: inline-block; margin: 5px 10px 5px 0; padding: 8px 12px; background: #007bff; color: white; text-decoration: none; border-radius: 3px; }}
+        .file-links a:hover {{ background: #0056b3; }}
+        .config-snapshot {{ background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; }}
+        .warning {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }}
+        .warning h3 {{ color: #856404; margin-top: 0; }}
+        .warning ul {{ margin-bottom: 0; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Subaru Cruise Control Analysis Report</h1>
+        <p><strong>Log File:</strong> {self.log_file}</p>
+        <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <p><strong>Total Speed Data Points:</strong> {len(self.speed_data)}</p>
+        <p><strong>Target CAN Addresses Monitored:</strong> {len([addr for addr in self.target_addresses if addr in self.can_data])}</p>
+    </div>
+
+    {"".join([f'''
+    <div class="warning">
+        <h3>⚠️ Analysis Warnings</h3>
+        <ul>
+            {"".join([f"<li>{warning}</li>" for warning in empty_warnings])}
+        </ul>
+        <p><strong>Note:</strong> Empty CSV exports will still contain proper headers for schema compliance.</p>
+    </div>
+    ''' if empty_warnings else ""])}
+
+    <div class="section">
+        <h2>Key Hypotheses</h2>
+        <div class="key-findings">
+
+            <h3>⚠ No Clear Set Button Presses Detected</h3>
+            <p>No clear 'Set' button presses were detected in the expected CAN address.</p>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Timeline Analysis</h2>
+
+        <p>Detected 2 marker windows using blinkers pattern.</p>
+        <table class="data-table">
+            <tr><th>Window</th><th>Start Time</th><th>End Time</th><th>Duration</th><th>Status</th></tr>
+
+            <tr>
+                <td>Marker 1</td>
+                <td>58919.68s</td>
+                <td>58919.88s</td>
+                <td>0.20s</td>
+                <td>Complete</td>
+            </tr>
+
+            <tr>
+                <td>Marker 2</td>
+                <td>58944.05s</td>
+                <td>58944.10s</td>
+                <td>0.05s</td>
+                <td>Complete</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="section">
+        <h2>Scorecards & Metrics</h2>
+
+        <h3>CAN Address Activity</h3>
+        <table class="data-table">
+            <tr><th>Address</th><th>Name</th><th>Total Changes</th><th>Messages</th><th>Top Bits</th></tr>
+
+            <tr>
+                <td>0x146</td>
+                <td>Cruise_Buttons</td>
+                <td>2960</td>
+                <td>5921</td>
+                <td>[(8, 2959), (0, 2593), (1, 1535)]</td>
+            </tr>
+
+            <tr>
+                <td>0x13A</td>
+                <td>Wheel_Speeds</td>
+                <td>2947</td>
+                <td>5895</td>
+                <td>[(8, 2946), (0, 1954), (1, 1494)]</td>
+            </tr>
+
+            <tr>
+                <td>0x139</td>
+                <td>Brake_Pedal</td>
+                <td>2947</td>
+                <td>5895</td>
+                <td>[(8, 2946), (0, 1835), (1, 1668)]</td>
+            </tr>
+
+            <tr>
+                <td>0x241</td>
+                <td>Cruise_Status</td>
+                <td>1183</td>
+                <td>2368</td>
+                <td>[(8, 1182), (0, 628), (1, 606)]</td>
+            </tr>
+
+            <tr>
+                <td>0x220</td>
+                <td>ES_Brake</td>
+                <td>1180</td>
+                <td>2362</td>
+                <td>[(0, 1180), (8, 1180), (1, 590)]</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="section">
+        <h2>Recommendations</h2>
+        <div class="recommendations">
+
+            <h3>Investigation Required</h3>
+            <p>Further analysis needed to identify cruise control activation signals. Consider:</p>
+            <ul>
+                <li>Examining additional CAN addresses</li>
+                <li>Analyzing different bit patterns</li>
+                <li>Correlating with vehicle-specific documentation</li>
+            </ul>
+
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Data Files</h2>
+        <div class="file-links">
+            <h3>Generated Data Files:</h3>
+<a href="counts_by_segment.csv">counts_by_segment.csv</a><a href="candidates.csv">candidates.csv</a><a href="edges.csv">edges.csv</a><a href="runs.csv">runs.csv</a><a href="timeline.csv">timeline.csv</a><a href="engaged_intervals.csv">engaged_intervals.csv</a><a href="config_snapshot.json">config_snapshot.json</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Configuration Snapshot</h2>
+        <div class="config-snapshot">
+<pre>{
+  "timestamp": "2025-09-24T13:49:13.801266",
+  "cli_args": {
+    "log_file": "tests/data/known_good.rlog.zst",
+    "speed_min": 55.0,
+    "speed_max": 56.0,
+    "repo_root": null,
+    "deps_dir": null,
+    "install_missing_deps": true,
+    "marker_type": "blinkers",
+    "marker_pre": 1.5,
+    "marker_post": 1.5,
+    "marker_timeout": 15.0,
+    "export_csv": true,
+    "export_json": true,
+    "output_dir": "test_export_output",
+    "engaged_bit": null,
+    "engaged_bus": null,
+    "engaged_mode": "annotate",
+    "engaged_margin": 0.5
+  },
+  "input_metadata": {
+    "file_path": "tests/data/known_good.rlog.zst",
+    "file_size": 8577255,
+    "file_extension": ".zst"
+  },
+  "gate_sources": {
+    "main_source": "0x241:B4b5 (MSB)",
+    "brake_source": "carState.brakePressed",
+    "speed_source": "carState.vEgo"
+  },
+  "bus_selection_policy": "auto=max-frames",
+  "analyzer_version": "0.1.0",
+  "marker_config": {
+    "marker_type": "blinkers",
+    "pre_time": 1.5,
+    "post_time": 1.5,
+    "timeout": 15.0,
+    "enabled": true
+  }
+}</pre>
+        </div>
+    </div>
+
+</body>
+</html>

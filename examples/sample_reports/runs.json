@@ -1,0 +1,38 @@
+[
+  {
+    "address_hex": "0x027",
+    "bit_global": 43,
+    "byte_index": 5,
+    "bit_lsb": 3,
+    "bit_msb": 4,
+    "label_lsb": "Byte5 bit3 (LSB)",
+    "label_msb": "MSB B5b4",
+    "start_abs": 58919.678,
+    "start_rel": 58919.678,
+    "start_mmss": "981:59.678",
+    "end_abs": 58919.877,
+    "end_rel": 58919.877,
+    "end_mmss": "981:59.877",
+    "duration_s": 0.2,
+    "duration_mmss": "00:00.200",
+    "bus": 0
+  },
+  {
+    "address_hex": "0x027",
+    "bit_global": 43,
+    "byte_index": 5,
+    "bit_lsb": 3,
+    "bit_msb": 4,
+    "label_lsb": "Byte5 bit3 (LSB)",
+    "label_msb": "MSB B5b4",
+    "start_abs": 58944.047,
+    "start_rel": 58944.047,
+    "start_mmss": "982:24.047",
+    "end_abs": 58944.097,
+    "end_rel": 58944.097,
+    "end_mmss": "982:24.097",
+    "duration_s": 0.05,
+    "duration_mmss": "00:00.050",
+    "bus": 0
+  }
+]

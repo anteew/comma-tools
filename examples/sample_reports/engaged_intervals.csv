@@ -1,0 +1,15 @@
+# schema_version: engaged_intervals.v1
+# analysis_id: e693e4df-9989-4140-9b54-5bc85db1edde
+# tool_version: unknown
+# time_origin: window_start
+# window_start_abs_s: 0.0
+# window_end_abs_s: 0.0
+# window_start_mmss: 00:00.000
+# window_end_mmss: 00:00.000
+# main_source: 0x241:B4b5 (MSB)
+# brake_source: carState.brakePressed
+# speed_source: carState.vEgo
+# bus_policy: auto=max-frames
+# scoring: {"chatter_penalty_start":40,"chatter_penalty_slope":0.1}
+# meta_json: {"timestamp":"2025-09-24T13:49:13.801266","cli_args":{"log_file":"tests/data/known_good.rlog.zst","speed_min":55.0,"speed_max":56.0,"repo_root":null,"deps_dir":null,"install_missing_deps":true,"marker_type":"blinkers","marker_pre":1.5,"marker_post":1.5,"marker_timeout":15.0,"export_csv":true,"export_json":true,"output_dir":"test_export_output","engaged_bit":null,"engaged_bus":null,"engaged_mode":"annotate","engaged_margin":0.5},"input_metadata":{"file_path":"tests/data/known_good.rlog.zst","file_size":8577255,"file_extension":".zst"},"gate_sources":{"main_source":"0x241:B4b5 (MSB)","brake_source":"carState.brakePressed","speed_source":"carState.vEgo"},"bus_selection_policy":"auto=max-frames","analyzer_version":"0.1.0","marker_config":{"marker_type":"blinkers","pre_time":1.5,"post_time":1.5,"timeout":15.0,"enabled":true},"tool_version":"unknown","schema_version":"engaged_intervals.v1","time_origin":"window_start","window_start_abs_s":0.0,"window_end_abs_s":0.0,"window_start_mmss":"00:00.000","window_end_mmss":"00:00.000","main_source":"0x241:B4b5 (MSB)","brake_source":"carState.brakePressed","speed_source":"carState.vEgo","bus_policy":"auto=max-frames","engaged_mode":"annotate","engaged_bit":null,"engaged_bus":null,"engaged_margin_s":0.5,"engaged_intervals_count":0,"scoring":{"chatter_penalty_start":40,"chatter_penalty_slope":0.1},"analysis_id":"e693e4df-9989-4140-9b54-5bc85db1edde"}
+address_hex,bit_global,byte_index,bit_lsb,bit_msb,label_lsb,label_msb,start_abs,start_rel,start_mmss,end_abs,end_rel,end_mmss,duration_s,duration_mmss,bus
