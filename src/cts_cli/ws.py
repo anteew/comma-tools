@@ -5,9 +5,10 @@ Provides WebSocket client for streaming monitor data from
 CTS-Lite API with connection management and cleanup.
 """
 
-import json
 import asyncio
-from typing import Iterator, Dict, Any, Optional, Union, AsyncIterator
+import json
+from typing import Any, AsyncIterator, Dict, Iterator, Optional, Union
+
 import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
@@ -50,7 +51,6 @@ class WebSocketStream:
             async with websockets.connect(
                 self.ws_url, extra_headers=headers, ping_interval=30, ping_timeout=10
             ) as websocket:
-
                 async for message in websocket:
                     if raw:
                         yield str(message)

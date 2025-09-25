@@ -7,11 +7,12 @@ run artifacts with path safety and overwrite protection.
 
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 import typer
 
 from ..http import HTTPClient
-from ..render import Renderer, safe_path_join, format_bytes
+from ..render import Renderer, format_bytes, safe_path_join
 
 
 def list_artifacts_command(

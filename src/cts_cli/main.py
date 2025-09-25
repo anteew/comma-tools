@@ -5,28 +5,27 @@ Provides the main Typer application with global flags and
 command routing for all CTS CLI functionality.
 """
 
-from typing import Dict, Any, List, Optional
 import sys
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import typer
 from typing_extensions import Annotated
 
+from .commands.artifacts import get_artifact_command, list_artifacts_command
+from .commands.cap import capabilities_command, ping_command
+from .commands.logs import logs_command
+from .commands.monitors import (
+    list_monitors_command,
+    start_monitor_command,
+    stop_monitor_command,
+    stream_monitor_command,
+)
+from .commands.run import run_command
+from .commands.uploads import upload_command
 from .config import Config
 from .http import HTTPClient
 from .render import Renderer
-from .commands.cap import ping_command, capabilities_command
-from .commands.run import run_command
-from .commands.logs import logs_command
-from .commands.artifacts import list_artifacts_command, get_artifact_command
-from .commands.monitors import (
-    start_monitor_command,
-    stream_monitor_command,
-    stop_monitor_command,
-    list_monitors_command,
-)
-from .commands.uploads import upload_command
-
 
 app = typer.Typer(
     name="cts",

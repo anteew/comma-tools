@@ -1,6 +1,7 @@
 """Unit tests for CAN decoder library."""
 
 import pytest
+
 from comma_tools.can import SubaruCANDecoder
 
 

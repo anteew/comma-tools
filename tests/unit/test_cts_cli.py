@@ -5,15 +5,16 @@ Tests URL/auth header wiring, parameter casting, path safety,
 and exit code mapping without requiring a running server.
 """
 
-import pytest
+import json
 from pathlib import Path
 from unittest.mock import Mock, patch
-import json
 
+import pytest
+
+from cts_cli.commands.run import parse_parameters
 from cts_cli.config import Config
 from cts_cli.http import HTTPClient
 from cts_cli.render import Renderer, safe_path_join
-from cts_cli.commands.run import parse_parameters
 
 
 class TestConfig:

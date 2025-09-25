@@ -2,8 +2,9 @@
 Unit tests for comma connect route resolver.
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 from comma_tools.sources.connect.resolver import RouteResolver
 

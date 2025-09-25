@@ -152,8 +152,8 @@ def load_external_modules():
     ensure_cloudlog_stub()
 
     try:
-        import numpy as np
         import matplotlib.pyplot as plt
+        import numpy as np
         from tools.lib.logreader import LogReader
 
         return {

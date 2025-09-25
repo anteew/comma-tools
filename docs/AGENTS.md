@@ -46,11 +46,17 @@
 - **Code Review**: PRs are automatically reviewed for adherence to these standards
 
 ### Pre-Commit Checklist
-1. **Run Local Tests**: Verify all functionality works as expected
-2. **Check Documentation**: Ensure Sphinx can build docs without errors (`sphinx-build -b html docs/ docs/_build/html`)
-3. **Verify Type Hints**: All new functions have complete type annotations
-4. **Update Dependencies**: If adding packages, update `pyproject.toml` and bootstrap requirements
-5. **Test Real Scenarios**: Use actual log files when possible for validation
+1. **Install Pre-commit Hooks**: `pip install pre-commit && pre-commit install` (one-time setup)
+2. **Run Pre-commit Checks**: `pre-commit run --all-files` (catches type/format errors locally)
+3. **Manual Verification**: 
+   - `mypy src/ --ignore-missing-imports` (type checking)
+   - `black --check src/ tests/` (code formatting)
+   - `flake8 src/ tests/ --count --select=E9,F63,F7,F82` (critical lint errors)
+4. **Run Local Tests**: Verify all functionality works as expected
+5. **Check Documentation**: Ensure Sphinx can build docs without errors (`sphinx-build -b html docs/ docs/_build/html`)
+6. **Verify Type Hints**: All new functions have complete type annotations
+7. **Update Dependencies**: If adding packages, update `pyproject.toml` and bootstrap requirements
+8. **Test Real Scenarios**: Use actual log files when possible for validation
 
 ### Documentation Deployment
 - **Automatic Deployment**: Docs auto-deploy to https://anteew.github.io/comma-tools/ on main branch merges
@@ -105,15 +111,50 @@ git clone https://github.com/anteew/comma-tools.git
 cd comma-tools
 pip install -e ".[dev,docs]"
 
+# Install pre-commit hooks (REQUIRED for development)
+pip install pre-commit
+pre-commit install
+
 # Test documentation build
 cd docs && sphinx-build -b html . _build/html
+
+# Verify pre-commit setup
+pre-commit run --all-files
+```
+
+### Pre-commit Workflow (MANDATORY)
+The repository uses pre-commit hooks to catch mypy type errors, formatting issues, and security problems before they reach CI:
+
+**Automatic Checks on Every Commit:**
+- **mypy**: Type checking with `--ignore-missing-imports`
+- **black**: Code formatting (line length 100)
+- **flake8**: Critical syntax/undefined name errors
+- **isort**: Import sorting
+- **bandit**: Security vulnerability scanning
+- **General**: Trailing whitespace, file endings, YAML/TOML validation
+
+**Emergency Bypass (Use Sparingly):**
+```bash
+git commit --no-verify -m "emergency fix"  # Skips pre-commit hooks
+```
+
+**Local Verification Commands:**
+```bash
+# Run all pre-commit checks manually
+pre-commit run --all-files
+
+# Individual tool verification (matches CI exactly)
+mypy src/ --ignore-missing-imports
+black --check src/ tests/
+flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 ```
 
 ### Development Tools
+- **Pre-commit Hooks**: Automated local checks for mypy, black, flake8, and security (prevents CI failures)
 - **Sphinx Documentation**: Professional HTML docs with Furo theme
 - **GitHub Actions**: Automated testing and deployment
-- **Type Checking**: MyPy integration for type safety
-- **Code Quality**: Automated linting and formatting checks
+- **Type Checking**: MyPy integration for type safety with strict Optional handling
+- **Code Quality**: Automated linting and formatting checks (black, flake8, isort, bandit)
 
 ## 📋 RECENT ENHANCEMENTS
 - **Professional Documentation**: Added Sphinx with GitHub Pages deployment and beautiful Furo theme

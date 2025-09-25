@@ -5,11 +5,11 @@ Integration tests for comma connect CLI.
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
-from comma_tools.sources.connect.cli import main, create_parser
+from comma_tools.sources.connect.cli import create_parser, main
 
 
 class TestConnectCLI:

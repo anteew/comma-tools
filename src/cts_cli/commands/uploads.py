@@ -8,6 +8,7 @@ SHA256 computation and progress reporting.
 import hashlib
 from pathlib import Path
 from typing import Optional
+
 import typer
 
 from ..http import HTTPClient

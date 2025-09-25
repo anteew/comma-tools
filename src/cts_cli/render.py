@@ -7,15 +7,14 @@ JSON/NDJSON output for both human and machine consumption.
 
 import json
 import sys
-from typing import Dict, Any, List, Optional, Union
-
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 try:
     from rich.console import Console
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn, TaskID
     from rich.json import JSON
+    from rich.progress import Progress, SpinnerColumn, TaskID, TextColumn
+    from rich.table import Table
 
     RICH_AVAILABLE = True
 except ImportError:

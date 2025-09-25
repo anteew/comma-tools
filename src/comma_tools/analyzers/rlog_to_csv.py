@@ -17,11 +17,12 @@ Examples:
 
 """
 from __future__ import annotations
+
 import argparse
-import sys
 import csv
-from typing import Optional
+import sys
 from pathlib import Path
+from typing import Optional
 
 from ..utils import add_openpilot_to_path
 

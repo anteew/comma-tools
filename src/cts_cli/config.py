@@ -7,7 +7,7 @@ and command-line arguments with proper defaults and validation.
 
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 try:
     import tomllib

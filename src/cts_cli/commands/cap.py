@@ -5,7 +5,8 @@ Implements 'cts ping' and 'cts cap' commands for API health
 and capabilities discovery.
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 import typer
 
 from ..http import HTTPClient

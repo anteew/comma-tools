@@ -1,7 +1,8 @@
 """Tests for enhanced CAN decoder functionality."""
 
 import pytest
-from comma_tools.can import SubaruCANDecoder, CANDecodingError
+
+from comma_tools.can import CANDecodingError, SubaruCANDecoder
 
 
 class TestCANDecoderEnhancements:

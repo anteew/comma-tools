@@ -6,6 +6,7 @@ optional follow mode and formatting.
 """
 
 from typing import Optional
+
 import typer
 
 from ..http import HTTPClient

@@ -5,10 +5,11 @@ Provides authenticated HTTP requests with rate limiting, retries,
 and streaming support for SSE and WebSocket connections.
 """
 
-import time
 import json
-from typing import Dict, Any, Optional, Iterator, Union
+import time
+from typing import Any, Dict, Iterator, Optional, Union
 from urllib.parse import urljoin
+
 import httpx
 
 from .config import Config

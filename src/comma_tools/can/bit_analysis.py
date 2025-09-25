@@ -7,9 +7,10 @@ Provides both low-level bit manipulation and high-level statistical analysis.
 """
 
 from __future__ import annotations
-from typing import Dict, List, Optional, Union, Tuple
-from dataclasses import dataclass
+
 from collections import Counter, defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Union
 
 
 @dataclass

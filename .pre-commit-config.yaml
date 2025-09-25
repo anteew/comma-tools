@@ -1,0 +1,55 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=100]
+        files: ^(src/|tests/).*\.py$
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=100]
+        files: ^(src/|tests/).*\.py$
+
+  # - repo: https://github.com/pycqa/flake8
+  #   rev: 7.0.0
+  #   hooks:
+  #     - id: flake8
+  #       args: [--max-line-length=100, --select=E9,F63,F7,F82, --show-source, --statistics]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        args: [--ignore-missing-imports, --no-strict-optional]
+        files: ^src/.*\.py$
+        additional_dependencies:
+          - types-requests
+          - httpx
+          - typer
+          - rich
+          - websockets
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^(src/|tests/).*\.(py|md|yml|yaml)$
+      - id: end-of-file-fixer
+        files: ^(src/|tests/).*\.(py|md|yml|yaml)$
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: debug-statements
+        files: ^(src/|tests/).*\.py$
+
+  # - repo: https://github.com/PyCQA/bandit
+  #   rev: 1.7.5
+  #   hooks:
+  #     - id: bandit
+  #       args: [-r, -f, json]
+  #       files: ^src/.*\.py$
+  #       exclude: ^tests/

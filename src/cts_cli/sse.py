@@ -7,7 +7,8 @@ streaming logs from CTS-Lite API endpoints.
 
 import json
 import time
-from typing import Iterator, Dict, Any, Optional
+from typing import Any, Dict, Iterator, Optional
+
 import httpx
 
 from .http import HTTPClient

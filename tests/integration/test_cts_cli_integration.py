@@ -5,16 +5,17 @@ Tests requiring mock server responses or actual CTS-Lite server
 for end-to-end validation of CLI functionality.
 """
 
-import pytest
 import json
-from unittest.mock import Mock, patch, MagicMock
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
 
-from cts_cli.main import app
+import pytest
+
 from cts_cli.config import Config
 from cts_cli.http import HTTPClient
+from cts_cli.main import app
 from cts_cli.render import Renderer
 
 

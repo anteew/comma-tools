@@ -5,13 +5,14 @@ Implements 'cts mon' commands for starting, streaming, stopping,
 and listing monitors with WebSocket support.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 import typer
 
+from ..commands.run import parse_parameters
 from ..http import HTTPClient
 from ..render import Renderer
 from ..ws import stream_monitor
-from ..commands.run import parse_parameters
 
 
 def start_monitor_command(
