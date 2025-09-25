@@ -7,7 +7,7 @@ run artifacts with path safety and overwrite protection.
 
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Any, Optional
 import typer
 
 from ..http import HTTPClient
@@ -15,9 +15,12 @@ from ..render import Renderer, safe_path_join, format_bytes
 
 
 def list_artifacts_command(
-    run_id: str, http_client: HTTPClient = None, renderer: Renderer = None
+    run_id: str, http_client: Optional[HTTPClient] = None, renderer: Optional[Renderer] = None
 ) -> int:
     """List artifacts for a run."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         artifacts = http_client.get_json(f"/v1/runs/{run_id}/artifacts")
 
@@ -30,13 +33,14 @@ def list_artifacts_command(
 
             artifact_data = []
             for artifact in artifacts:
+                artifact_dict: Dict[str, Any] = artifact if isinstance(artifact, dict) else {}
                 artifact_data.append(
                     {
-                        "ID": artifact.get("id", ""),
-                        "Filename": artifact.get("filename", ""),
-                        "Size": format_bytes(artifact.get("size", 0)),
-                        "Type": artifact.get("type", ""),
-                        "Created": artifact.get("created_at", ""),
+                        "ID": artifact_dict.get("id", ""),
+                        "Filename": artifact_dict.get("filename", ""),
+                        "Size": format_bytes(artifact_dict.get("size", 0)),
+                        "Type": artifact_dict.get("type", ""),
+                        "Created": artifact_dict.get("created_at", ""),
                     }
                 )
 
@@ -54,10 +58,13 @@ def get_artifact_command(
     download: Optional[str] = None,
     stdout: bool = False,
     force: bool = False,
-    http_client: HTTPClient = None,
-    renderer: Renderer = None,
+    http_client: Optional[HTTPClient] = None,
+    renderer: Optional[Renderer] = None,
 ) -> int:
     """Get artifact content or download to file."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         artifact_info = http_client.get_json(f"/v1/artifacts/{artifact_id}")
         download_url = artifact_info["download_url"]

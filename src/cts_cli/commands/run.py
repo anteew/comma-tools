@@ -18,7 +18,7 @@ from ..sse import stream_logs
 
 def parse_parameters(params: List[str]) -> Dict[str, Any]:
     """Parse -p name=value parameters with type inference."""
-    result = {}
+    result: Dict[str, Any] = {}
 
     for param in params:
         if "=" not in param:
@@ -89,9 +89,10 @@ def download_artifacts(
         html_files = []
 
         for artifact in artifacts:
-            artifact_id = artifact["id"]
-            filename = artifact["filename"]
-            download_url = artifact["download_url"]
+            artifact_dict: Dict[str, Any] = artifact if isinstance(artifact, dict) else {}
+            artifact_id = artifact_dict.get("id", "")
+            filename = artifact_dict.get("filename", "")
+            download_url = artifact_dict.get("download_url", "")
 
             output_path = out_dir / filename
 
@@ -124,10 +125,13 @@ def run_command(
     out_dir: Optional[str] = None,
     open_html: bool = False,
     name: Optional[str] = None,
-    http_client: HTTPClient = None,
-    renderer: Renderer = None,
+    http_client: Optional[HTTPClient] = None,
+    renderer: Optional[Renderer] = None,
 ) -> int:
     """Run a tool with specified parameters."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         parsed_params = parse_parameters(params)
 

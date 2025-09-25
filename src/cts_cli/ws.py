@@ -53,10 +53,10 @@ class WebSocketStream:
 
                 async for message in websocket:
                     if raw:
-                        yield message
+                        yield str(message)
                     else:
                         try:
-                            data = json.loads(message)
+                            data = json.loads(str(message))
                             yield data
                         except json.JSONDecodeError:
                             continue

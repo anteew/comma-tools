@@ -14,9 +14,15 @@ from ..sse import stream_logs
 
 
 def logs_command(
-    run_id: str, follow: bool = False, http_client: HTTPClient = None, renderer: Renderer = None
+    run_id: str,
+    follow: bool = False,
+    http_client: Optional[HTTPClient] = None,
+    renderer: Optional[Renderer] = None,
 ) -> int:
     """Stream logs for a run."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         if not follow:
             renderer.print(f"Getting logs for run: {run_id}")

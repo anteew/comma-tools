@@ -7,6 +7,7 @@ SHA256 computation and progress reporting.
 
 import hashlib
 from pathlib import Path
+from typing import Optional
 import typer
 
 from ..http import HTTPClient
@@ -14,9 +15,12 @@ from ..render import Renderer, format_bytes
 
 
 def upload_command(
-    file_path: str, http_client: HTTPClient = None, renderer: Renderer = None
+    file_path: str, http_client: Optional[HTTPClient] = None, renderer: Optional[Renderer] = None
 ) -> int:
     """Upload a file and return upload ID."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         file_path_obj = Path(file_path)
 

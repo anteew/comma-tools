@@ -5,7 +5,7 @@ Provides the main Typer application with global flags and
 command routing for all CTS CLI functionality.
 """
 
-from typing import List, Optional
+from typing import Dict, Any, List, Optional
 import sys
 from pathlib import Path
 
@@ -183,13 +183,14 @@ def runs_list(
 
             run_data = []
             for run in runs:
+                run_dict: Dict[str, Any] = run if isinstance(run, dict) else {}
                 run_data.append(
                     {
-                        "ID": run.get("id", ""),
-                        "Tool": run.get("tool_id", ""),
-                        "Status": run.get("status", ""),
-                        "Started": run.get("started_at", ""),
-                        "Duration": run.get("duration", ""),
+                        "ID": run_dict.get("id", ""),
+                        "Tool": run_dict.get("tool_id", ""),
+                        "Status": run_dict.get("status", ""),
+                        "Started": run_dict.get("started_at", ""),
+                        "Duration": run_dict.get("duration", ""),
                     }
                 )
 

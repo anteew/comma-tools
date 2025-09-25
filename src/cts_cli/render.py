@@ -8,12 +8,13 @@ JSON/NDJSON output for both human and machine consumption.
 import json
 import sys
 from typing import Dict, Any, List, Optional, Union
+
 from pathlib import Path
 
 try:
     from rich.console import Console
     from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.progress import Progress, SpinnerColumn, TextColumn, TaskID
     from rich.json import JSON
 
     RICH_AVAILABLE = True
@@ -29,7 +30,11 @@ class Renderer:
         self.json_output = json_output
         self.quiet = quiet
 
+        self.console: Optional[object] = None
+
         if RICH_AVAILABLE and not json_output:
+            from rich.console import Console
+
             self.console = Console()
         else:
             self.console = None
@@ -40,7 +45,7 @@ class Renderer:
             return
 
         if self.console:
-            self.console.print(message, **kwargs)
+            self.console.print(message, **kwargs)  # type: ignore
         else:
             print(message)
 
@@ -49,7 +54,9 @@ class Renderer:
         if self.json_output:
             print(json.dumps(data, indent=2))
         elif self.console:
-            self.console.print(JSON.from_data(data))
+            from rich.json import JSON
+
+            self.console.print(JSON.from_data(data))  # type: ignore
         else:
             print(json.dumps(data, indent=2))
 
@@ -64,6 +71,8 @@ class Renderer:
             return
 
         if self.console:
+            from rich.table import Table
+
             table = Table(title=title)
 
             for key in data[0].keys():
@@ -72,7 +81,7 @@ class Renderer:
             for row in data:
                 table.add_row(*[str(v) for v in row.values()])
 
-            self.console.print(table)
+            self.console.print(table)  # type: ignore
         else:
             if title:
                 print(f"\n{title}")
@@ -89,31 +98,33 @@ class Renderer:
     def print_error(self, message: str) -> None:
         """Print error message."""
         if self.console:
-            self.console.print(f"Error: {message}", style="red")
+            self.console.print(f"Error: {message}", style="red")  # type: ignore
         else:
             print(f"Error: {message}", file=sys.stderr)
 
     def print_success(self, message: str) -> None:
         """Print success message."""
         if self.console:
-            self.console.print(message, style="green")
+            self.console.print(message, style="green")  # type: ignore
         else:
             print(message)
 
     def print_warning(self, message: str) -> None:
         """Print warning message."""
         if self.console:
-            self.console.print(f"Warning: {message}", style="yellow")
+            self.console.print(f"Warning: {message}", style="yellow")  # type: ignore
         else:
             print(f"Warning: {message}")
 
     def progress_context(self, description: str = "Processing..."):
         """Create progress context manager."""
         if self.console and not self.json_output:
+            from rich.progress import Progress, SpinnerColumn, TextColumn
+
             return Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
-                console=self.console,
+                console=self.console,  # type: ignore
             )
         else:
             return _NoOpProgress(description)

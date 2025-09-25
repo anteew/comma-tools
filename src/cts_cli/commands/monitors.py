@@ -5,7 +5,7 @@ Implements 'cts mon' commands for starting, streaming, stopping,
 and listing monitors with WebSocket support.
 """
 
-from typing import List, Optional
+from typing import Dict, Any, List, Optional
 import typer
 
 from ..http import HTTPClient
@@ -15,9 +15,15 @@ from ..commands.run import parse_parameters
 
 
 def start_monitor_command(
-    tool_id: str, params: List[str], http_client: HTTPClient = None, renderer: Renderer = None
+    tool_id: str,
+    params: List[str],
+    http_client: Optional[HTTPClient] = None,
+    renderer: Optional[Renderer] = None,
 ) -> int:
     """Start a monitor."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         parsed_params = parse_parameters(params)
 
@@ -42,10 +48,13 @@ def stream_monitor_command(
     monitor_id: str,
     raw: bool = False,
     ndjson: bool = False,
-    http_client: HTTPClient = None,
-    renderer: Renderer = None,
+    http_client: Optional[HTTPClient] = None,
+    renderer: Optional[Renderer] = None,
 ) -> int:
     """Stream data from a monitor."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         renderer.print(f"Streaming monitor: {monitor_id}")
 
@@ -67,9 +76,12 @@ def stream_monitor_command(
 
 
 def stop_monitor_command(
-    monitor_id: str, http_client: HTTPClient = None, renderer: Renderer = None
+    monitor_id: str, http_client: Optional[HTTPClient] = None, renderer: Optional[Renderer] = None
 ) -> int:
     """Stop a monitor."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         response = http_client.delete(f"/v1/monitors/{monitor_id}")
         response.raise_for_status()
@@ -86,8 +98,13 @@ def stop_monitor_command(
         return 2
 
 
-def list_monitors_command(http_client: HTTPClient = None, renderer: Renderer = None) -> int:
+def list_monitors_command(
+    http_client: Optional[HTTPClient] = None, renderer: Optional[Renderer] = None
+) -> int:
     """List active monitors."""
+    if http_client is None or renderer is None:
+        raise ValueError("http_client and renderer are required")
+
     try:
         monitors = http_client.get_json("/v1/monitors")
 
@@ -100,13 +117,14 @@ def list_monitors_command(http_client: HTTPClient = None, renderer: Renderer = N
 
             monitor_data = []
             for monitor in monitors:
+                monitor_dict: Dict[str, Any] = monitor if isinstance(monitor, dict) else {}
                 monitor_data.append(
                     {
-                        "ID": monitor.get("id", ""),
-                        "Tool": monitor.get("tool_id", ""),
-                        "Status": monitor.get("status", ""),
-                        "Started": monitor.get("started_at", ""),
-                        "Uptime": monitor.get("uptime", ""),
+                        "ID": monitor_dict.get("id", ""),
+                        "Tool": monitor_dict.get("tool_id", ""),
+                        "Status": monitor_dict.get("status", ""),
+                        "Started": monitor_dict.get("started_at", ""),
+                        "Uptime": monitor_dict.get("uptime", ""),
                     }
                 )
 
