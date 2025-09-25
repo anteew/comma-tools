@@ -30,6 +30,24 @@ python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst --
 # Subsequent runs (dependencies cached locally)
 python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst
 ```
+### Managed openpilot / opendbc checkouts
+
+comma-tools automatically clones the external repositories it needs the first time you run the tools:
+
+- `openpilot` → `https://github.com/anteew/openpilot.git` (branch `devin2`)
+- `opendbc` → `https://github.com/anteew/opendbc.git` (branch `devin2`)
+
+The clones live under `~/.cache/comma-tools/repos/`, keeping your own checkouts safe. You can point comma-tools at existing clones or pick different branches with environment variables:
+
+```bash
+export OPENPILOT_PATH=/path/to/your/openpilot
+export OPENPILOT_BRANCH=my-openpilot-branch
+export OPENDBC_PATH=/path/to/your/opendbc
+export OPENDBC_BRANCH=my-opendbc-branch
+```
+
+Set the variables before running tools or tests to reuse your local repositories.
+
 
 **Why no pip install required?**
 - **Custom openpilot compatibility**: Works with your modified openpilot fork automatically

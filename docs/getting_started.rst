@@ -29,6 +29,21 @@ Development Installation
 
    pip install -e ".[dev,docs]"
 
+Managed External Repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The tools automatically clone the required openpilot and opendbc repositories if they are not available locally.
+
+- openpilot: https://github.com/anteew/openpilot.git (branch ``devin2``)
+- opendbc: https://github.com/anteew/opendbc.git (branch ``devin2``)
+
+Clones are stored under ``~/.cache/comma-tools/repos/`` so existing checkouts in your workspace are never touched. Set these environment variables before running tools if you want to reuse your own clones or select a different branch::
+
+   export OPENPILOT_PATH=/path/to/openpilot
+   export OPENPILOT_BRANCH=my-openpilot-branch
+   export OPENDBC_PATH=/path/to/opendbc
+   export OPENDBC_BRANCH=my-opendbc-branch
+
 Directory Structure
 -------------------
 
