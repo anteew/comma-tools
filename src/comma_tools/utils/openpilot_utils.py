@@ -14,8 +14,10 @@ import types
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+from .repo_bootstrap import ensure_all_repos
 
-def find_repo_root(explicit: Optional[str] = None) -> Path:
+
+def find_repo_root(explicit: Optional[str] = None, *, auto_bootstrap: bool = True) -> Path:
     """Locate the root directory that contains the openpilot checkout."""
     candidates: List[Path] = []
     if explicit:
@@ -33,18 +35,30 @@ def find_repo_root(explicit: Optional[str] = None) -> Path:
         if (candidate / "openpilot").exists():
             return candidate
 
-    raise FileNotFoundError(
-        "Could not find the openpilot checkout.\n\n"
-        "Expected directory structure:\n"
-        "  parent-directory/\n"
-        "  ├── openpilot/          # Clone from https://github.com/commaai/openpilot\n"
-        "  └── comma-tools/        # This repository\n\n"
-        "To fix this:\n"
-        "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
-        "2. Ensure both repositories are in the same parent directory\n"
-        "3. Or use --repo-root to specify the parent directory path\n\n"
-        "Example: cruise-control-analyzer logfile.zst --repo-root /path/to/parent-directory"
-    )
+    if not auto_bootstrap:
+        raise FileNotFoundError(
+            "Could not find the openpilot checkout.\n\n"
+            "Expected directory structure:\n"
+            "  parent-directory/\n"
+            "  ├── openpilot/          # Clone from https://github.com/commaai/openpilot\n"
+            "  └── comma-tools/        # This repository\n\n"
+            "To fix this:\n"
+            "1. Clone openpilot: git clone https://github.com/commaai/openpilot.git\n"
+            "2. Ensure both repositories are in the same parent directory\n"
+            "3. Or use --repo-root to specify the parent directory path\n\n"
+            "Example: cruise-control-analyzer logfile.zst --repo-root /path/to/parent-directory"
+        )
+
+    try:
+        repo_paths = ensure_all_repos()
+    except Exception as exc:
+        raise FileNotFoundError(
+            "Could not locate openpilot automatically and automatic bootstrap failed.\n"
+            "Install openpilot next to comma-tools or set OPENPILOT_PATH."
+        ) from exc
+
+    openpilot_repo = repo_paths["openpilot"]
+    return openpilot_repo.parent
 
 
 def resolve_deps_dir(repo_root: Path, override: Optional[str]) -> Path:
@@ -73,7 +87,16 @@ def prepare_environment(repo_root: Path, deps_dir: Path) -> None:
 
     deps_dir.mkdir(parents=True, exist_ok=True)
 
-    for path in (deps_dir, repo_root / "openpilot"):
+    opendbc_env = os.environ.get("OPENDBC_PATH")
+    opendbc_path = (
+        Path(opendbc_env).expanduser().resolve()
+        if opendbc_env
+        else repo_root / "opendbc"
+    )
+
+    for path in (deps_dir, openpilot_path, opendbc_path):
+        if not path.exists():
+            continue
         path_str = str(path)
         if path_str not in sys.path:
             sys.path.insert(0, path_str)

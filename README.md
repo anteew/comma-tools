@@ -30,6 +30,27 @@ python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst --
 # Subsequent runs (dependencies cached locally)
 python3 -m comma_tools.analyzers.cruise_control_analyzer /path/to/logfile.zst
 ```
+### Managed openpilot / opendbc checkouts
+
+comma-tools automatically clones the external repositories it needs the first time you run the tools:
+
+- `openpilot` → `https://github.com/commaai/openpilot.git` (branch `master` by default)
+- `opendbc` → `https://github.com/commaai/opendbc.git` (branch `master` by default)
+
+Set ``OPENPILOT_BRANCH`` to ``release3`` or ``nightly`` (or any other branch) if you want a different channel while keeping the
+official upstream remote as the default.
+
+The clones live under `~/.cache/comma-tools/repos/`, keeping your own checkouts safe. You can point comma-tools at existing clones or pick different branches with environment variables:
+
+```bash
+export OPENPILOT_PATH=/path/to/your/openpilot
+export OPENPILOT_BRANCH=my-openpilot-branch
+export OPENDBC_PATH=/path/to/your/opendbc
+export OPENDBC_BRANCH=my-opendbc-branch
+```
+
+Set the variables before running tools or tests to reuse your local repositories.
+
 
 **Why no pip install required?**
 - **Custom openpilot compatibility**: Works with your modified openpilot fork automatically
@@ -62,12 +83,12 @@ pip install -e ".[client]"
 
 ### Monitors
 - **Hybrid RX Trace** (`hybrid_rx_trace.py`): Real-time monitoring of Panda safety states
-- **Panda State** (`panda-state.py`): General Panda device status reporting  
+- **Panda State** (`panda_state.py`): General Panda device status reporting  
 - **CAN Bus Check** (`can_bus_check.py`): General CAN message frequency analysis
 - **CAN Hybrid RX Check** (`can_hybrid_rx_check.py`): Subaru hybrid-specific signal monitoring
 
 ### Utilities
-- **Simple Panda** (`simple-panda.py`): Basic Panda health check utility
+- **Simple Panda** (`simple_panda.py`): Basic Panda health check utility
 
 ### Scripts
 - Various shell script wrappers for common operations
@@ -198,6 +219,26 @@ black src/ tests/
 # Type checking
 mypy src/
 ```
+
+Running ``pytest`` now executes the fast unit-test suite by default. Integration
+scenarios that require managed ``openpilot`` checkouts and large fixture data are
+tagged with ``@pytest.mark.integration`` and are skipped unless explicitly
+requested. Use the following commands when you need different coverage:
+
+```bash
+# Run only the unit suite (default behavior)
+pytest
+
+# Target a specific module or test function
+pytest tests/unit/test_cts_cli.py -k "Renderer and not quiet"
+
+# Execute the slower integration suite
+pytest -m integration --real-log-file /path/to/log.zst
+```
+
+Install the optional CTS client dependencies (``pip install -e ".[client]"``)
+when you want to exercise the Connect CLI tests locally. They are skipped if the
+extras are missing.
 
 ### Documentation
 

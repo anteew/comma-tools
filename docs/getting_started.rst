@@ -29,6 +29,23 @@ Development Installation
 
    pip install -e ".[dev,docs]"
 
+Managed External Repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The tools automatically clone the required openpilot and opendbc repositories if they are not available locally.
+
+- openpilot: https://github.com/commaai/openpilot.git (branch ``master`` by default)
+- opendbc: https://github.com/commaai/opendbc.git (branch ``master`` by default)
+
+To track a different release channel, set ``OPENPILOT_BRANCH`` (for example ``release3`` or ``nightly``) before running the tools. The environment variables below also let you reuse existing clones:
+
+Clones are stored under ``~/.cache/comma-tools/repos/`` so existing checkouts in your workspace are never touched. Set these environment variables before running tools if you want to reuse your own clones or select a different branch::
+
+   export OPENPILOT_PATH=/path/to/openpilot
+   export OPENPILOT_BRANCH=my-openpilot-branch
+   export OPENDBC_PATH=/path/to/opendbc
+   export OPENDBC_BRANCH=my-opendbc-branch
+
 Directory Structure
 -------------------
 
@@ -94,6 +111,29 @@ Monitor live CAN bus activity and Panda safety states:
 
    # Check CAN bus activity
    python -m comma_tools.monitors.can_bus_check
+
+Testing
+-------
+
+The project ships with unit and integration tests. ``pytest`` now filters to the
+unit suite by default so new contributors can get fast feedback without cloning
+``openpilot`` or downloading large fixtures. Use these commands when working on
+changes:
+
+.. code-block:: bash
+
+   # Run the default unit suite
+   pytest
+
+   # Focus on an individual module or test
+   pytest tests/unit/test_cts_cli.py -k Renderer
+
+   # Opt in to the integration scenarios
+   pytest -m integration --real-log-file /path/to/log.zst
+
+Install the optional CTS client extras (``pip install -e ".[client]"``) before
+running the Connect CLI tests locally. They are skipped automatically when the
+client dependencies are missing.
 
 Next Steps
 ----------

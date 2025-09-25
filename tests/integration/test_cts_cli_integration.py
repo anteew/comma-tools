@@ -13,10 +13,17 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from cts_cli.config import Config
-from cts_cli.http import HTTPClient
-from cts_cli.main import app
-from cts_cli.render import Renderer
+try:
+    from cts_cli.config import Config
+    from cts_cli.http import HTTPClient
+    from cts_cli.main import app
+    from cts_cli.render import Renderer
+except ImportError as exc:
+    pytest.skip(
+        f"cts_cli optional dependency is unavailable: {exc}", allow_module_level=True
+    )
+
+pytestmark = pytest.mark.integration
 
 
 @pytest.fixture

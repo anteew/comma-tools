@@ -1,4 +1,19 @@
+# Python artifacts
 *.pyc
+*.egg-info/
+__pycache__/
+
+# Local environments
 venv/
-# Sphinx documentation
+comma-depends/
+
+# Test and coverage outputs
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+validation_exports.tar.gz
+
+# Documentation builds
 docs/_build/

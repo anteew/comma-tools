@@ -11,10 +11,15 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from cts_cli.commands.run import parse_parameters
-from cts_cli.config import Config
-from cts_cli.http import HTTPClient
-from cts_cli.render import Renderer, safe_path_join
+try:
+    from cts_cli.commands.run import parse_parameters
+    from cts_cli.config import Config
+    from cts_cli.http import HTTPClient
+    from cts_cli.render import Renderer, safe_path_join
+except ImportError as exc:
+    pytest.skip(
+        f"cts_cli optional dependency is unavailable: {exc}", allow_module_level=True
+    )
 
 
 class TestConfig:

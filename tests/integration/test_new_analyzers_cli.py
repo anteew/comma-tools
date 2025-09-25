@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 
 class TestRlogToCsvCLI:
     """Integration tests for rlog-to-csv CLI."""

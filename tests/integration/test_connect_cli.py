@@ -11,6 +11,8 @@ import pytest
 
 from comma_tools.sources.connect.cli import create_parser, main
 
+pytestmark = pytest.mark.integration
+
 
 class TestConnectCLI:
     """Test comma connect CLI functionality."""

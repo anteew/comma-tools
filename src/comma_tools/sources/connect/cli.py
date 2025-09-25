@@ -168,20 +168,17 @@ def main() -> int:
     try:
         validate_args(args)
     except ValueError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+        parser.exit(1, f"Error: {e}\n")
 
     try:
         load_auth()
         if args.verbose:
             print("Authentication: JWT token found")
     except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+        parser.exit(1, f"Error: {e}\n")
 
     client = ConnectClient()
     resolver = RouteResolver(client)
-    downloader = LogDownloader(client, parallel=args.parallel)
 
     try:
         input_str = args.route if args.route else args.url
@@ -211,6 +208,7 @@ def main() -> int:
         return 0
 
     try:
+        downloader = LogDownloader(client, parallel=args.parallel)
         report = downloader.download_route(
             canonical_route, args.dest, file_types, resume=not args.no_resume
         )
