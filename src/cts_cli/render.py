@@ -125,11 +125,7 @@ class Renderer:
 
     def progress_context(self, description: str = "Processing...") -> ContextManager[Any]:
         """Create progress context manager."""
-        if (
-            self.console is not None
-            and not self.json_output
-            and _rich_progress is not None
-        ):
+        if self.console is not None and not self.json_output and _rich_progress is not None:
             return _rich_progress.Progress(
                 _rich_progress.SpinnerColumn(),
                 _rich_progress.TextColumn("[progress.description]{task.description}"),
