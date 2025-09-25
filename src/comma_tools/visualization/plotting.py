@@ -1,6 +1,6 @@
 """Plotting utilities for automotive data visualization."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _ensure_matplotlib():

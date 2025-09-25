@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from cereal import messaging, log
+from cereal import log, messaging
 
 try:
     model_name = log.PandaState.SafetyModel.Name  # may not exist on every build

@@ -1,7 +1,7 @@
 """CAN bus analysis and decoding utilities."""
 
-from .decoders import SubaruCANDecoder, CANDecodingError
-from .bit_analysis import BitAnalyzer, CanMessage, BitChangeEvent, BitChangeStats
+from .bit_analysis import BitAnalyzer, BitChangeEvent, BitChangeStats, CanMessage
+from .decoders import CANDecodingError, SubaruCANDecoder
 
 __all__ = [
     "SubaruCANDecoder",

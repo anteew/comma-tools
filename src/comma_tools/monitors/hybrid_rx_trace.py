@@ -6,7 +6,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 
-from cereal import messaging, log
+from cereal import log, messaging
 
 EXPECTED = [
     (0, 0x119, "Steering_Torque"),

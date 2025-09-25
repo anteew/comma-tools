@@ -1,16 +1,17 @@
 """Unit tests for rlog_to_csv module."""
 
-import pytest
-from unittest.mock import patch
-import sys
-from pathlib import Path
-import tempfile
 import csv
 import os
+import sys
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.utils import find_repo_root, add_openpilot_to_path
+from comma_tools.utils import add_openpilot_to_path, find_repo_root
 
 
 class TestFindRepoRoot:

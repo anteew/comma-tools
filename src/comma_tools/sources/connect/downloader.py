@@ -10,9 +10,9 @@ import os
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Any
-from urllib.request import Request, urlopen
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from .client import ConnectClient
 

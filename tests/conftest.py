@@ -1,16 +1,17 @@
 import os
-from pathlib import Path
-import pytest
 import sys
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from comma_tools.utils import (
-    find_repo_root,
-    resolve_deps_dir,
-    prepare_environment,
     ensure_python_packages,
+    find_repo_root,
     load_external_modules,
+    prepare_environment,
+    resolve_deps_dir,
 )
 
 

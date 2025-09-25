@@ -14,8 +14,8 @@ from typing import Dict, List
 
 from .auth import load_auth
 from .client import ConnectClient
+from .downloader import DownloadReport, LogDownloader
 from .resolver import RouteResolver
-from .downloader import LogDownloader, DownloadReport
 
 
 def create_parser() -> argparse.ArgumentParser:
