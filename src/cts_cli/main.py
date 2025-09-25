@@ -23,7 +23,7 @@ from .commands.monitors import (
     start_monitor_command,
     stream_monitor_command,
     stop_monitor_command,
-    list_monitors_command
+    list_monitors_command,
 )
 from .commands.uploads import upload_command
 
@@ -32,7 +32,7 @@ app = typer.Typer(
     name="cts",
     help="CTS CLI - Command-line interface for CTS-Lite HTTP API",
     no_args_is_help=True,
-    add_completion=False
+    add_completion=False,
 )
 
 _config: Optional[Config] = None
@@ -68,17 +68,14 @@ def main(
     json_output: Annotated[bool, typer.Option("--json", help="Machine-output mode")] = False,
     timeout: Annotated[int, typer.Option("--timeout", help="Request timeout")] = 30,
     no_verify: Annotated[bool, typer.Option("--no-verify", help="Skip TLS verify")] = False,
-    quiet: Annotated[bool, typer.Option("--quiet", "-q", help="Suppress non-essential logs")] = False,
+    quiet: Annotated[
+        bool, typer.Option("--quiet", "-q", help="Suppress non-essential logs")
+    ] = False,
 ):
     """CTS CLI - Command-line interface for CTS-Lite HTTP API."""
     global _config, _http_client, _renderer
-    
-    _config = Config(
-        url=url,
-        api_key=api_key,
-        timeout=timeout,
-        no_verify=no_verify
-    )
+
+    _config = Config(url=url, api_key=api_key, timeout=timeout, no_verify=no_verify)
     _http_client = HTTPClient(_config)
     _renderer = Renderer(json_output=json_output, quiet=quiet)
 
@@ -100,25 +97,33 @@ def cap():
 @app.command()
 def run(
     tool_id: Annotated[str, typer.Argument(help="Tool ID to run")],
-    params: Annotated[Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")] = None,
+    params: Annotated[
+        Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")
+    ] = None,
     path: Annotated[Optional[str], typer.Option("--path", help="Use local path")] = None,
     upload: Annotated[Optional[str], typer.Option("--upload", help="Upload then reference")] = None,
-    wait: Annotated[bool, typer.Option("--wait", help="Stream logs and exit with job status")] = False,
+    wait: Annotated[
+        bool, typer.Option("--wait", help="Stream logs and exit with job status")
+    ] = False,
     follow: Annotated[bool, typer.Option("--follow", help="Implies --wait, tail SSE logs")] = False,
-    out_dir: Annotated[Optional[str], typer.Option("--out-dir", help="Download artifacts after success")] = None,
-    open_html: Annotated[bool, typer.Option("--open", help="Open HTML artifacts after download")] = False,
+    out_dir: Annotated[
+        Optional[str], typer.Option("--out-dir", help="Download artifacts after success")
+    ] = None,
+    open_html: Annotated[
+        bool, typer.Option("--open", help="Open HTML artifacts after download")
+    ] = False,
     name: Annotated[Optional[str], typer.Option("--name", help="Run name")] = None,
 ):
     """Run a tool with specified parameters."""
     if params is None:
         params = []
-    
+
     if follow:
         wait = True
-    
+
     if (wait or follow) and out_dir is None:
         out_dir = str(get_config().out_dir)
-    
+
     exit_code = run_command(
         tool_id=tool_id,
         params=params,
@@ -130,7 +135,7 @@ def run(
         open_html=open_html,
         name=name,
         http_client=get_http_client(),
-        renderer=get_renderer()
+        renderer=get_renderer(),
     )
     raise typer.Exit(exit_code)
 
@@ -142,10 +147,7 @@ def logs(
 ):
     """Stream logs for a run."""
     exit_code = logs_command(
-        run_id=run_id,
-        follow=follow,
-        http_client=get_http_client(),
-        renderer=get_renderer()
+        run_id=run_id, follow=follow, http_client=get_http_client(), renderer=get_renderer()
     )
     raise typer.Exit(exit_code)
 
@@ -168,9 +170,9 @@ def runs_list(
         endpoint = "/v1/runs"
         if status:
             endpoint += f"?status={status}"
-        
+
         runs = get_http_client().get_json(endpoint)
-        
+
         renderer = get_renderer()
         if renderer.json_output:
             renderer.print_json(runs)
@@ -178,21 +180,23 @@ def runs_list(
             if not runs:
                 renderer.print("No runs found")
                 return
-            
+
             run_data = []
             for run in runs:
-                run_data.append({
-                    "ID": run.get("id", ""),
-                    "Tool": run.get("tool_id", ""),
-                    "Status": run.get("status", ""),
-                    "Started": run.get("started_at", ""),
-                    "Duration": run.get("duration", "")
-                })
-            
+                run_data.append(
+                    {
+                        "ID": run.get("id", ""),
+                        "Tool": run.get("tool_id", ""),
+                        "Status": run.get("status", ""),
+                        "Started": run.get("started_at", ""),
+                        "Duration": run.get("duration", ""),
+                    }
+                )
+
             renderer.print_table(run_data, title="Recent Runs")
-        
+
         raise typer.Exit(0)
-        
+
     except Exception as e:
         get_renderer().print_error(f"Failed to list runs: {e}")
         raise typer.Exit(2)
@@ -207,7 +211,7 @@ def runs_get(
         run_info = get_http_client().get_json(f"/v1/runs/{run_id}")
         get_renderer().print_json(run_info)
         raise typer.Exit(0)
-        
+
     except Exception as e:
         get_renderer().print_error(f"Failed to get run: {e}")
         raise typer.Exit(2)
@@ -219,9 +223,7 @@ def art_list(
 ):
     """List artifacts for a run."""
     exit_code = list_artifacts_command(
-        run_id=run_id,
-        http_client=get_http_client(),
-        renderer=get_renderer()
+        run_id=run_id, http_client=get_http_client(), renderer=get_renderer()
     )
     raise typer.Exit(exit_code)
 
@@ -240,7 +242,7 @@ def art_get(
         stdout=stdout,
         force=force,
         http_client=get_http_client(),
-        renderer=get_renderer()
+        renderer=get_renderer(),
     )
     raise typer.Exit(exit_code)
 
@@ -248,17 +250,16 @@ def art_get(
 @mon_app.command("start")
 def mon_start(
     tool_id: Annotated[str, typer.Argument(help="Tool ID")],
-    params: Annotated[Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")] = None,
+    params: Annotated[
+        Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")
+    ] = None,
 ):
     """Start a monitor."""
     if params is None:
         params = []
-    
+
     exit_code = start_monitor_command(
-        tool_id=tool_id,
-        params=params,
-        http_client=get_http_client(),
-        renderer=get_renderer()
+        tool_id=tool_id, params=params, http_client=get_http_client(), renderer=get_renderer()
     )
     raise typer.Exit(exit_code)
 
@@ -275,7 +276,7 @@ def mon_stream(
         raw=raw,
         ndjson=ndjson,
         http_client=get_http_client(),
-        renderer=get_renderer()
+        renderer=get_renderer(),
     )
     raise typer.Exit(exit_code)
 
@@ -286,9 +287,7 @@ def mon_stop(
 ):
     """Stop a monitor."""
     exit_code = stop_monitor_command(
-        monitor_id=monitor_id,
-        http_client=get_http_client(),
-        renderer=get_renderer()
+        monitor_id=monitor_id, http_client=get_http_client(), renderer=get_renderer()
     )
     raise typer.Exit(exit_code)
 
@@ -296,10 +295,7 @@ def mon_stop(
 @mon_app.command("ls")
 def mon_ls():
     """List active monitors."""
-    exit_code = list_monitors_command(
-        http_client=get_http_client(),
-        renderer=get_renderer()
-    )
+    exit_code = list_monitors_command(http_client=get_http_client(), renderer=get_renderer())
     raise typer.Exit(exit_code)
 
 
@@ -309,9 +305,7 @@ def upload(
 ):
     """Upload a file and return upload ID."""
     exit_code = upload_command(
-        file_path=file_path,
-        http_client=get_http_client(),
-        renderer=get_renderer()
+        file_path=file_path, http_client=get_http_client(), renderer=get_renderer()
     )
     raise typer.Exit(exit_code)
 
