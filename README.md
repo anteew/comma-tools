@@ -226,7 +226,6 @@ comma-tools/
 │   ├── monitors/             # Real-time monitoring
 │   └── utils/                # Shared utilities
 ├── tests/                    # Test suite
-├── scripts/                  # Shell script wrappers
 └── docs/                     # Documentation
 ```
 
