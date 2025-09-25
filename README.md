@@ -48,6 +48,9 @@ pip install -e .
 
 # Or install with development dependencies
 pip install -e ".[dev]"
+
+# Install with CLI client support
+pip install -e ".[client]"
 ```
 
 ## Tools
@@ -254,6 +257,61 @@ Notes:
 - If neither CLI nor env is provided and the fixture is present, tests will use the fixture. If no fixture is present, tests are skipped automatically.
 - Ensure Git LFS is installed locally to fetch the fixture (`git lfs install`).
 - To also test dependency bootstrap, keep `openpilot/` checked out next to `comma-tools/` or pass `--repo-root` to the CLI.
+
+## CLI Client (CTS)
+
+The `cts` CLI client provides a command-line interface for interacting with CTS-Lite HTTP API servers:
+
+```bash
+# Install CLI client dependencies
+pip install ".[client]"
+
+# Health check
+cts ping
+
+# Discover available tools and monitors
+cts cap
+
+# Run analysis tool
+cts run cruise-control-analyzer --path /path/to/rlog.zst -p speed_min=50 -p speed_max=60 --wait --follow
+
+# Stream logs from a running job
+cts logs <run_id> --follow
+
+# List and download artifacts
+cts art list <run_id>
+cts art get <artifact_id> --download ./report.html
+
+# Start and monitor real-time data streams
+cts mon start hybrid_rx_trace -p interface=can0
+cts mon stream <monitor_id> --ndjson
+cts mon stop <monitor_id>
+
+# Upload files for processing
+cts upload /path/to/data.rlog.zst
+```
+
+### Authentication & Configuration
+
+The CLI client supports multiple authentication methods:
+
+```bash
+# Via environment variable
+export CTS_API_KEY="your-jwt-token"
+
+# Via command line
+cts --api-key "your-jwt-token" ping
+
+# Via config file (~/.config/cts/config.toml)
+url = "http://127.0.0.1:8080"
+api_key = "your-jwt-token"
+out_dir = "~/Downloads/cts"
+```
+
+### Output Modes
+
+- **Human-readable** (default): Tables, progress bars, and colored output
+- **Machine-readable** (`--json`): Structured JSON/NDJSON for scripting
 
 For more detailed information, see the [full documentation](https://anteew.github.io/comma-tools/).
 
