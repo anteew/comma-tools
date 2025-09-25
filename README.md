@@ -62,12 +62,12 @@ pip install -e ".[client]"
 
 ### Monitors
 - **Hybrid RX Trace** (`hybrid_rx_trace.py`): Real-time monitoring of Panda safety states
-- **Panda State** (`panda-state.py`): General Panda device status reporting  
+- **Panda State** (`panda_state.py`): General Panda device status reporting  
 - **CAN Bus Check** (`can_bus_check.py`): General CAN message frequency analysis
 - **CAN Hybrid RX Check** (`can_hybrid_rx_check.py`): Subaru hybrid-specific signal monitoring
 
 ### Utilities
-- **Simple Panda** (`simple-panda.py`): Basic Panda health check utility
+- **Simple Panda** (`simple_panda.py`): Basic Panda health check utility
 
 ### Scripts
 - Various shell script wrappers for common operations
