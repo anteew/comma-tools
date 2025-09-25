@@ -4,7 +4,8 @@ This module provides reusable event detection functionality extracted from the
 CruiseControlAnalyzer for use across different CAN analysis tools.
 """
 
-from typing import Dict, List, Optional, Any, cast
+from typing import Any, Dict, List, Optional, cast
+
 from ..can import SubaruCANDecoder
 
 
@@ -95,7 +96,7 @@ class EventDetector:
                 f"\nAnalyzing Cruise Buttons (0x{self.decoder.CRUISE_BUTTONS_ADDR:03X}): {len(button_messages)} messages"
             )
 
-            button_changes = []
+            button_changes: List[Dict[str, Any]] = []
             prev_buttons = None
 
             for msg in button_messages:
@@ -140,7 +141,7 @@ class EventDetector:
                 f"\nAnalyzing Cruise Status (0x{self.decoder.CRUISE_STATUS_ADDR:03X}): {len(status_messages)} messages"
             )
 
-            status_changes = []
+            status_changes: List[Dict[str, Any]] = []
             prev_status = None
 
             for msg in status_messages:
@@ -183,7 +184,7 @@ class EventDetector:
                 f"\nAnalyzing ES_Brake (0x{self.decoder.ES_BRAKE_ADDR:03X}): {len(brake_messages)} messages"
             )
 
-            brake_changes = []
+            brake_changes: List[Dict[str, Any]] = []
             prev_brake = None
 
             for msg in brake_messages:

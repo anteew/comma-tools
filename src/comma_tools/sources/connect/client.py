@@ -7,10 +7,10 @@ route info, segments, and file listings with proper rate limiting.
 
 import json
 import time
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 from .auth import load_auth, redact_token
 

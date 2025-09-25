@@ -1,18 +1,19 @@
 """Integration tests for cruise control analyzer bootstrap functionality."""
 
-import pytest
-import tempfile
 import shutil
-from pathlib import Path
 import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from comma_tools.utils import (
+    ensure_python_packages,
     find_repo_root,
     prepare_environment,
     resolve_deps_dir,
-    ensure_python_packages,
 )
 
 

@@ -1,12 +1,11 @@
 import sys
 from pathlib import Path
+
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.analyzers.cruise_control_analyzer import (  # noqa: E402
-    CruiseControlAnalyzer,
-)
+from comma_tools.analyzers.cruise_control_analyzer import CruiseControlAnalyzer  # noqa: E402
 from comma_tools.analyzers.marker_detection import MarkerConfig  # noqa: E402
 
 

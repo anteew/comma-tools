@@ -1,12 +1,13 @@
 """Integration tests for new analyzer CLI tools."""
 
-import pytest
-import subprocess
-import tempfile
 import csv
 import json
 import os
+import subprocess
+import tempfile
 from pathlib import Path
+
+import pytest
 
 
 class TestRlogToCsvCLI:
@@ -164,8 +165,8 @@ class TestToolsIntegration:
     def test_tools_import_correctly(self):
         """Test that tools can be imported as modules."""
         try:
-            import comma_tools.analyzers.rlog_to_csv as rlog_to_csv
             import comma_tools.analyzers.can_bitwatch as can_bitwatch
+            import comma_tools.analyzers.rlog_to_csv as rlog_to_csv
 
             assert hasattr(rlog_to_csv, "main")
             assert hasattr(can_bitwatch, "main")

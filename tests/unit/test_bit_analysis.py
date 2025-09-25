@@ -1,13 +1,14 @@
 """Unit tests for CAN bit analysis library."""
 
-import pytest
-from collections import Counter
 import sys
+from collections import Counter
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from comma_tools.can import BitAnalyzer, CanMessage, BitChangeEvent, BitChangeStats
+from comma_tools.can import BitAnalyzer, BitChangeEvent, BitChangeStats, CanMessage
 
 
 class TestCanMessage:

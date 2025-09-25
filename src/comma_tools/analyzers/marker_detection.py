@@ -6,6 +6,7 @@ time windows of interest in automotive log data using various detection strategi
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, cast
+
 from ..can import SubaruCANDecoder
 
 

@@ -21,14 +21,15 @@ Tip:
   Use together with rlog_to_csv.py to generate the CSV from an rlog.zst.
 """
 from __future__ import annotations
+
 import argparse
 import csv
-import re
 import json
 import os
-from collections import defaultdict, Counter
+import re
+from collections import Counter, defaultdict
 from dataclasses import dataclass
-from typing import Tuple, List
+from typing import List, Tuple
 
 from ..can import BitAnalyzer, CanMessage
 

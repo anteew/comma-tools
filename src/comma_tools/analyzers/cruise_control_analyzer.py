@@ -20,17 +20,17 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
+from ..can import BitAnalyzer, CanMessage, SubaruCANDecoder
 from ..utils import (
-    find_repo_root,
-    resolve_deps_dir,
-    prepare_environment,
     ensure_python_packages,
+    find_repo_root,
     load_external_modules,
+    prepare_environment,
+    resolve_deps_dir,
 )
-from ..can import SubaruCANDecoder, BitAnalyzer, CanMessage
 from ..visualization import SpeedTimelinePlotter
 from .event_detection import EventDetector
-from .marker_detection import MarkerDetector, MarkerConfig
+from .marker_detection import MarkerConfig, MarkerDetector
 
 np = None  # loaded at runtime
 plt = None  # loaded at runtime

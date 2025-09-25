@@ -7,7 +7,7 @@ resolve routes from connect URLs, and download log files to local storage.
 
 from .auth import load_auth
 from .client import ConnectClient
-from .resolver import RouteResolver
 from .downloader import LogDownloader
+from .resolver import RouteResolver
 
 __all__ = ["load_auth", "ConnectClient", "RouteResolver", "LogDownloader"]

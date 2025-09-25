@@ -1,22 +1,23 @@
 """Unit tests for can_bitwatch module."""
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from comma_tools.analyzers.can_bitwatch import (
-    parse_hex_bytes,
-    norm_address,
-    msb_label_to_indices,
-    global_idx_from_msb,
     WatchBit,
-    fmt_time_rel,
-    payload_to_u64_le,
-    bit_value,
     analyze_counts,
     analyze_per_address,
+    bit_value,
+    fmt_time_rel,
+    global_idx_from_msb,
+    msb_label_to_indices,
+    norm_address,
+    parse_hex_bytes,
+    payload_to_u64_le,
 )
 
 
