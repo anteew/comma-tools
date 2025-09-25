@@ -42,7 +42,6 @@ _renderer: Optional[Renderer] = None
 
 def get_config() -> Config:
     """Get global config instance."""
-    global _config
     if _config is None:
         raise RuntimeError("Config not initialized")
     return _config
@@ -50,7 +49,6 @@ def get_config() -> Config:
 
 def get_http_client() -> HTTPClient:
     """Get global HTTP client instance."""
-    global _http_client
     if _http_client is None:
         raise RuntimeError("HTTP client not initialized")
     return _http_client
@@ -58,7 +56,6 @@ def get_http_client() -> HTTPClient:
 
 def get_renderer() -> Renderer:
     """Get global renderer instance."""
-    global _renderer
     if _renderer is None:
         raise RuntimeError("Renderer not initialized")
     return _renderer
@@ -330,7 +327,6 @@ def cli_main():
         print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
-        global _http_client
         if _http_client:
             _http_client.close()
 
