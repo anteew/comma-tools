@@ -32,7 +32,7 @@ class TestFindRepoRoot:
         mock_cwd.return_value = tmp_path
 
         with pytest.raises(FileNotFoundError, match="Could not find the openpilot checkout"):
-            find_repo_root(str(tmp_path))
+            find_repo_root(str(tmp_path), auto_bootstrap=False)
 
     @patch("comma_tools.utils.openpilot_utils.Path.cwd")
     @patch("comma_tools.utils.openpilot_utils.__file__", "/fake/path/to/script.py")

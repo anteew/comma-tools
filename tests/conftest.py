@@ -6,6 +6,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+_BIN_DIR = Path(sys.executable).parent
+if (_BIN_DIR / "rlog-to-csv").exists():
+    os.environ["PATH"] = f"{_BIN_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
+
 from comma_tools.utils import (
     ensure_python_packages,
     find_repo_root,
