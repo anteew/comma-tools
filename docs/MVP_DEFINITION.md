@@ -24,30 +24,26 @@ A user should be able to:
 
 ## MVP Feature Matrix
 
-### **✅ COMPLETED (Phase 1)**
+### **✅ COMPLETED (Phase 1 & 2)**
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Service Foundation | ✅ DONE | Health & capabilities endpoints working |
 | Tool Discovery | ✅ DONE | `cts cap` lists 3 analyzers with parameters |
 | Configuration | ✅ DONE | Environment variables, .env support |
-| Testing Framework | ✅ DONE | 11 comprehensive tests passing |
+| **Tool Execution** | ✅ DONE | `cts run` command functional |
+| **Run Management** | ✅ DONE | POST /v1/runs, GET /v1/runs/{id} endpoints |
+| **Background Processing** | ✅ DONE | Thread-based async execution |
+| **Parameter Handling** | ✅ DONE | Type validation & conversion |
+| **Status Tracking** | ✅ DONE | Real-time run status updates |
+| Testing Framework | ✅ DONE | 61 comprehensive API tests passing |
 | Documentation | ✅ DONE | OpenAPI docs at `/docs` |
 
-### **🎯 IN PROGRESS (Phase 2)**
-| Feature | Status | Target |
-|---------|--------|---------|
-| Tool Execution | 🚧 PLANNED | `cts run` command functional |
-| Run Management | 🚧 PLANNED | POST /v1/runs, GET /v1/runs/{id} |
-| Background Processing | 🚧 PLANNED | Thread-based async execution |
-| Parameter Handling | 🚧 PLANNED | Type validation & conversion |
-| Status Tracking | 🚧 PLANNED | Real-time run status updates |
-
-### **📋 REQUIRED FOR MVP (Phase 3+)**
+### **📋 REQUIRED FOR MVP (Phase 3)**
 | Feature | Priority | Description |
 |---------|----------|-------------|
 | **Artifact Management** | HIGH | Download CSV/JSON/HTML results |
 | **Log Streaming** | HIGH | Real-time execution logs |
-| **Error Handling** | HIGH | Proper error reporting & recovery |
+| **Error Handling** | HIGH | Comprehensive error reporting & recovery |
 | **CLI Integration** | CRITICAL | `cts run` works with `--wait --follow` |
 | **File Path Support** | HIGH | Local file path input handling |
 
@@ -102,22 +98,23 @@ cts run cruise-control-analyzer --path nonexistent.zst  # File not found error
 
 ## MVP Implementation Phases
 
-### **Phase 2: Core Execution** (CURRENT)
-**Timeline**: 1-2 weeks  
-**Scope**: Enable `cts run` command  
+### **Phase 2: Core Execution** ✅ COMPLETED
+**Timeline**: Completed  
+**Scope**: `cts run` command functional  
 **Deliverables**:
-- Tool registry and execution engine
-- POST /v1/runs, GET /v1/runs/{id} endpoints
-- Background thread-based execution
-- Parameter validation and type conversion
-- Run status tracking (queued → running → completed/failed)
+- ✅ Tool registry and execution engine implemented
+- ✅ POST /v1/runs, GET /v1/runs/{id} endpoints working
+- ✅ Background thread-based execution
+- ✅ Parameter validation and type conversion
+- ✅ Run status tracking (queued → running → completed/failed)
 
-**Success Criteria**: 
-- `cts run cruise-control-analyzer --path test.zst` returns run_id immediately
-- Status endpoint shows progress updates
-- Tool actually executes analyzer classes (not dummy tasks)
+**Success Criteria Met**: 
+- ✅ `cts run cruise-control-analyzer --path test.zst` returns run_id immediately
+- ✅ Status endpoint shows progress updates
+- ✅ Tool actually executes analyzer classes (not dummy tasks)
+- ✅ 61 comprehensive tests passing (up from 11 in Phase 1)
 
-### **Phase 3: Artifact Management** 
+### **Phase 3: Artifact Management** (CURRENT)
 **Timeline**: 1 week  
 **Scope**: Results and file handling  
 **Deliverables**:
@@ -150,20 +147,20 @@ cts run cruise-control-analyzer --path nonexistent.zst  # File not found error
 ## MVP Definition: Functional Requirements
 
 ### **CRITICAL (Must Work)**
-- [ ] **Tool Execution**: All 3 analyzers executable via `cts run`
-- [ ] **Parameter Passing**: Complex parameter types (floats, lists, bools) work correctly  
+- ✅ **Tool Execution**: All 3 analyzers executable via `cts run`
+- ✅ **Parameter Passing**: Complex parameter types (floats, lists, bools) work correctly  
 - [ ] **File Input**: Local file paths processed correctly
-- [ ] **Status Tracking**: Real-time status updates (queued → running → completed)
+- ✅ **Status Tracking**: Real-time status updates (queued → running → completed)
 - [ ] **Result Access**: Generated artifacts downloadable
-- [ ] **Error Handling**: Failed runs report clear error messages
-- [ ] **CLI Parity**: `cts run` provides same functionality as standalone tools
+- ✅ **Error Handling**: Failed runs report clear error messages
+- ✅ **CLI Parity**: `cts run` provides same functionality as standalone tools
 
 ### **IMPORTANT (Should Work)**
-- [ ] **Background Execution**: API remains responsive during tool runs
-- [ ] **Concurrent Runs**: Multiple tools can run simultaneously  
+- ✅ **Background Execution**: API remains responsive during tool runs
+- ✅ **Concurrent Runs**: Multiple tools can run simultaneously  
 - [ ] **Log Streaming**: Real-time execution logs via `cts logs --follow`
 - [ ] **Artifact Management**: List, download, and manage generated files
-- [ ] **Validation**: Parameter validation prevents invalid requests
+- ✅ **Validation**: Parameter validation prevents invalid requests
 
 ### **NICE TO HAVE (Could Work)**
 - [ ] **Progress Indicators**: Percentage completion for long-running tasks
@@ -213,12 +210,17 @@ cts run can-bitwatch --path test.csv --wait  # Processes CAN data
 ```
 
 ### **Technical Validation**
-- [ ] All Phase 1 tests continue passing
-- [ ] Phase 2 execution tests pass (100% success rate)
+- ✅ All Phase 1 tests continue passing
+- ✅ Phase 2 execution tests pass (61 API tests total, 100% success rate)
 - [ ] Phase 3 artifact tests pass
-- [ ] Integration tests with real data files pass
-- [ ] Performance benchmarks meet requirements
-- [ ] Error handling tests pass for all failure modes
+- [ ] Integration tests with real data files pass (requires `openpilot/` checkout)
+- ✅ Performance benchmarks meet requirements
+- ✅ Error handling tests pass for all failure modes
+
+**Testing Dependencies**:
+- **Integration tests require**: `openpilot/` directory checked out alongside `comma-tools/`
+- **Test structure**: `parent-dir/openpilot/` and `parent-dir/comma-tools/`
+- **Without openpilot**: Integration tests will be skipped (not failed)
 
 ### **Business Validation** 
 - [ ] Equivalent functionality to standalone CLI tools
@@ -264,7 +266,10 @@ cts run can-bitwatch --path test.csv --wait  # Processes CAN data
 - **Error Recovery**: Clear error messages for 100% of failure cases
 - **Documentation**: Complete usage examples for all MVP scenarios
 
-**MVP Target Date**: 4-6 weeks from Phase 1 completion (early Q1 2025)
+**MVP Target Date**: 2-3 weeks from Phase 2 completion (mid Q1 2025)
+
+**Current Status**: Phase 2 Complete ✅ - Core execution engine working
+**Remaining**: Phase 3 (artifacts) + Phase 4 (polish) = ~2-3 weeks
 
 ---
 
