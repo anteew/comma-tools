@@ -175,33 +175,58 @@ python3 -m comma_tools.monitors.can_bus_check
 
 The connect downloader downloads log files directly from connect.comma.ai with resume capability and idempotent behavior.
 
+**🚀 New: Public URL Support!** No authentication needed for public comma connect URLs - just paste the URL and download instantly.
+
 **From source (recommended):**
 ```bash
 export PYTHONPATH=src
 
-# Download logs using a connect URL
-python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --cameras
+# Download PUBLIC connect URLs (no authentication required!)
+python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs
 
-# Download using canonical route name
+# Download with multiple file types
+python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --qlogs --qcameras
+
+# Download using canonical route name (requires authentication)
 python3 -m comma_tools.sources.connect.cli --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
 
 # Download all file types with custom settings
 python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/... --logs --qlogs --cameras --parallel 8 --verbose
 
 # Dry run to see what would be downloaded
-python3 -m comma_tools.sources.connect.cli --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dry-run
+python3 -m comma_tools.sources.connect.cli --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --dry-run
 ```
 
 **Or if installed via pip:**
 ```bash
+# Public URLs work without authentication
+comma-connect-dl --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs
+
+# Canonical routes require authentication
 comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
 ```
 
-**Authentication:** Requires JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
+**Authentication:**
+- **Public connect URLs**: No authentication needed! Just paste and download.
+- **Canonical routes**: Requires JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
 
 **File Layout:** Downloads are organized as `<dest>/<dongle_id>/<YYYY-MM-DD--HH-MM-SS>/<segment>/<filename>` for compatibility with existing analyzers.
 
-**Note:** Log retention is 3 days (1 year with comma prime). Connect URLs are resolved by searching device segments within a configurable time window (default 7 days).
+**Testing Public URLs:**
+```bash
+# Test with a known public URL (no authentication needed)
+export PYTHONPATH=src
+python3 -m comma_tools.sources.connect.cli \
+  --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa \
+  --logs --dry-run --verbose
+
+# Expected output:
+# Attempting public access for connect URL...
+# Resolved route: dcb4c2e18426be55|00000008--0696c823fa
+# Would download from route: dcb4c2e18426be55|00000008--0696c823fa
+```
+
+**Note:** Log retention is 3 days (1 year with comma prime). Public connect URLs are resolved directly using openpilot-compatible parsing - no device segment searching required.
 
 ## Dependency Management
 
@@ -249,6 +274,12 @@ black src/ tests/
 
 # Type checking
 mypy src/
+
+# Test public URL support (no authentication needed)
+export PYTHONPATH=src
+python3 -m comma_tools.sources.connect.cli \
+  --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa \
+  --logs --dry-run --verbose
 ```
 
 ### Documentation
@@ -278,7 +309,6 @@ comma-tools/
 │   ├── monitors/             # Real-time monitoring
 │   └── utils/                # Shared utilities
 ├── tests/                    # Test suite
-├── scripts/                  # Shell script wrappers
 └── docs/                     # Documentation
 ```
 
