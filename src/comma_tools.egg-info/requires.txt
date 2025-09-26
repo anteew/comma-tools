@@ -5,6 +5,13 @@ zstandard
 pyzmq
 smbus2
 
+[api]
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-multipart>=0.0.6
+
 [client]
 httpx>=0.24.0
 typer>=0.9.0
@@ -17,15 +24,20 @@ requests>=2.25.0
 [dev]
 pytest>=6.0
 pytest-cov
+httpx>=0.24.0
 black
 flake8
 mypy
 matplotlib>=3.5.0
 requests>=2.25.0
-httpx>=0.24.0
 typer>=0.9.0
 rich>=13.0.0
 websockets>=11.0.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-multipart>=0.0.6
 
 [docs]
 sphinx>=4.0
@@ -39,3 +51,4 @@ matplotlib>=3.5.0
 [test]
 pytest>=6.0
 pytest-cov
+httpx>=0.24.0
