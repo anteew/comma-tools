@@ -102,17 +102,28 @@
 - Proper separation of concerns maintained
 - Service-first architecture preserved
 
-### 2024-12-19 - Phase 2 Planning 🎯 NEXT  
-**Status**: Ready to plan tool registry and execution capabilities
+### 2024-12-19 - Phase 2 Planning ✅ COMPLETED & FEEDBACK ADDRESSED
+**Status**: Phase 2 planning completed and critical feedback integrated
 
 **Next Tasks**:
 1. ✅ Create Phase 2 implementation guide for tool execution
 2. ✅ Plan tool registry system architecture  
 3. ✅ Design runs management endpoints
 4. ✅ Create PR #50 for Phase 2 planning
-5. ⏳ Hand off to coding agent for implementation
+5. ✅ Address critical GitHub feedback on threading and checkbox formatting
+6. ⏳ Hand off to coding agent for implementation
 
-**Pull Request Created**: #50 - https://github.com/anteew/comma-tools/pull/50
+**GitHub Feedback Addressed**:
+- ✅ **Copilot**: Fixed checkbox formatting - empty [ ] for Phase 2 requirements (not completed [x])
+- ✅ **chatgpt-codex-connector**: CRITICAL threading fix - replaced FastAPI BackgroundTasks with proper thread-based execution
+- ✅ **Dan**: Integrated all feedback changes into Phase 2 implementation guide
+
+**Critical Architecture Fix**: 
+- **Problem**: FastAPI BackgroundTasks run in same event loop and would block API during CPU-intensive analyzer work
+- **Solution**: Use `asyncio.to_thread()` or `run_in_executor()` for proper thread isolation
+- **Impact**: API remains responsive during tool execution, status endpoints work correctly
+
+**Pull Request**: #50 - https://github.com/anteew/comma-tools/pull/50 (UPDATED with fixes)
 
 ## Architecture Decisions Log
 
