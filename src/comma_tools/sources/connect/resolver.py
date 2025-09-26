@@ -6,8 +6,10 @@ using device segment search within configurable time windows.
 """
 
 import re
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 
 from .client import ConnectClient
@@ -72,6 +74,28 @@ class RouteResolver:
 
         dongle_id, url_slug = match.groups()
 
+        canonical_route = f"{dongle_id}|{url_slug}"
+
+        # Try to verify the route exists by getting its files. If the response looks
+        # usable, short circuit with the slug-based canonical route. Otherwise fall
+        # back to the segment search for timestamp resolution.
+        route_files = None
+        try:
+            route_files = self.client.route_files(canonical_route)
+        except HTTPError as http_error:
+            if http_error.code in (401, 404):
+                route_files = None
+            else:
+                raise ValueError(
+                    f"Error accessing route {canonical_route}: {http_error}"
+                ) from http_error
+        except Exception as e:
+            raise ValueError(f"Error accessing route {canonical_route}: {e}") from e
+        else:
+            if self._has_downloadable_files(route_files):
+                return canonical_route
+
+        # Fallback: try to search device segments (original approach)
         end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(days=search_days)
 
@@ -99,6 +123,13 @@ class RouteResolver:
             f"Pass the canonical route (dongle|YYYY-MM-DD--HH-MM-SS) "
             f"or widen the search window with --days."
         )
+
+    @staticmethod
+    def _has_downloadable_files(route_files: Any) -> bool:
+        """Return True when route_files looks like a non-empty mapping of files."""
+        if isinstance(route_files, Mapping):
+            return any(bool(files) for files in route_files.values())
+        return False
 
     def resolve(self, input_str: str, search_days: int = 7) -> str:
         """
