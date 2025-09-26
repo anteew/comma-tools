@@ -17,17 +17,31 @@ logger = logging.getLogger(__name__)
 class RunContext:
     """Context for tracking tool execution state."""
 
-    def __init__(self, run_id: str, tool_id: str, params: Dict[str, Any]):
+    def __init__(
+        self,
+        run_id: str,
+        tool_id: str,
+        params: Dict[str, Any],
+        repo_root: Optional[str] = None,
+        deps_dir: Optional[str] = None,
+        install_missing_deps: bool = False,
+    ):
         """Initialize run context.
 
         Args:
             run_id: Unique run identifier
             tool_id: Tool identifier
             params: Tool parameters
+            repo_root: Optional openpilot parent directory path
+            deps_dir: Optional dependencies directory path
+            install_missing_deps: Whether to install missing dependencies
         """
         self.run_id = run_id
         self.tool_id = tool_id
         self.params = params
+        self.repo_root = repo_root
+        self.deps_dir = deps_dir
+        self.install_missing_deps = install_missing_deps
         self.status = RunStatus.QUEUED
         self.created_at = datetime.utcnow()
         self.started_at: Optional[datetime] = None
@@ -86,7 +100,12 @@ class ExecutionEngine:
         self._validate_parameters(tool, request.params, request.input)
 
         run_context = RunContext(
-            run_id=str(uuid4()), tool_id=request.tool_id, params=request.params
+            run_id=str(uuid4()),
+            tool_id=request.tool_id,
+            params=request.params,
+            repo_root=request.repo_root,
+            deps_dir=request.deps_dir,
+            install_missing_deps=request.install_missing_deps,
         )
 
         self.active_runs[run_context.run_id] = run_context
@@ -152,6 +171,15 @@ class ExecutionEngine:
             run_context: Run context to execute
         """
         try:
+            if run_context.tool_id == "cruise-control-analyzer":
+                run_context.params.update(
+                    {
+                        "repo_root": run_context.repo_root,
+                        "deps_dir": run_context.deps_dir,
+                        "install_missing_deps": run_context.install_missing_deps,
+                    }
+                )
+
             tool_instance = self.registry.create_tool_instance(
                 run_context.tool_id, **run_context.params
             )

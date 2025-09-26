@@ -87,6 +87,11 @@ class RunRequest(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict, description="Tool parameters")
     input: Optional[InputRef] = Field(None, description="Input file reference")
     name: Optional[str] = Field(None, description="Optional run name")
+    repo_root: Optional[str] = Field(None, description="Path to openpilot parent directory")
+    deps_dir: Optional[str] = Field(None, description="Directory for Python dependencies")
+    install_missing_deps: bool = Field(
+        False, description="Install missing dependencies automatically"
+    )
 
 
 class RunResponse(BaseModel):

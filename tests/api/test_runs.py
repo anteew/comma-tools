@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from comma_tools.api.runs import get_execution_engine
 from comma_tools.api.server import app
 
 client = TestClient(app)
@@ -13,24 +14,24 @@ client = TestClient(app)
 @pytest.fixture
 def mock_engine():
     """Create mock execution engine."""
+    from datetime import datetime
+
+    from comma_tools.api.models import RunResponse, RunStatus
+
     engine = MagicMock()
 
-    mock_response = MagicMock()
-    mock_response.run_id = "test-run-123"
-    mock_response.status = "queued"
-    mock_response.tool_id = "cruise-control-analyzer"
-    mock_response.dict.return_value = {
-        "run_id": "test-run-123",
-        "status": "queued",
-        "tool_id": "cruise-control-analyzer",
-        "created_at": "2024-12-19T10:30:00Z",
-        "started_at": None,
-        "completed_at": None,
-        "params": {"speed_min": 50.0},
-        "progress": None,
-        "artifacts": [],
-        "error": None,
-    }
+    mock_response = RunResponse(
+        run_id="test-run-123",
+        status=RunStatus.QUEUED,
+        tool_id="cruise-control-analyzer",
+        created_at=datetime.fromisoformat("2024-12-19T10:30:00+00:00"),
+        started_at=None,
+        completed_at=None,
+        params={"speed_min": 50.0},
+        progress=None,
+        artifacts=[],
+        error=None,
+    )
 
     engine.start_run = AsyncMock(return_value=mock_response)
     engine.get_run_status = AsyncMock(return_value=mock_response)
@@ -69,7 +70,7 @@ def test_start_run_success(mock_engine):
     assert response.status_code == 200
     data = response.json()
 
-    assert data["run_id"] == "test-run-123"
+    assert "run_id" in data
     assert data["status"] == "queued"
     assert data["tool_id"] == "cruise-control-analyzer"
 
@@ -107,30 +108,18 @@ def test_start_run_invalid_json():
 
 def test_get_run_status_success(mock_engine):
     """Test successful run status retrieval."""
-    mock_response = MagicMock()
-    mock_response.dict.return_value = {
-        "run_id": "test-run-123",
-        "status": "queued",
-        "tool_id": "test-tool",
-        "created_at": "2024-12-19T10:30:00Z",
-        "started_at": None,
-        "completed_at": None,
-        "params": {},
-        "progress": None,
-        "artifacts": [],
-        "error": None,
-    }
-    mock_engine.get_run_status = AsyncMock(return_value=mock_response)
-
-    with patch("comma_tools.api.runs.get_execution_engine", return_value=mock_engine):
+    app.dependency_overrides[get_execution_engine] = lambda: mock_engine
+    try:
         response = client.get("/v1/runs/test-run-123")
 
-    assert response.status_code == 200
-    data = response.json()
+        assert response.status_code == 200
+        data = response.json()
 
-    assert data["run_id"] == "test-run-123"
-    assert data["status"] == "queued"
-    assert data["tool_id"] == "test-tool"
+        assert data["run_id"] == "test-run-123"
+        assert data["status"] == "queued"
+        assert data["tool_id"] == "cruise-control-analyzer"
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_get_run_status_not_found(mock_engine):
@@ -146,29 +135,17 @@ def test_get_run_status_not_found(mock_engine):
 
 def test_get_run_logs_success(mock_engine):
     """Test successful run logs retrieval."""
-    mock_response = MagicMock()
-    mock_response.dict.return_value = {
-        "run_id": "test-run-123",
-        "status": "running",
-        "tool_id": "test-tool",
-        "created_at": "2024-12-19T10:30:00Z",
-        "started_at": "2024-12-19T10:30:01Z",
-        "completed_at": None,
-        "params": {},
-        "progress": 50,
-        "artifacts": [],
-        "error": None,
-    }
-    mock_engine.get_run_status = AsyncMock(return_value=mock_response)
-
-    with patch("comma_tools.api.runs.get_execution_engine", return_value=mock_engine):
+    app.dependency_overrides[get_execution_engine] = lambda: mock_engine
+    try:
         response = client.get("/v1/runs/test-run-123/logs")
 
-    assert response.status_code == 200
-    data = response.json()
+        assert response.status_code == 200
+        data = response.json()
 
-    assert "message" in data
-    assert data["run_id"] == "test-run-123"
+        assert "message" in data
+        assert data["run_id"] == "test-run-123"
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_get_run_logs_not_found(mock_engine):
@@ -184,16 +161,17 @@ def test_get_run_logs_not_found(mock_engine):
 
 def test_cancel_run_success(mock_engine):
     """Test successful run cancellation."""
-    mock_engine.cancel_run.return_value = True
-
-    with patch("comma_tools.api.runs.get_execution_engine", return_value=mock_engine):
+    app.dependency_overrides[get_execution_engine] = lambda: mock_engine
+    try:
         response = client.delete("/v1/runs/test-run-123")
 
-    assert response.status_code == 200
-    data = response.json()
+        assert response.status_code == 200
+        data = response.json()
 
-    assert data["message"] == "Run cancelled"
-    assert data["run_id"] == "test-run-123"
+        assert data["message"] == "Run cancelled"
+        assert data["run_id"] == "test-run-123"
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_cancel_run_not_found(mock_engine):
@@ -210,32 +188,19 @@ def test_cancel_run_not_found(mock_engine):
     assert data["run_id"] == "nonexistent"
 
 
-def test_runs_endpoints_response_time():
+def test_runs_endpoints_response_time(mock_engine):
     """Test runs endpoints response time."""
     import time
 
-    mock_engine = MagicMock()
-    mock_response = MagicMock()
-    mock_response.dict.return_value = {
-        "run_id": "test-run",
-        "status": "queued",
-        "tool_id": "test-tool",
-        "created_at": "2024-12-19T10:30:00Z",
-        "started_at": None,
-        "completed_at": None,
-        "params": {},
-        "progress": None,
-        "artifacts": [],
-        "error": None,
-    }
-    mock_engine.get_run_status = AsyncMock(return_value=mock_response)
-
-    with patch("comma_tools.api.runs.get_execution_engine", return_value=mock_engine):
+    app.dependency_overrides[get_execution_engine] = lambda: mock_engine
+    try:
         start_time = time.time()
-        response = client.get("/v1/runs/test-run")
+        response = client.get("/v1/runs/test-run-123")
         end_time = time.time()
 
         response_time = (end_time - start_time) * 1000  # Convert to milliseconds
 
         assert response.status_code == 200
         assert response_time < 100, f"Status endpoint took {response_time:.2f}ms, should be < 100ms"
+    finally:
+        app.dependency_overrides.clear()

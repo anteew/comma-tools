@@ -1,5 +1,7 @@
 """Tests for tool registry functionality."""
 
+from unittest.mock import patch
+
 import pytest
 
 from comma_tools.api.registry import ToolRegistry
@@ -38,21 +40,23 @@ def test_create_tool_instance_cruise_control():
     """Test creating cruise control analyzer instance."""
     registry = ToolRegistry()
 
-    instance = registry.create_tool_instance(
-        "cruise-control-analyzer", log_file="/path/to/test.zst"
-    )
+    with patch("comma_tools.api.registry.ToolRegistry._initialize_cruise_control_environment"):
+        instance = registry.create_tool_instance(
+            "cruise-control-analyzer", log_file="/path/to/test.zst"
+        )
 
-    from comma_tools.analyzers.cruise_control_analyzer import CruiseControlAnalyzer
+        from comma_tools.analyzers.cruise_control_analyzer import CruiseControlAnalyzer
 
-    assert isinstance(instance, CruiseControlAnalyzer)
+        assert isinstance(instance, CruiseControlAnalyzer)
 
 
 def test_create_tool_instance_missing_params():
     """Test creating tool instance with missing required params."""
     registry = ToolRegistry()
 
-    with pytest.raises(ValueError, match="log_file parameter required"):
-        registry.create_tool_instance("cruise-control-analyzer")
+    with patch("comma_tools.api.registry.ToolRegistry._initialize_cruise_control_environment"):
+        with pytest.raises(ValueError, match="log_file parameter required"):
+            registry.create_tool_instance("cruise-control-analyzer")
 
 
 def test_create_tool_instance_rlog_to_csv():
