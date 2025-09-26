@@ -52,10 +52,13 @@ class LogStreamer:
 
         try:
             while True:
-                log_entry = await queue.get()
-                if log_entry is None:
-                    break
-                yield json.dumps(log_entry.model_dump(), default=str)
+                try:
+                    log_entry = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    if log_entry is None:
+                        break
+                    yield json.dumps(log_entry.model_dump(), default=str)
+                except asyncio.TimeoutError:
+                    yield json.dumps({"keepalive": True}, default=str)
         finally:
             if run_id in self.active_streams:
                 del self.active_streams[run_id]
@@ -109,11 +112,11 @@ def get_log_streamer() -> LogStreamer:
     return _log_streamer
 
 
-@router.get("/runs/{run_id}/logs", response_model=LogsResponse)
-async def get_run_logs(
+@router.get("/runs/{run_id}/logs/list", response_model=LogsResponse)
+async def get_run_logs_list(
     run_id: str, limit: int = 100, streamer: LogStreamer = Depends(get_log_streamer)
 ) -> LogsResponse:
-    """Get run logs.
+    """Get run logs as JSON list.
 
     Args:
         run_id: Run identifier
@@ -127,7 +130,7 @@ async def get_run_logs(
     return LogsResponse(run_id=run_id, logs=logs, has_more=len(logs) >= limit)
 
 
-@router.get("/runs/{run_id}/logs/stream")
+@router.get("/runs/{run_id}/logs")
 async def stream_run_logs(
     run_id: str, streamer: LogStreamer = Depends(get_log_streamer)
 ) -> StreamingResponse:

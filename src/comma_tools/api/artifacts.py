@@ -4,14 +4,14 @@ import logging
 import mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from .config import Config
-from .models import ArtifactMetadata, ArtifactsResponse
+from .models import ArtifactMetadata
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -104,10 +104,10 @@ def get_artifact_manager() -> ArtifactManager:
     return _artifact_manager
 
 
-@router.get("/runs/{run_id}/artifacts", response_model=ArtifactsResponse)
+@router.get("/runs/{run_id}/artifacts")
 async def list_run_artifacts(
     run_id: str, manager: ArtifactManager = Depends(get_artifact_manager)
-) -> ArtifactsResponse:
+) -> List[Dict[str, Any]]:
     """List artifacts for a run.
 
     Args:
@@ -115,10 +115,19 @@ async def list_run_artifacts(
         manager: Artifact manager dependency
 
     Returns:
-        Artifacts response with list of artifacts
+        List of artifact dictionaries matching CLI expectations
     """
     artifacts = manager.get_artifacts_for_run(run_id)
-    return ArtifactsResponse(run_id=run_id, artifacts=artifacts, total_count=len(artifacts))
+    return [
+        {
+            "id": artifact.artifact_id,
+            "filename": artifact.filename,
+            "size": artifact.size_bytes,
+            "type": artifact.content_type,
+            "created_at": artifact.created_at.isoformat(),
+        }
+        for artifact in artifacts
+    ]
 
 
 @router.get("/artifacts/{artifact_id}")

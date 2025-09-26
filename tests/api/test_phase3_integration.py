@@ -26,14 +26,21 @@ def test_artifact_endpoints_exist(client):
     response = client.get("/v1/runs/test-run/artifacts")
     assert response.status_code == 200
     data = response.json()
-    assert "run_id" in data
-    assert "artifacts" in data
-    assert "total_count" in data
+    assert isinstance(data, list)
 
 
-def test_log_endpoints_exist(client):
-    """Test that log endpoints exist and return proper responses."""
-    response = client.get("/v1/runs/test-run/logs")
+def test_log_streaming_endpoint_exists(client):
+    """Test that log streaming endpoint exists (without consuming stream)."""
+    from comma_tools.api.server import create_app
+
+    app = create_app()
+    routes = [route.path for route in app.routes if hasattr(route, "path")]
+    assert "/v1/runs/{run_id}/logs" in routes
+
+
+def test_log_list_endpoint_exists(client):
+    """Test that log list endpoint exists and returns JSON."""
+    response = client.get("/v1/runs/test-run/logs/list")
     assert response.status_code == 200
     data = response.json()
     assert "run_id" in data

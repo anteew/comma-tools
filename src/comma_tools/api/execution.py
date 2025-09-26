@@ -326,20 +326,28 @@ class ExecutionEngine:
         Returns:
             List of artifact file paths
         """
-        artifacts = []
+        artifacts: List[Path] = []
 
         if run_context.tool_id == "cruise-control-analyzer":
-            search_dirs = [Path(".")]
+            search_dirs = []
             if "output_dir" in run_context.params:
-                search_dirs.append(Path(run_context.params["output_dir"]))
+                output_dir = Path(run_context.params["output_dir"])
+                if output_dir.exists():
+                    search_dirs.append(output_dir)
+
+            if not search_dirs:
+                return artifacts
 
             patterns = ["*.csv", "*.json", "*.html", "*.png", "*.pdf"]
 
             for search_dir in search_dirs:
-                if search_dir.exists():
-                    for pattern in patterns:
-                        for file_path in search_dir.glob(pattern):
-                            if file_path.is_file() and file_path.stat().st_size > 0:
+                for pattern in patterns:
+                    for file_path in search_dir.glob(pattern):
+                        if file_path.is_file() and file_path.stat().st_size > 0:
+                            if (
+                                run_context.started_at
+                                and file_path.stat().st_mtime > run_context.started_at.timestamp()
+                            ):
                                 artifacts.append(file_path)
 
         return artifacts
