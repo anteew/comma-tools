@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from .config import Config
@@ -106,18 +106,20 @@ def get_artifact_manager() -> ArtifactManager:
 
 @router.get("/runs/{run_id}/artifacts")
 async def list_run_artifacts(
-    run_id: str, manager: ArtifactManager = Depends(get_artifact_manager)
+    run_id: str, request: Request, manager: ArtifactManager = Depends(get_artifact_manager)
 ) -> List[Dict[str, Any]]:
     """List artifacts for a run.
 
     Args:
         run_id: Run identifier
+        request: FastAPI request object for constructing fully-qualified URLs
         manager: Artifact manager dependency
 
     Returns:
         List of artifact dictionaries matching CLI expectations
     """
     artifacts = manager.get_artifacts_for_run(run_id)
+    base_url = f"{request.url.scheme}://{request.url.netloc}"
     return [
         {
             "id": artifact.artifact_id,
@@ -125,7 +127,7 @@ async def list_run_artifacts(
             "size": artifact.size_bytes,
             "type": artifact.content_type,
             "created_at": artifact.created_at.isoformat(),
-            "download_url": artifact.download_url,
+            "download_url": f"{base_url}{artifact.download_url}",
         }
         for artifact in artifacts
     ]
