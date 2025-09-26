@@ -153,7 +153,7 @@ async def stream_run_logs(run_id: str, streamer: LogStreamer = Depends(get_log_s
         async for log_line in streamer.stream_logs(run_id):
             yield f"data: {log_line}\n\n"
     
-    return StreamingResponse(generate(), media_type="text/plain")
+    return StreamingResponse(generate(), media_type="text/event-stream")
 ```
 
 ### Integration with Phase 2 Execution Engine
