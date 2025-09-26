@@ -3,7 +3,7 @@
 import os
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -15,6 +15,12 @@ class Config(BaseSettings):
     host: str = Field(default="127.0.0.1", description="API host address")
     port: int = Field(default=8080, description="API port")
     log_level: str = Field(default="INFO", description="Logging level")
+
+    @field_validator("log_level")
+    @classmethod
+    def normalize_log_level(cls, v: str) -> str:
+        """Normalize log level to uppercase for logging compatibility."""
+        return v.upper()
 
     @classmethod
     def from_env(cls) -> "Config":
