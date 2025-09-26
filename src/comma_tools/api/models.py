@@ -1,7 +1,8 @@
 """Pydantic request/response models for CTS-Lite API."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -60,3 +61,49 @@ class ErrorResponse(BaseModel):
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Detailed error information")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+
+
+class RunStatus(str, Enum):
+    """Run execution status enumeration."""
+
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELED = "canceled"
+
+
+class InputRef(BaseModel):
+    """Input reference for tool execution."""
+
+    type: Literal["path", "upload"] = Field(..., description="Input type")
+    value: str = Field(..., description="Input value (path or upload ID)")
+
+
+class RunRequest(BaseModel):
+    """Request model for starting a tool run."""
+
+    tool_id: str = Field(..., description="Tool identifier to execute")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Tool parameters")
+    input: Optional[InputRef] = Field(None, description="Input file reference")
+    name: Optional[str] = Field(None, description="Optional run name")
+    repo_root: Optional[str] = Field(None, description="Path to openpilot parent directory")
+    deps_dir: Optional[str] = Field(None, description="Directory for Python dependencies")
+    install_missing_deps: bool = Field(
+        False, description="Install missing dependencies automatically"
+    )
+
+
+class RunResponse(BaseModel):
+    """Response model for tool run status."""
+
+    run_id: str = Field(..., description="Unique run identifier")
+    status: RunStatus = Field(..., description="Current run status")
+    tool_id: str = Field(..., description="Tool identifier")
+    created_at: datetime = Field(..., description="Run creation timestamp")
+    started_at: Optional[datetime] = Field(None, description="Run start timestamp")
+    completed_at: Optional[datetime] = Field(None, description="Run completion timestamp")
+    params: Dict[str, Any] = Field(default_factory=dict, description="Tool parameters")
+    progress: Optional[int] = Field(None, description="Progress percentage (0-100)")
+    artifacts: List[str] = Field(default_factory=list, description="Generated artifact paths")
+    error: Optional[str] = Field(None, description="Error message if failed")
