@@ -79,6 +79,7 @@ class RouteResolver:
         # Try to verify the route exists by getting its files. If the response looks
         # usable, short circuit with the slug-based canonical route. Otherwise fall
         # back to the segment search for timestamp resolution.
+        route_files = None
         try:
             route_files = self.client.route_files(canonical_route)
         except HTTPError as http_error:
