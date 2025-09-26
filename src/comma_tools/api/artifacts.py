@@ -125,6 +125,7 @@ async def list_run_artifacts(
             "size": artifact.size_bytes,
             "type": artifact.content_type,
             "created_at": artifact.created_at.isoformat(),
+            "download_url": artifact.download_url,
         }
         for artifact in artifacts
     ]
