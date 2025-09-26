@@ -18,9 +18,5 @@ class Config(BaseSettings):
 
     @classmethod
     def from_env(cls) -> "Config":
-        """Create config from environment variables."""
-        return cls(
-            host=os.getenv("CTS_API_HOST", "127.0.0.1"),
-            port=int(os.getenv("CTS_API_PORT", "8080")),
-            log_level=os.getenv("CTS_API_LOG_LEVEL", "INFO").upper(),
-        )
+        """Create config from environment variables and .env files."""
+        return cls()

@@ -18,11 +18,14 @@ class HealthResponse(BaseModel):
 class ToolParameter(BaseModel):
     """Tool parameter schema model."""
 
-    type: str = Field(..., description="Parameter type (str, int, float, bool)")
+    type: str = Field(..., description="Parameter type (str, int, float, bool, list)")
     default: Optional[Any] = Field(None, description="Default value")
     description: str = Field(..., description="Parameter description")
     choices: Optional[List[str]] = Field(None, description="Valid choices for parameter")
     required: bool = Field(False, description="Whether parameter is required")
+    nargs: Optional[str] = Field(
+        None, description="Number of arguments (*, +, ?, or specific number)"
+    )
 
 
 class ToolCapability(BaseModel):

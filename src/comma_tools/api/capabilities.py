@@ -21,6 +21,7 @@ def _extract_parameters_from_parser(parser: argparse.ArgumentParser) -> Dict[str
 
         param_name = action.dest
         param_type = "str"  # default
+        nargs = None
 
         if action.type == int:
             param_type = "int"
@@ -33,7 +34,17 @@ def _extract_parameters_from_parser(parser: argparse.ArgumentParser) -> Dict[str
         elif hasattr(action, "choices") and action.choices:
             param_type = "str"
 
-        required = action.option_strings == []
+        # Handle nargs for list-type parameters
+        if hasattr(action, "nargs") and action.nargs is not None:
+            if action.nargs in ("*", "+", "?"):
+                nargs = str(action.nargs)
+                param_type = "list"
+            elif isinstance(action.nargs, int):
+                nargs = str(action.nargs)
+                if action.nargs > 1:
+                    param_type = "list"
+
+        required = action.option_strings == [] or getattr(action, "required", False)
 
         parameters[param_name] = ToolParameter(
             type=param_type,
@@ -41,6 +52,7 @@ def _extract_parameters_from_parser(parser: argparse.ArgumentParser) -> Dict[str
             description=action.help or f"Parameter {param_name}",
             choices=list(action.choices) if hasattr(action, "choices") and action.choices else None,
             required=required,
+            nargs=nargs,
         )
 
     return parameters
@@ -125,7 +137,10 @@ def _get_can_bitwatch_capability() -> ToolCapability:
         "--window-start", type=float, default=None, help="Override window start time"
     )
     parser.add_argument(
-        "--watch", nargs="*", default=["0x027:B4b5", "0x027:B5b1"], help="Watch specs"
+        "--watch",
+        nargs="*",
+        default=["0x027:B4b5", "0x027:B5b1", "0x67A:B3b7", "0x321:B5b1"],
+        help="Watch specs",
     )
 
     return ToolCapability(
