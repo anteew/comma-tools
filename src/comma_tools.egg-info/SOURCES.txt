@@ -14,6 +14,13 @@ src/comma_tools/analyzers/cruise_control_analyzer.py
 src/comma_tools/analyzers/event_detection.py
 src/comma_tools/analyzers/marker_detection.py
 src/comma_tools/analyzers/rlog_to_csv.py
+src/comma_tools/api/__init__.py
+src/comma_tools/api/capabilities.py
+src/comma_tools/api/config.py
+src/comma_tools/api/health.py
+src/comma_tools/api/models.py
+src/comma_tools/api/server.py
+src/comma_tools/api/middleware/__init__.py
 src/comma_tools/can/__init__.py
 src/comma_tools/can/bit_analysis.py
 src/comma_tools/can/decoders.py
