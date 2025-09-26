@@ -31,7 +31,7 @@ Implement the core tool execution capabilities for CTS-Lite, enabling users to r
 #### `src/comma_tools/api/execution.py`
 **Purpose**: Tool execution engine with async support
 **Requirements**:
-- Background task execution using FastAPI BackgroundTasks
+- Background task execution using proper thread isolation (NOT FastAPI BackgroundTasks)
 - Tool parameter validation and preparation  
 - Execution environment setup (deps, paths, etc.)
 - Progress tracking and status management
@@ -41,8 +41,14 @@ Implement the core tool execution capabilities for CTS-Lite, enabling users to r
 **Key Features**:
 - ExecutionEngine class for managing tool runs
 - RunContext class for execution state
-- Background task wrapper for async execution
+- Thread-based execution wrapper to prevent blocking the API
 - Proper error handling and timeout support
+
+**⚠️ CRITICAL: Use Thread-Based Execution**
+- **DO NOT use FastAPI BackgroundTasks** for heavy analyzer execution
+- BackgroundTasks run in the same event loop and will block all API requests
+- **USE `asyncio.to_thread()` or `run_in_executor()`** to run analyzers in separate threads
+- This ensures the API remains responsive during tool execution
 
 #### `src/comma_tools/api/runs.py`  
 **Purpose**: Run management endpoints
@@ -182,12 +188,11 @@ The execution engine must:
 4. **Set up tool environment** (dependencies, openpilot paths)
 5. **Execute tool safely** with proper error handling
 
-### Background Execution Flow
+### Background Execution Flow (Thread-Based)
 ```python
 @router.post("/runs", response_model=RunResponse)
 async def start_run(
     request: RunRequest,
-    background_tasks: BackgroundTasks,
     engine: ExecutionEngine = Depends(get_execution_engine)
 ):
     # Validate tool exists and parameters
@@ -200,8 +205,8 @@ async def start_run(
         params=request.params
     )
     
-    # Start background execution
-    background_tasks.add_task(engine.execute_tool, run_context)
+    # Start execution in separate thread (CRITICAL: Don't use BackgroundTasks)
+    asyncio.create_task(engine.execute_tool_async(run_context))
     
     # Return immediate response
     return RunResponse(
@@ -211,6 +216,34 @@ async def start_run(
         created_at=run_context.created_at,
         params=request.params
     )
+
+# In ExecutionEngine class:
+async def execute_tool_async(self, run_context: RunContext):
+    """Execute tool in separate thread to avoid blocking API"""
+    try:
+        run_context.status = RunStatus.RUNNING
+        run_context.started_at = datetime.utcnow()
+        
+        # Run analyzer in separate thread - CRITICAL for API responsiveness
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,  # Use default ThreadPoolExecutor
+            self._execute_tool_sync,
+            run_context
+        )
+        
+        run_context.status = RunStatus.COMPLETED
+        run_context.completed_at = datetime.utcnow()
+        
+    except Exception as e:
+        run_context.status = RunStatus.FAILED
+        run_context.error = str(e)
+        run_context.completed_at = datetime.utcnow()
+
+def _execute_tool_sync(self, run_context: RunContext):
+    """Synchronous tool execution - runs in thread"""
+    # Import and execute analyzer class here
+    # This runs in separate thread, won't block API
 ```
 
 ## Testing Requirements
@@ -284,13 +317,15 @@ async def start_run(
 ## Common Pitfalls to Avoid
 
 - **Don't duplicate analyzer logic** - call existing analyzer classes, don't reimplement
-- **Don't block API responses** - use BackgroundTasks for all tool execution
+- **⚠️ CRITICAL: Don't use FastAPI BackgroundTasks for heavy work** - use thread execution instead
+- **Don't block the event loop** - CPU-intensive analyzer work must run in threads
 - **Don't skip parameter validation** - validate all inputs against tool schemas  
 - **Don't ignore error handling** - capture and report all execution errors
 - **Don't hardcode tool lists** - dynamically discover from analyzer modules
 - **Do handle missing dependencies** - analyzer tools may need openpilot, deps setup
 - **Do preserve existing behavior** - analyzers should work exactly as before
-- **Do use proper async patterns** - don't mix sync/async incorrectly
+- **Do use `asyncio.to_thread()` or `run_in_executor()`** - proper thread isolation
+- **Do test API responsiveness** - ensure status endpoints work during tool execution
 
 ## Architecture Compliance Notes
 
