@@ -12,7 +12,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
-from .auth import load_auth, redact_token
+from .auth import load_auth, redact_token, try_load_auth
 
 
 class RateLimiter:
@@ -49,21 +49,24 @@ class ConnectClient:
     error handling and retries.
     """
 
-    def __init__(self, base_url: str = "https://api.comma.ai"):
+    def __init__(self, base_url: str = "https://api.commadotai.com", require_auth: bool = True):
         self.base_url = base_url.rstrip("/")
         self.rate_limiter = RateLimiter(max_calls=5, window_seconds=60)
+        self.require_auth = require_auth
         self._jwt_token: Optional[str] = None
 
-    def _get_jwt_token(self) -> str:
+    def _get_jwt_token(self) -> Optional[str]:
         """Get JWT token, loading if necessary."""
         if self._jwt_token is None:
-            self._jwt_token = load_auth()
-        assert self._jwt_token is not None
+            if self.require_auth:
+                self._jwt_token = load_auth()
+            else:
+                self._jwt_token = try_load_auth()
         return self._jwt_token
 
     def _make_request(self, endpoint: str, method: str = "GET") -> Dict[str, Any]:
         """
-        Make authenticated API request with rate limiting.
+        Make API request with optional authentication and rate limiting.
 
         Args:
             endpoint: API endpoint path
@@ -83,7 +86,8 @@ class ConnectClient:
         jwt_token = self._get_jwt_token()
 
         request = Request(url, method=method)
-        request.add_header("Authorization", f"JWT {jwt_token}")
+        if jwt_token:
+            request.add_header("Authorization", f"JWT {jwt_token}")
         request.add_header("User-Agent", "comma-tools-connect-downloader/1.0")
 
         try:
@@ -93,15 +97,25 @@ class ConnectClient:
                 return json.loads(data)
         except HTTPError as e:
             if e.code == 401:
-                token_redacted = redact_token(jwt_token)
-                raise HTTPError(
-                    e.url,
-                    e.code,
-                    f"Auth failed. Verify token {token_redacted} at jwt.comma.ai "
-                    f"and permissions for this device/route.",
-                    e.headers,
-                    e.fp,
-                ) from e
+                if jwt_token:
+                    token_redacted = redact_token(jwt_token)
+                    raise HTTPError(
+                        e.url,
+                        e.code,
+                        f"Auth failed. Verify token {token_redacted} at jwt.comma.ai "
+                        f"and permissions for this device/route.",
+                        e.headers,
+                        e.fp,
+                    ) from e
+                else:
+                    raise HTTPError(
+                        e.url,
+                        e.code,
+                        f"Authentication required. This resource is not public. "
+                        f"Set COMMA_JWT environment variable or run openpilot/tools/lib/auth.py",
+                        e.headers,
+                        e.fp,
+                    ) from e
             elif e.code == 404:
                 raise HTTPError(
                     e.url, e.code, f"Route not found or you lack access.", e.headers, e.fp

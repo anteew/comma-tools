@@ -53,17 +53,17 @@ class RouteResolver:
 
     def resolve_connect_url(self, connect_url: str, search_days: int = 7) -> str:
         """
-        Resolve connect URL to canonical route name.
+        Resolve connect URL to canonical route name using openpilot-style parsing.
 
         Args:
             connect_url: Connect URL to resolve
-            search_days: Number of days to search backwards
+            search_days: Number of days to search backwards (unused, for compatibility)
 
         Returns:
             Canonical route name
 
         Raises:
-            ValueError: If URL cannot be resolved within search window
+            ValueError: If URL cannot be resolved
         """
         connect_pattern = r"https://connect\.comma\.ai/([a-f0-9]{16})/([a-f0-9]{8}--[a-f0-9]{10})"
         match = re.match(connect_pattern, connect_url)
@@ -72,6 +72,28 @@ class RouteResolver:
 
         dongle_id, url_slug = match.groups()
 
+        # Use openpilot-style parsing: create canonical route name
+        # Convert dcb4c2e18426be55/00000008--0696c823fa -> dcb4c2e18426be55|00000008--0696c823fa
+        canonical_route = f"{dongle_id}|{url_slug}"
+
+        # Try to verify the route exists by getting its files
+        try:
+            route_files = self.client.route_files(canonical_route)
+            # If we get files, the route exists and is accessible
+            if route_files and any(route_files.values()):
+                return canonical_route
+            else:
+                # Route exists but has no files, still return it
+                return canonical_route
+        except Exception as e:
+            # If direct route lookup fails, fall back to device segments search
+            # but only as a last resort
+            if "404" in str(e) or "not found" in str(e).lower():
+                pass  # Continue to fallback
+            else:
+                raise ValueError(f"Error accessing route {canonical_route}: {e}") from e
+
+        # Fallback: try to search device segments (original approach)
         end_time = datetime.now(timezone.utc)
         start_time = end_time - timedelta(days=search_days)
 
@@ -81,7 +103,7 @@ class RouteResolver:
         try:
             segments = self.client.device_segments(dongle_id, from_ms, to_ms)
         except Exception as e:
-            raise ValueError(f"Failed to search device segments for {dongle_id}: {e}") from e
+            raise ValueError(f"Failed to resolve connect URL {connect_url}: {e}") from e
 
         for segment in segments:
             segment_url = segment.get("url", "")
@@ -95,9 +117,8 @@ class RouteResolver:
                     return canonical_route
 
         raise ValueError(
-            f"Couldn't map Connect URL within the last {search_days} days. "
-            f"Pass the canonical route (dongle|YYYY-MM-DD--HH-MM-SS) "
-            f"or widen the search window with --days."
+            f"Couldn't resolve connect URL {connect_url}. "
+            f"URL may not be public or route may not exist."
         )
 
     def resolve(self, input_str: str, search_days: int = 7) -> str:

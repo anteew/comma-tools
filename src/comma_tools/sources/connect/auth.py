@@ -44,6 +44,21 @@ def load_auth() -> str:
     )
 
 
+def try_load_auth() -> Optional[str]:
+    """
+    Try to load comma API JWT token, returning None if not found.
+
+    This is useful for attempting public access before requiring authentication.
+
+    Returns:
+        JWT token string if found, None otherwise
+    """
+    try:
+        return load_auth()
+    except FileNotFoundError:
+        return None
+
+
 def redact_token(token: str, show_chars: int = 4) -> str:
     """
     Redact JWT token for safe logging.

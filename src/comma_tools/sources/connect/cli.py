@@ -25,14 +25,20 @@ def create_parser() -> argparse.ArgumentParser:
         description="Download log files from comma connect",
         epilog="""
 Examples:
+  # Public URL (no authentication needed!)
   comma-connect-dl --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs
 
+  # Multiple file types from public URL
+  comma-connect-dl --url https://connect.comma.ai/dcb4c2e18426be55/00000008--0696c823fa --logs --qlogs --qcameras
+
+  # Canonical route (requires authentication)
   comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --cameras
 
-  comma-connect-dl --url <connect-url> --logs --dest ./my-logs --parallel 8
+  # Custom destination and parallel downloads
+  comma-connect-dl --url <public-connect-url> --logs --dest ./my-logs --parallel 8
 
 For more information, see: https://github.com/commaai/comma-api
-Note: Drives are retained 3 days (or 1 year with comma prime)
+Note: Public URLs work instantly. Drives are retained 3 days (or 1 year with comma prime)
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -171,15 +177,25 @@ def main() -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
-    try:
-        load_auth()
-        if args.verbose:
-            print("Authentication: JWT token found")
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+    # For connect URLs, try public access first, then fall back to authenticated access
+    is_connect_url = args.url and args.url.startswith("https://connect.comma.ai/")
 
-    client = ConnectClient()
+    if is_connect_url:
+        # Try public access first
+        client = ConnectClient(require_auth=False)
+        if args.verbose:
+            print("Attempting public access for connect URL...")
+    else:
+        # For canonical routes, require authentication
+        try:
+            load_auth()
+            if args.verbose:
+                print("Authentication: JWT token found")
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        client = ConnectClient(require_auth=True)
+
     resolver = RouteResolver(client)
     downloader = LogDownloader(client, parallel=args.parallel)
 
@@ -192,8 +208,32 @@ def main() -> int:
             print(f"Resolved route: {canonical_route}")
 
     except Exception as e:
-        print(f"Error resolving route: {e}", file=sys.stderr)
-        return 1
+        # If public access failed for a connect URL, try with authentication
+        if is_connect_url and "Authentication required" in str(e):
+            if args.verbose:
+                print("Public access failed, trying with authentication...")
+            try:
+                load_auth()
+                if args.verbose:
+                    print("Authentication: JWT token found")
+
+                # Recreate client and resolver with authentication required
+                client = ConnectClient(require_auth=True)
+                resolver = RouteResolver(client)
+                downloader = LogDownloader(client, parallel=args.parallel)
+
+                canonical_route = resolver.resolve(input_str, search_days)
+                if args.verbose:
+                    print(f"Resolved route (authenticated): {canonical_route}")
+            except FileNotFoundError as auth_error:
+                print(f"Error: {auth_error}", file=sys.stderr)
+                return 1
+            except Exception as retry_error:
+                print(f"Error resolving route (authenticated): {retry_error}", file=sys.stderr)
+                return 1
+        else:
+            print(f"Error resolving route: {e}", file=sys.stderr)
+            return 1
 
     file_types = {
         "logs": args.logs,
