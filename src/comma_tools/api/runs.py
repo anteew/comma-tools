@@ -96,37 +96,6 @@ async def get_run_status(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
-@router.get("/runs/{run_id}/logs")
-async def get_run_logs(
-    run_id: str, engine: ExecutionEngine = Depends(get_execution_engine)
-) -> Dict[str, str]:
-    """
-    Get run logs.
-
-    Returns log output from tool execution. In Phase 2, this returns
-    a simple message. Future phases will implement SSE streaming.
-
-    Args:
-        run_id: Run identifier
-        engine: Execution engine dependency
-
-    Returns:
-        Log information
-
-    Raises:
-        HTTPException: If run not found
-    """
-    try:
-        await engine.get_run_status(run_id)
-
-        return {"message": "Log streaming not yet implemented", "run_id": run_id}
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logger.error(f"Failed to get run logs: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-
 @router.delete("/runs/{run_id}")
 async def cancel_run(
     run_id: str, engine: ExecutionEngine = Depends(get_execution_engine)

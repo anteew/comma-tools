@@ -6,7 +6,7 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import capabilities, health, runs
+from . import artifacts, capabilities, health, logs, runs
 from .config import Config
 
 
@@ -31,6 +31,8 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/v1", tags=["health"])
     app.include_router(capabilities.router, prefix="/v1", tags=["capabilities"])
     app.include_router(runs.router, prefix="/v1", tags=["runs"])
+    app.include_router(artifacts.router, prefix="/v1", tags=["artifacts"])
+    app.include_router(logs.router, prefix="/v1", tags=["logs"])
 
     return app
 
