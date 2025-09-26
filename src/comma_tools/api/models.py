@@ -107,3 +107,40 @@ class RunResponse(BaseModel):
     progress: Optional[int] = Field(None, description="Progress percentage (0-100)")
     artifacts: List[str] = Field(default_factory=list, description="Generated artifact paths")
     error: Optional[str] = Field(None, description="Error message if failed")
+
+
+class ArtifactMetadata(BaseModel):
+    """Artifact metadata model."""
+
+    artifact_id: str = Field(..., description="Unique artifact identifier")
+    run_id: str = Field(..., description="Run identifier")
+    filename: str = Field(..., description="Original filename")
+    content_type: str = Field(..., description="MIME content type")
+    size_bytes: int = Field(..., description="File size in bytes")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    download_url: str = Field(..., description="Download URL")
+
+
+class ArtifactsResponse(BaseModel):
+    """Artifacts response model."""
+
+    run_id: str = Field(..., description="Run identifier")
+    artifacts: List[ArtifactMetadata] = Field(default_factory=list, description="Artifact list")
+    total_count: int = Field(..., description="Total artifact count")
+
+
+class LogEntry(BaseModel):
+    """Log entry model."""
+
+    timestamp: datetime = Field(..., description="Log timestamp")
+    level: str = Field(..., description="Log level")
+    message: str = Field(..., description="Log message")
+    source: str = Field(default="tool", description="Log source")
+
+
+class LogsResponse(BaseModel):
+    """Logs response model."""
+
+    run_id: str = Field(..., description="Run identifier")
+    logs: List[LogEntry] = Field(default_factory=list, description="Log entries")
+    has_more: bool = Field(default=False, description="More logs available")

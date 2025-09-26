@@ -5,7 +5,8 @@ import logging
 import sys
 import traceback
 from datetime import datetime
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from .models import RunRequest, RunResponse, RunStatus
@@ -48,7 +49,7 @@ class RunContext:
         self.completed_at: Optional[datetime] = None
         self.progress: Optional[int] = None
         self.error: Optional[str] = None
-        self.artifacts: list[str] = []
+        self.artifacts: List[str] = []
 
     def to_response(self) -> RunResponse:
         """Convert to RunResponse model.
@@ -143,14 +144,38 @@ class ExecutionEngine:
 
             logger.info(f"Starting execution of {run_context.tool_id} (run {run_context.run_id})")
 
+            from .artifacts import get_artifact_manager
+            from .logs import get_log_streamer
+
+            artifact_manager = get_artifact_manager()
+            log_streamer = get_log_streamer()
+
+            log_streamer.add_log_entry(
+                run_context.run_id, "INFO", f"Starting {run_context.tool_id} execution"
+            )
+
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(
                 None, self._execute_tool_sync, run_context  # Use default ThreadPoolExecutor
             )
 
+            artifacts = self._scan_for_artifacts(run_context)
+            for artifact_path in artifacts:
+                artifact_id = artifact_manager.register_artifact(run_context.run_id, artifact_path)
+                run_context.artifacts.append(artifact_id)
+                log_streamer.add_log_entry(
+                    run_context.run_id, "INFO", f"Registered artifact: {artifact_path.name}"
+                )
+
             run_context.status = RunStatus.COMPLETED
             run_context.completed_at = datetime.utcnow()
             run_context.progress = 100
+
+            log_streamer.add_log_entry(
+                run_context.run_id, "INFO", f"Completed {run_context.tool_id} execution"
+            )
+
+            log_streamer.terminate_stream(run_context.run_id)
 
             logger.info(f"Completed execution of {run_context.tool_id} (run {run_context.run_id})")
 
@@ -158,6 +183,13 @@ class ExecutionEngine:
             run_context.status = RunStatus.FAILED
             run_context.error = str(e)
             run_context.completed_at = datetime.utcnow()
+
+            from .logs import get_log_streamer
+
+            log_streamer = get_log_streamer()
+            log_streamer.add_log_entry(run_context.run_id, "ERROR", f"Execution failed: {str(e)}")
+
+            log_streamer.terminate_stream(run_context.run_id)
 
             logger.error(
                 f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
@@ -288,3 +320,40 @@ class ExecutionEngine:
         run_context.error = "Cancelled by user"
 
         return True
+
+    def _scan_for_artifacts(self, run_context: RunContext) -> List[Path]:
+        """Scan for generated artifacts after tool execution.
+
+        Args:
+            run_context: Run context to scan for artifacts
+
+        Returns:
+            List of artifact file paths
+        """
+        artifacts: List[Path] = []
+
+        if run_context.tool_id == "cruise-control-analyzer":
+            search_dirs = []
+            if "output_dir" in run_context.params:
+                output_dir = Path(run_context.params["output_dir"])
+                if output_dir.exists():
+                    search_dirs.append(output_dir)
+            else:
+                search_dirs.append(Path("."))
+
+            if not search_dirs:
+                return artifacts
+
+            patterns = ["*.csv", "*.json", "*.html", "*.png", "*.pdf"]
+
+            for search_dir in search_dirs:
+                for pattern in patterns:
+                    for file_path in search_dir.glob(pattern):
+                        if file_path.is_file() and file_path.stat().st_size > 0:
+                            if (
+                                run_context.started_at
+                                and file_path.stat().st_mtime > run_context.started_at.timestamp()
+                            ):
+                                artifacts.append(file_path)
+
+        return artifacts

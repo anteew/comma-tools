@@ -12,6 +12,7 @@ class Config(BaseSettings):
     host: str = Field(default="127.0.0.1", description="API host address")
     port: int = Field(default=8080, description="API port")
     log_level: str = Field(default="INFO", description="Logging level")
+    storage_dir: str = Field(default="/var/lib/cts-lite", description="Artifact storage directory")
 
     @field_validator("log_level")
     @classmethod
