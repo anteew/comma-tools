@@ -145,7 +145,9 @@ python3 -m comma_tools.sources.connect.cli --route dcb4c2e18426be55|2024-04-19--
 comma-connect-dl --route dcb4c2e18426be55|2024-04-19--12-33-20 --logs --dest ./my-logs
 ```
 
-**Authentication:** Requires JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
+**Authentication:**
+- **Connect URLs**: Public URLs work without authentication. If access fails, automatically falls back to authenticated access.
+- **Canonical routes**: Require JWT token via `COMMA_JWT` environment variable or `~/.comma/auth.json` file (created by `openpilot/tools/lib/auth.py`).
 
 **File Layout:** Downloads are organized as `<dest>/<dongle_id>/<YYYY-MM-DD--HH-MM-SS>/<segment>/<filename>` for compatibility with existing analyzers.
 

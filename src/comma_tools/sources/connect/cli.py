@@ -10,7 +10,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from .auth import load_auth
 from .client import ConnectClient
@@ -169,19 +169,29 @@ def main() -> int:
         validate_args(args)
     except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
-        return 1
+        raise SystemExit(1) from None
 
-    try:
-        load_auth()
+    # For connect URLs, try public access first, then fall back to authenticated access
+    is_connect_url = args.url and args.url.startswith("https://connect.comma.ai/")
+
+    if is_connect_url:
+        # Try public access first for connect URLs
+        client = ConnectClient(require_auth=False)
         if args.verbose:
-            print("Authentication: JWT token found")
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        return 1
+            print("Attempting public access for connect URL...")
+    else:
+        # For canonical routes, require authentication
+        try:
+            load_auth()
+            if args.verbose:
+                print("Authentication: JWT token found")
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            raise SystemExit(1) from None
+        client = ConnectClient(require_auth=True)
 
-    client = ConnectClient()
     resolver = RouteResolver(client)
-    downloader = LogDownloader(client, parallel=args.parallel)
+    downloader: Optional[LogDownloader] = None
 
     try:
         input_str = args.route if args.route else args.url
@@ -192,8 +202,31 @@ def main() -> int:
             print(f"Resolved route: {canonical_route}")
 
     except Exception as e:
-        print(f"Error resolving route: {e}", file=sys.stderr)
-        return 1
+        # If public access failed for a connect URL, try with authentication
+        if is_connect_url and "Authentication required" in str(e):
+            if args.verbose:
+                print("Public access failed, trying with authentication...")
+            try:
+                load_auth()
+                if args.verbose:
+                    print("Authentication: JWT token found")
+
+                # Recreate client and resolver with authentication required
+                client = ConnectClient(require_auth=True)
+                resolver = RouteResolver(client)
+
+                canonical_route = resolver.resolve(input_str, search_days)
+                if args.verbose:
+                    print(f"Resolved route (authenticated): {canonical_route}")
+            except FileNotFoundError as auth_error:
+                print(f"Error: {auth_error}", file=sys.stderr)
+                raise SystemExit(1) from None
+            except Exception as retry_error:
+                print(f"Error resolving route (authenticated): {retry_error}", file=sys.stderr)
+                raise SystemExit(1) from None
+        else:
+            print(f"Error resolving route: {e}", file=sys.stderr)
+            raise SystemExit(1) from None
 
     file_types = {
         "logs": args.logs,
@@ -211,6 +244,8 @@ def main() -> int:
         return 0
 
     try:
+        if downloader is None:
+            downloader = LogDownloader(client, parallel=args.parallel)
         report = downloader.download_route(
             canonical_route, args.dest, file_types, resume=not args.no_resume
         )
@@ -229,7 +264,7 @@ def main() -> int:
             traceback.print_exc()
         else:
             print(f"Error during download: {e}", file=sys.stderr)
-        return 1
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

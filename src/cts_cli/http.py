@@ -14,7 +14,6 @@ import httpx
 
 from .config import Config
 
-
 JSONData = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 
