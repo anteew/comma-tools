@@ -225,19 +225,19 @@ class Config(BaseSettings):
 ## Success Criteria
 
 ### Functional Requirements
-- [x] Service starts successfully with `cts-lite` command
-- [x] Health endpoint returns proper response
-- [x] Capabilities endpoint lists available tools
-- [x] OpenAPI documentation accessible at `/docs`
-- [x] All tests pass
-- [x] `cts ping` command works against the service
-- [x] `cts cap` command works against the service
+- [ ] Service starts successfully with `cts-lite` command
+- [ ] Health endpoint returns proper response
+- [ ] Capabilities endpoint lists available tools
+- [ ] OpenAPI documentation accessible at `/docs`
+- [ ] All tests pass
+- [ ] `cts ping` command works against the service
+- [ ] `cts cap` command works against the service
 
 ### Non-Functional Requirements
-- [x] Service starts within 2 seconds
-- [x] Health check response time < 100ms
-- [x] Proper error handling and logging
-- [x] Clean shutdown on SIGTERM
+- [ ] Service starts within 2 seconds
+- [ ] Health check response time < 100ms
+- [ ] Proper error handling and logging
+- [ ] Clean shutdown on SIGTERM
 
 ## Validation Steps
 
