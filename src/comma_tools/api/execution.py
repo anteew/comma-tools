@@ -175,6 +175,8 @@ class ExecutionEngine:
                 run_context.run_id, "INFO", f"Completed {run_context.tool_id} execution"
             )
 
+            log_streamer.terminate_stream(run_context.run_id)
+
             logger.info(f"Completed execution of {run_context.tool_id} (run {run_context.run_id})")
 
         except Exception as e:
@@ -186,6 +188,8 @@ class ExecutionEngine:
 
             log_streamer = get_log_streamer()
             log_streamer.add_log_entry(run_context.run_id, "ERROR", f"Execution failed: {str(e)}")
+
+            log_streamer.terminate_stream(run_context.run_id)
 
             logger.error(
                 f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
@@ -334,6 +338,8 @@ class ExecutionEngine:
                 output_dir = Path(run_context.params["output_dir"])
                 if output_dir.exists():
                     search_dirs.append(output_dir)
+            else:
+                search_dirs.append(Path("."))
 
             if not search_dirs:
                 return artifacts

@@ -100,6 +100,18 @@ class LogStreamer:
             return []
         return self.log_storage[run_id][-limit:]
 
+    def terminate_stream(self, run_id: str) -> None:
+        """Terminate log streaming for a run by pushing sentinel value.
+
+        Args:
+            run_id: Run identifier
+        """
+        if run_id in self.active_streams:
+            try:
+                self.active_streams[run_id].put_nowait(None)
+            except asyncio.QueueFull:
+                logger.warning(f"Could not terminate stream for run {run_id}: queue full")
+
 
 _log_streamer: Optional[LogStreamer] = None
 
