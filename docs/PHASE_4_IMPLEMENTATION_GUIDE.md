@@ -28,11 +28,9 @@ Complete the final production polish requirements to achieve full MVP readiness.
 **Key Enhancements**:
 ```python
 class ErrorCategory(str, Enum):
-    TOOL_ERROR = "tool_error"           # Analyzer execution failed
+    TOOL_ERROR = "tool_error"           # Analyzer execution failed, including timeouts
     VALIDATION_ERROR = "validation_error" # Invalid parameters/inputs  
-    SYSTEM_ERROR = "system_error"       # Infrastructure issues
-    TIMEOUT_ERROR = "timeout_error"     # Execution timeout
-    RESOURCE_ERROR = "resource_error"   # Insufficient resources
+    SYSTEM_ERROR = "system_error"       # Infrastructure or resource issues
 
 class EnhancedRunContext:
     def __init__(self, ...):
@@ -44,11 +42,15 @@ class EnhancedRunContext:
 ```
 
 #### Error Handling Patterns:
-- **Tool Execution Errors**: Capture stderr, provide debugging info
+- **Tool Execution Errors**: Capture stderr, provide debugging info, handle timeouts
 - **Validation Errors**: Clear parameter error messages  
 - **System Errors**: Resource availability, permissions, dependencies
-- **Timeout Handling**: Configurable per tool type
 - **Cleanup on Failure**: Remove partial artifacts, free resources
+
+**Simplified Error Flow**:
+- **TOOL_ERROR**: Any analyzer execution failure (includes timeouts, crashes, invalid outputs)
+- **VALIDATION_ERROR**: Invalid parameters, missing files, bad inputs (caught early)  
+- **SYSTEM_ERROR**: Infrastructure issues (disk space, permissions, missing dependencies)
 
 ### **2. Monitor Integration (IMPORTANT)**
 
@@ -312,7 +314,7 @@ systemctl start cts-lite  # Service integration works
 
 ### **Error Handling Philosophy**
 ```python
-# CORRECT: Enhanced error handling pattern
+# CORRECT: Simplified error handling pattern
 async def execute_tool_with_error_handling(self, run_context: RunContext):
     try:
         # Phase 2 & 3 execution logic (preserve existing)
@@ -324,6 +326,7 @@ async def execute_tool_with_error_handling(self, run_context: RunContext):
         run_context.error_details = {
             "tool_stderr": e.stderr,
             "exit_code": e.exit_code,
+            "execution_time": e.duration,
             "suggested_fix": self.suggest_fix(e)
         }
         await self.cleanup_failed_run(run_context)
@@ -332,10 +335,10 @@ async def execute_tool_with_error_handling(self, run_context: RunContext):
         run_context.error_category = ErrorCategory.VALIDATION_ERROR  
         run_context.error_details = {"validation_errors": e.errors()}
         
-    except asyncio.TimeoutError:
-        run_context.error_category = ErrorCategory.TIMEOUT_ERROR
-        run_context.error_details = {"timeout_seconds": run_context.timeout_seconds}
-        await self.cleanup_timeout_run(run_context)
+    except (OSError, PermissionError, DiskSpaceError) as e:
+        run_context.error_category = ErrorCategory.SYSTEM_ERROR
+        run_context.error_details = {"system_error": str(e), "error_type": type(e).__name__}
+        await self.cleanup_failed_run(run_context)
 ```
 
 ### **Monitor Integration Pattern**
