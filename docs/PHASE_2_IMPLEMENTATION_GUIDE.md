@@ -255,20 +255,20 @@ async def start_run(
 ## Success Criteria
 
 ### Functional Requirements
-- [x] POST /v1/runs endpoint accepts tool requests and returns run_id
-- [x] GET /v1/runs/{run_id} endpoint returns current run status  
-- [x] Tool registry discovers at least 3 analyzers from existing code
-- [x] Background execution actually runs analyzer classes (not dummy tasks)
-- [x] Parameter validation prevents invalid requests
-- [x] Error handling captures and reports tool execution failures
-- [x] `cts run cruise-control-analyzer --path file.zst -p speed_min=50` works end-to-end
+- [ ] POST /v1/runs endpoint accepts tool requests and returns run_id
+- [ ] GET /v1/runs/{run_id} endpoint returns current run status  
+- [ ] Tool registry discovers at least 3 analyzers from existing code
+- [ ] Background execution actually runs analyzer classes (not dummy tasks)
+- [ ] Parameter validation prevents invalid requests
+- [ ] Error handling captures and reports tool execution failures
+- [ ] `cts run cruise-control-analyzer --path file.zst -p speed_min=50` works end-to-end
 
 ### Non-Functional Requirements  
-- [x] Run startup time < 1 second (queued → running)
-- [x] Status endpoint response time < 100ms
-- [x] Proper error logging for debugging
-- [x] Background tasks don't block API responses
-- [x] Memory usage stays reasonable during execution
+- [ ] Run startup time < 1 second (queued → running)
+- [ ] Status endpoint response time < 100ms
+- [ ] Proper error logging for debugging
+- [ ] Background tasks don't block API responses
+- [ ] Memory usage stays reasonable during execution
 
 ## Validation Steps
 
