@@ -192,7 +192,9 @@ def test_get_run_logs_not_found(mock_engine):
         # Should have empty or minimal content since run doesn't exist
         content = response.text
         # The stream should be empty since our fake generator yields nothing
-        assert content == "" or content.strip() == "", f"Expected empty content, got: {repr(content)}"
+        assert (
+            content == "" or content.strip() == ""
+        ), f"Expected empty content, got: {repr(content)}"
     finally:
         app.dependency_overrides.clear()
 
