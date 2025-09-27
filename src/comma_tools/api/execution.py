@@ -5,11 +5,12 @@ import logging
 import sys
 import traceback
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 from uuid import uuid4
 
-from .models import RunRequest, RunResponse, RunStatus
+from .models import RunRequest, RunResponse, RunStatus, ErrorCategory
 from .registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,13 @@ class RunContext:
         self.progress: Optional[int] = None
         self.error: Optional[str] = None
         self.artifacts: List[str] = []
+        
+        # Enhanced error handling fields
+        self.error_category: Optional[ErrorCategory] = None
+        self.error_details: Dict[str, Any] = {}
+        self.recovery_attempted: bool = False
+        self.timeout_seconds: int = 300  # 5 minute default
+        self.cleanup_handlers: List[Callable] = []
 
     def to_response(self) -> RunResponse:
         """Convert to RunResponse model.
@@ -71,6 +79,202 @@ class RunContext:
         )
 
 
+class ResourceManager:
+    """Manages resources and ensures proper cleanup."""
+    
+    def __init__(self):
+        self.active_processes: Set[asyncio.subprocess.Process] = set()
+        self.temp_directories: Set[Path] = set()
+        self.open_files: Set = set()
+        
+    async def cleanup_run_resources(self, run_context: "RunContext") -> None:
+        """Clean up all resources associated with a run.
+        
+        Args:
+            run_context: Run context to clean up resources for
+        """
+        # Execute registered cleanup handlers
+        for cleanup_handler in run_context.cleanup_handlers:
+            try:
+                if asyncio.iscoroutinefunction(cleanup_handler):
+                    await cleanup_handler(run_context)
+                else:
+                    cleanup_handler(run_context)
+            except Exception as e:
+                logger.warning(f"Cleanup handler failed for run {run_context.run_id}: {e}")
+                
+        # Force cleanup critical resources
+        await self._cleanup_processes(run_context.run_id)
+        await self._cleanup_temp_files(run_context.run_id)
+        self._cleanup_memory_references(run_context.run_id)
+        
+    async def _cleanup_processes(self, run_id: str) -> None:
+        """Terminate any running processes for this run.
+        
+        Args:
+            run_id: Run identifier
+        """
+        for proc in list(self.active_processes):
+            if hasattr(proc, 'run_id') and getattr(proc, 'run_id') == run_id:
+                try:
+                    if proc.returncode is None:  # Process still running
+                        proc.terminate()
+                        await asyncio.wait_for(proc.wait(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    try:
+                        proc.kill()  # Force kill if graceful termination fails
+                        await proc.wait()
+                    except Exception as e:
+                        logger.warning(f"Force kill failed for run {run_id}: {e}")
+                except Exception as e:
+                    logger.warning(f"Process cleanup failed for run {run_id}: {e}")
+                finally:
+                    self.active_processes.discard(proc)
+    
+    async def _cleanup_temp_files(self, run_id: str) -> None:
+        """Clean up temporary files for this run.
+        
+        Args:
+            run_id: Run identifier
+        """
+        for temp_dir in list(self.temp_directories):
+            if run_id in str(temp_dir):
+                try:
+                    if temp_dir.exists():
+                        import shutil
+                        shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception as e:
+                    logger.warning(f"Temp directory cleanup failed for run {run_id}: {e}")
+                finally:
+                    self.temp_directories.discard(temp_dir)
+    
+    def _cleanup_memory_references(self, run_id: str) -> None:
+        """Clean up memory references for this run.
+        
+        Args:
+            run_id: Run identifier
+        """
+        # Close any open files related to this run
+        for file_obj in list(self.open_files):
+            if hasattr(file_obj, 'name') and run_id in str(file_obj.name):
+                try:
+                    file_obj.close()
+                except Exception as e:
+                    logger.warning(f"File cleanup failed for run {run_id}: {e}")
+                finally:
+                    self.open_files.discard(file_obj)
+
+
+class RecoveryManager:
+    """Manages error recovery and graceful degradation."""
+    
+    async def attempt_recovery(self, run_context: "RunContext") -> bool:
+        """Attempt to recover from tool execution failure.
+        
+        Args:
+            run_context: Failed execution context
+            
+        Returns:
+            True if recovery successful, False otherwise
+        """
+        if run_context.error_category == ErrorCategory.TOOL_ERROR:
+            # Retry with reduced parameters for some tools
+            if self._can_retry_with_fallback(run_context):
+                run_context.recovery_attempted = True
+                return await self._retry_with_fallback(run_context)
+                
+        elif run_context.error_category == ErrorCategory.SYSTEM_ERROR:
+            # Wait and retry for transient system issues
+            if self._is_transient_error(run_context):
+                await asyncio.sleep(2)  # Brief wait
+                run_context.recovery_attempted = True
+                return await self._retry_execution(run_context)
+                
+        return False
+    
+    def _can_retry_with_fallback(self, run_context: "RunContext") -> bool:
+        """Check if tool supports fallback retry.
+        
+        Args:
+            run_context: Run context to check
+            
+        Returns:
+            True if fallback retry is possible
+        """
+        # For now, allow fallback for specific tools
+        return run_context.tool_id in ["cruise-control-analyzer"]
+    
+    def _is_transient_error(self, run_context: "RunContext") -> bool:
+        """Check if error is transient and worth retrying.
+        
+        Args:
+            run_context: Run context to check
+            
+        Returns:
+            True if error appears transient
+        """
+        error_details = run_context.error_details
+        if "system_error" in error_details:
+            error_msg = str(error_details["system_error"]).lower()
+            return any(keyword in error_msg for keyword in [
+                "temporarily unavailable", "connection refused", "timeout", 
+                "resource temporarily unavailable"
+            ])
+        return False
+    
+    async def _retry_with_fallback(self, run_context: "RunContext") -> bool:
+        """Retry execution with fallback parameters.
+        
+        Args:
+            run_context: Run context to retry
+            
+        Returns:
+            True if retry successful
+        """
+        # This would integrate with the main execution engine
+        # For now, just log the attempt
+        logger.info(f"Attempting fallback retry for run {run_context.run_id}")
+        return False
+    
+    async def _retry_execution(self, run_context: "RunContext") -> bool:
+        """Retry execution with same parameters.
+        
+        Args:
+            run_context: Run context to retry
+            
+        Returns:
+            True if retry successful
+        """
+        # This would integrate with the main execution engine
+        # For now, just log the attempt
+        logger.info(f"Attempting transient error retry for run {run_context.run_id}")
+        return False
+    
+    def suggest_tool_fix(self, error: Exception, stderr: str = "") -> str:
+        """Generate actionable fix suggestions based on error details.
+        
+        Args:
+            error: The exception that occurred
+            stderr: Standard error output from tool
+            
+        Returns:
+            User-friendly suggestion string
+        """
+        error_msg = str(error).lower()
+        stderr_msg = stderr.lower()
+        
+        if "memory" in stderr_msg or "memoryerror" in error_msg:
+            return "Tool ran out of memory. Try with smaller input file or increase system memory."
+        elif "permission" in stderr_msg or "permissionerror" in error_msg:
+            return "Permission denied. Check file permissions and user access rights."
+        elif "not found" in stderr_msg or "filenotfounderror" in error_msg:
+            return "Required file or dependency missing. Check file paths or run with --install-missing-deps flag."
+        elif "timeout" in error_msg or isinstance(error, (asyncio.TimeoutError, TimeoutError)):
+            return "Tool execution timed out. Try increasing timeout or optimizing input parameters."
+        else:
+            return "Tool execution failed. Check input parameters and tool compatibility."
+
+
 class ExecutionEngine:
     """Engine for managing tool execution with async support."""
 
@@ -82,9 +286,11 @@ class ExecutionEngine:
         """
         self.registry = registry
         self.active_runs: Dict[str, RunContext] = {}
+        self.resource_manager = ResourceManager()
+        self.recovery_manager = RecoveryManager()
 
     async def start_run(self, request: RunRequest) -> RunResponse:
-        """Start tool execution in background.
+        """Start tool execution in background with enhanced error handling.
 
         Args:
             request: Run request
@@ -96,10 +302,6 @@ class ExecutionEngine:
             KeyError: If tool not found
             ValueError: If parameters invalid
         """
-        tool = self.registry.get_tool(request.tool_id)
-
-        self._validate_parameters(tool, request.params, request.input)
-
         run_context = RunContext(
             run_id=str(uuid4()),
             tool_id=request.tool_id,
@@ -108,11 +310,39 @@ class ExecutionEngine:
             deps_dir=request.deps_dir,
             install_missing_deps=request.install_missing_deps,
         )
+        
+        try:
+            tool = self.registry.get_tool(request.tool_id)
+            self._validate_parameters(tool, request.params, request.input)
+            
+        except KeyError as e:
+            # Tool not found
+            run_context.status = RunStatus.FAILED
+            run_context.error_category = ErrorCategory.VALIDATION_ERROR
+            run_context.error = f"Tool not found: {request.tool_id}"
+            run_context.error_details = {
+                "validation_error": str(e),
+                "suggested_fix": f"Check available tools or verify tool ID '{request.tool_id}'"
+            }
+            run_context.completed_at = datetime.utcnow()
+            self.active_runs[run_context.run_id] = run_context
+            return run_context.to_response()
+            
+        except ValueError as e:
+            # Parameter validation failed
+            run_context.status = RunStatus.FAILED
+            run_context.error_category = ErrorCategory.VALIDATION_ERROR
+            run_context.error = str(e)
+            run_context.error_details = {
+                "validation_error": str(e),
+                "suggested_fix": "Check parameter names, types, and required values"
+            }
+            run_context.completed_at = datetime.utcnow()
+            self.active_runs[run_context.run_id] = run_context
+            return run_context.to_response()
 
         self.active_runs[run_context.run_id] = run_context
-
         asyncio.create_task(self.execute_tool_async(run_context))
-
         return run_context.to_response()
 
     async def get_run_status(self, run_id: str) -> RunResponse:
@@ -133,7 +363,7 @@ class ExecutionEngine:
         return self.active_runs[run_id].to_response()
 
     async def execute_tool_async(self, run_context: RunContext) -> None:
-        """Execute tool in separate thread to avoid blocking API.
+        """Execute tool with comprehensive error handling and timeout protection.
 
         Args:
             run_context: Run context to execute
@@ -154,10 +384,25 @@ class ExecutionEngine:
                 run_context.run_id, "INFO", f"Starting {run_context.tool_id} execution"
             )
 
+            # Set up cleanup handlers
+            run_context.cleanup_handlers.append(self._cleanup_temp_files)
+            run_context.cleanup_handlers.append(self._release_resources)
+
+            # Execute with timeout protection
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, self._execute_tool_sync, run_context  # Use default ThreadPoolExecutor
-            )
+            try:
+                await asyncio.wait_for(
+                    loop.run_in_executor(None, self._execute_tool_sync, run_context),
+                    timeout=run_context.timeout_seconds
+                )
+            except asyncio.TimeoutError:
+                run_context.error_category = ErrorCategory.TOOL_ERROR
+                run_context.error_details = {
+                    "error_type": "timeout",
+                    "timeout_seconds": run_context.timeout_seconds,
+                    "suggested_fix": "Increase timeout or optimize tool parameters"
+                }
+                raise asyncio.TimeoutError(f"Tool execution timed out after {run_context.timeout_seconds} seconds")
 
             artifacts = self._scan_for_artifacts(run_context)
             for artifact_path in artifacts:
@@ -179,22 +424,117 @@ class ExecutionEngine:
 
             logger.info(f"Completed execution of {run_context.tool_id} (run {run_context.run_id})")
 
+        except asyncio.TimeoutError as e:
+            await self._handle_tool_failure(run_context, e, "Tool execution timed out")
+            
+        except (OSError, PermissionError, FileNotFoundError) as e:
+            run_context.error_category = ErrorCategory.SYSTEM_ERROR
+            run_context.error_details = {
+                "system_error": str(e), 
+                "error_type": type(e).__name__,
+                "suggested_fix": self._suggest_system_fix(e)
+            }
+            await self._handle_tool_failure(run_context, e, "System error occurred")
+            
+        except ValueError as e:
+            # Handle validation-like errors from tool execution
+            run_context.error_category = ErrorCategory.VALIDATION_ERROR
+            run_context.error_details = {
+                "validation_error": str(e),
+                "suggested_fix": "Check input parameters and file formats"
+            }
+            await self._handle_tool_failure(run_context, e, "Validation error in tool execution")
+            
         except Exception as e:
-            run_context.status = RunStatus.FAILED
-            run_context.error = str(e)
-            run_context.completed_at = datetime.utcnow()
+            # Generic tool execution error
+            run_context.error_category = ErrorCategory.TOOL_ERROR
+            run_context.error_details = {
+                "tool_error": str(e),
+                "error_type": type(e).__name__,
+                "suggested_fix": self.recovery_manager.suggest_tool_fix(e)
+            }
+            await self._handle_tool_failure(run_context, e, "Tool execution failed")
+            
+    async def _handle_tool_failure(self, run_context: RunContext, error: Exception, message: str) -> None:
+        """Handle tool execution failure with cleanup and recovery attempts.
+        
+        Args:
+            run_context: Failed run context
+            error: The exception that occurred
+            message: Human-readable error message
+        """
+        run_context.status = RunStatus.FAILED
+        run_context.error = str(error)
+        run_context.completed_at = datetime.utcnow()
 
-            from .logs import get_log_streamer
+        from .logs import get_log_streamer
 
-            log_streamer = get_log_streamer()
-            log_streamer.add_log_entry(run_context.run_id, "ERROR", f"Execution failed: {str(e)}")
+        log_streamer = get_log_streamer()
+        log_streamer.add_log_entry(run_context.run_id, "ERROR", f"{message}: {str(error)}")
 
-            log_streamer.terminate_stream(run_context.run_id)
+        # Attempt recovery if applicable
+        try:
+            if await self.recovery_manager.attempt_recovery(run_context):
+                log_streamer.add_log_entry(run_context.run_id, "INFO", "Recovery attempt successful")
+                # Don't return here - let it fall through to cleanup
+            else:
+                log_streamer.add_log_entry(run_context.run_id, "WARNING", "Recovery attempt failed or not applicable")
+        except Exception as recovery_error:
+            logger.warning(f"Recovery attempt failed for run {run_context.run_id}: {recovery_error}")
 
-            logger.error(
-                f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
-            )
-            logger.error(traceback.format_exc())
+        # Always clean up resources
+        try:
+            await self.resource_manager.cleanup_run_resources(run_context)
+        except Exception as cleanup_error:
+            logger.error(f"Cleanup failed for run {run_context.run_id}: {cleanup_error}")
+
+        log_streamer.terminate_stream(run_context.run_id)
+
+        logger.error(f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {error}")
+        logger.error(traceback.format_exc())
+        
+    def _suggest_system_fix(self, error: Exception) -> str:
+        """Generate system error fix suggestions.
+        
+        Args:
+            error: The system exception
+            
+        Returns:
+            User-friendly suggestion string
+        """
+        error_msg = str(error).lower()
+        
+        if isinstance(error, PermissionError):
+            return "Permission denied. Check file permissions and user access rights."
+        elif isinstance(error, FileNotFoundError):
+            return "Required file not found. Check file paths and ensure all dependencies are available."
+        elif isinstance(error, OSError):
+            if "disk" in error_msg or "space" in error_msg:
+                return "Insufficient disk space. Free up storage and try again."
+            elif "memory" in error_msg:
+                return "Insufficient memory. Close other applications or increase system memory."
+            else:
+                return "System resource issue. Check system resources and try again."
+        else:
+            return "System error occurred. Check system resources and configuration."
+    
+    async def _cleanup_temp_files(self, run_context: RunContext) -> None:
+        """Cleanup handler for temporary files.
+        
+        Args:
+            run_context: Run context being cleaned up
+        """
+        # This is a cleanup handler that would be registered
+        logger.debug(f"Cleaning up temporary files for run {run_context.run_id}")
+        
+    async def _release_resources(self, run_context: RunContext) -> None:
+        """Cleanup handler for releasing resources.
+        
+        Args:
+            run_context: Run context being cleaned up
+        """
+        # This is a cleanup handler that would be registered
+        logger.debug(f"Releasing resources for run {run_context.run_id}")
 
     def _execute_tool_sync(self, run_context: RunContext) -> None:
         """Synchronous tool execution - runs in thread.
