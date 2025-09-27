@@ -3,8 +3,10 @@
 import asyncio
 import logging
 import sys
+import threading
 import traceback
-from datetime import datetime
+import warnings
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 from uuid import uuid4
@@ -44,7 +46,7 @@ class RunContext:
         self.deps_dir = deps_dir
         self.install_missing_deps = install_missing_deps
         self.status = RunStatus.QUEUED
-        self.created_at = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc)
         self.started_at: Optional[datetime] = None
         self.completed_at: Optional[datetime] = None
         self.progress: Optional[int] = None
@@ -56,6 +58,7 @@ class RunContext:
         self.recovery_attempted: bool = False
         self.cleanup_handlers: List[Callable[["RunContext"], Awaitable[None]]] = []
         self.timeout_seconds: Optional[int] = None  # Override global timeout
+        self.cancelled: bool = False  # Signal for cancellation
 
     def to_response(self) -> RunResponse:
         """Convert to RunResponse model.
@@ -184,7 +187,7 @@ class ExecutionEngine:
         """
         try:
             run_context.status = RunStatus.RUNNING
-            run_context.started_at = datetime.utcnow()
+            run_context.started_at = datetime.now(timezone.utc)
 
             logger.info(f"Starting execution of {run_context.tool_id} (run {run_context.run_id})")
 
@@ -201,19 +204,47 @@ class ExecutionEngine:
             timeout_seconds = run_context.get_timeout_seconds()
             logger.debug(f"Using timeout of {timeout_seconds}s for {run_context.tool_id}")
 
+            # Track the thread for better monitoring
+            execution_thread = None
+
             loop = asyncio.get_event_loop()
 
             try:
-                await asyncio.wait_for(
-                    loop.run_in_executor(None, self._execute_tool_sync, run_context),
-                    timeout=timeout_seconds,
-                )
+                # Start execution in a separate thread
+                future = loop.run_in_executor(None, self._execute_tool_sync, run_context)
+
+                # Track the thread
+                for thread in threading.enumerate():
+                    if thread.name.startswith('asyncio_'):
+                        execution_thread = thread
+                        break
+
+                await asyncio.wait_for(future, timeout=timeout_seconds)
             except asyncio.TimeoutError:
-                timeout_error = f"Tool execution timed out after {timeout_seconds} seconds"
+                # Warn about the timeout with better context
+                warnings.warn(
+                    f"Tool {run_context.tool_id} execution timed out after {timeout_seconds}s. "
+                    f"Background thread may still be running and cannot be forcibly terminated.",
+                    RuntimeWarning,
+                    stacklevel=2
+                )
+
+                # Log thread status and set cancellation flag
+                if execution_thread and execution_thread.is_alive():
+                    logger.warning(
+                        f"Thread {execution_thread.name} is still running after timeout. "
+                        "It will continue in background until completion."
+                    )
+                    # Set cancellation flag so the thread can check it
+                    run_context.cancelled = True
+                timeout_error = (
+                    f"Tool execution timed out after {timeout_seconds} seconds. "
+                    f"Note: Background thread may still be running."
+                )
                 run_context.error_category = ErrorCategory.TOOL_ERROR
                 run_context.error_details = {
                     "timeout_seconds": timeout_seconds,
-                    "execution_time": (datetime.utcnow() - run_context.started_at).total_seconds(),
+                    "execution_time": (datetime.now(timezone.utc) - run_context.started_at).total_seconds(),
                 }
 
                 error_response = self.recovery_manager.create_user_friendly_error(
@@ -244,7 +275,7 @@ class ExecutionEngine:
                 )
 
             run_context.status = RunStatus.COMPLETED
-            run_context.completed_at = datetime.utcnow()
+            run_context.completed_at = datetime.now(timezone.utc)
             run_context.progress = 100
 
             log_streamer.add_log_entry(
@@ -257,7 +288,7 @@ class ExecutionEngine:
 
         except Exception as e:
             run_context.status = RunStatus.FAILED
-            run_context.completed_at = datetime.utcnow()
+            run_context.completed_at = datetime.now(timezone.utc)
 
             if run_context.error_category is None:
                 run_context.error_category = self.recovery_manager.categorize_error(e)
@@ -297,6 +328,10 @@ class ExecutionEngine:
             run_context: Run context to execute
         """
         try:
+            # Check for cancellation periodically (tools should check run_context.cancelled)
+            if run_context.cancelled:
+                logger.info(f"Run {run_context.run_id} was cancelled")
+                return
             if run_context.tool_id == "cruise-control-analyzer":
                 run_context.params.update(
                     {
@@ -410,7 +445,7 @@ class ExecutionEngine:
             return False
 
         run_context.status = RunStatus.CANCELED
-        run_context.completed_at = datetime.utcnow()
+        run_context.completed_at = datetime.now(timezone.utc)
         run_context.error = "Cancelled by user"
 
         return True

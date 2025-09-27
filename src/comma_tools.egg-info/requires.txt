@@ -11,7 +11,6 @@ uvicorn[standard]>=0.20.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-multipart>=0.0.6
-tenacity>=8.2.0
 
 [client]
 httpx>=0.24.0
@@ -25,6 +24,7 @@ requests>=2.25.0
 [dev]
 pytest>=6.0
 pytest-cov
+pytest-asyncio
 httpx>=0.24.0
 black
 flake8
@@ -52,4 +52,5 @@ matplotlib>=3.5.0
 [test]
 pytest>=6.0
 pytest-cov
+pytest-asyncio
 httpx>=0.24.0

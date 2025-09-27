@@ -54,11 +54,13 @@ api = [
 test = [
     "pytest>=6.0",
     "pytest-cov",
+    "pytest-asyncio",
     "httpx>=0.24.0",
 ]
 dev = [
     "pytest>=6.0",
     "pytest-cov",
+    "pytest-asyncio",
     "httpx>=0.24.0",
     "black",
     "flake8",
