@@ -174,9 +174,9 @@ def test_get_run_logs_not_found(mock_engine):
 
     async def fake_stream_logs(run_id):
         """Returns empty stream for non-existent runs."""
-        # Just return immediately - no logs for non-existent run
-        return
-        yield  # unreachable, but keeps it as generator
+        # Empty async generator that yields nothing
+        if False:  # Never executes, but makes this a generator
+            yield
 
     mock_log_streamer.stream_logs = fake_stream_logs
 
@@ -191,8 +191,8 @@ def test_get_run_logs_not_found(mock_engine):
 
         # Should have empty or minimal content since run doesn't exist
         content = response.text
-        # The stream should be short/empty since we return immediately
-        assert len(content) < 50  # Minimal content for non-existent run
+        # The stream should be empty since our fake generator yields nothing
+        assert content == "" or content.strip() == "", f"Expected empty content, got: {repr(content)}"
     finally:
         app.dependency_overrides.clear()
 
