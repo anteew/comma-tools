@@ -15,10 +15,15 @@ src/comma_tools/analyzers/event_detection.py
 src/comma_tools/analyzers/marker_detection.py
 src/comma_tools/analyzers/rlog_to_csv.py
 src/comma_tools/api/__init__.py
+src/comma_tools/api/artifacts.py
 src/comma_tools/api/capabilities.py
 src/comma_tools/api/config.py
+src/comma_tools/api/execution.py
 src/comma_tools/api/health.py
+src/comma_tools/api/logs.py
 src/comma_tools/api/models.py
+src/comma_tools/api/registry.py
+src/comma_tools/api/runs.py
 src/comma_tools/api/server.py
 src/comma_tools/api/middleware/__init__.py
 src/comma_tools/can/__init__.py
