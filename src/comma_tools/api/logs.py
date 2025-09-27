@@ -6,10 +6,12 @@ import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from .models import LogEntry, LogsResponse
+from .execution import ExecutionEngine
+from .runs import get_execution_engine
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -126,7 +128,10 @@ def get_log_streamer() -> LogStreamer:
 
 @router.get("/runs/{run_id}/logs/list", response_model=LogsResponse)
 async def get_run_logs_list(
-    run_id: str, limit: int = 100, streamer: LogStreamer = Depends(get_log_streamer)
+    run_id: str,
+    limit: int = 100,
+    streamer: LogStreamer = Depends(get_log_streamer),
+    engine: ExecutionEngine = Depends(get_execution_engine),
 ) -> LogsResponse:
     """Get run logs as JSON list.
 
@@ -138,19 +143,39 @@ async def get_run_logs_list(
     Returns:
         Logs response with log entries
     """
+    # Ensure run exists; return 404 if not found
+    try:
+        await engine.get_run_status(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get logs list for run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
     logs = streamer.get_logs(run_id, limit)
     return LogsResponse(run_id=run_id, logs=logs, has_more=len(logs) >= limit)
 
 
 @router.get("/runs/{run_id}/logs")
 async def get_run_logs_overview(
-    run_id: str, request: Request, streamer: LogStreamer = Depends(get_log_streamer)
+    run_id: str,
+    request: Request,
+    streamer: LogStreamer = Depends(get_log_streamer),
+    engine: ExecutionEngine = Depends(get_execution_engine),
 ):
     """Return JSON overview for logs endpoint.
 
     For streaming, use /v1/runs/{run_id}/logs/stream.
     For JSON list, use /v1/runs/{run_id}/logs/list.
     """
+    try:
+        await engine.get_run_status(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get logs overview for run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
     return JSONResponse(
         {
             "run_id": run_id,
@@ -161,12 +186,23 @@ async def get_run_logs_overview(
 
 @router.get("/runs/{run_id}/logs/stream")
 async def stream_run_logs(
-    run_id: str, streamer: LogStreamer = Depends(get_log_streamer)
+    run_id: str,
+    streamer: LogStreamer = Depends(get_log_streamer),
+    engine: ExecutionEngine = Depends(get_execution_engine),
 ) -> StreamingResponse:
     """Stream run logs using Server-Sent Events."""
 
     async def generate():
         async for log_line in streamer.stream_logs(run_id):
             yield f"data: {log_line}\n\n"
+
+    # Ensure run exists before starting stream
+    try:
+        await engine.get_run_status(run_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to start log stream for run {run_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     return StreamingResponse(generate(), media_type="text/event-stream")

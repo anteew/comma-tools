@@ -39,13 +39,10 @@ def test_log_streaming_endpoint_exists(client):
 
 
 def test_log_list_endpoint_exists(client):
-    """Test that log list endpoint exists and returns JSON."""
+    """Test that log list endpoint exists and validates run existence."""
     response = client.get("/v1/runs/test-run/logs/list")
-    assert response.status_code == 200
-    data = response.json()
-    assert "run_id" in data
-    assert "logs" in data
-    assert "has_more" in data
+    # Non-existent run should return 404 per consistency with other log endpoints
+    assert response.status_code == 404
 
 
 def test_artifact_metadata_endpoint_not_found(client):
