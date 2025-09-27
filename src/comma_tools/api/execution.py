@@ -6,10 +6,10 @@ import sys
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 from uuid import uuid4
 
-from .models import RunRequest, RunResponse, RunStatus
+from .models import ErrorCategory, RunRequest, RunResponse, RunStatus
 from .registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,12 @@ class RunContext:
         self.error: Optional[str] = None
         self.artifacts: List[str] = []
 
+        self.error_category: Optional[ErrorCategory] = None
+        self.error_details: Dict[str, Any] = {}
+        self.recovery_attempted: bool = False
+        self.cleanup_handlers: List[Callable[["RunContext"], Awaitable[None]]] = []
+        self.timeout_seconds: Optional[int] = None  # Override global timeout
+
     def to_response(self) -> RunResponse:
         """Convert to RunResponse model.
 
@@ -70,6 +76,38 @@ class RunContext:
             error=self.error,
         )
 
+    async def cleanup(self) -> None:
+        """Execute all registered cleanup handlers.
+
+        This method is called during error handling and normal completion
+        to ensure proper resource cleanup.
+        """
+        for handler in self.cleanup_handlers:
+            try:
+                await handler(self)
+            except Exception as e:
+                logger.warning(f"Cleanup handler failed for run {self.run_id}: {e}")
+
+    def get_timeout_seconds(self, default_timeout: int = 300) -> int:
+        """Get timeout for this run context.
+
+        Args:
+            default_timeout: Default timeout if none specified
+
+        Returns:
+            Timeout in seconds
+        """
+        if self.timeout_seconds is not None:
+            return self.timeout_seconds
+
+        tool_timeouts = {
+            "cruise-control-analyzer": 600,  # 10 minutes for heavy analysis
+            "rlog-to-csv": 180,  # 3 minutes for conversion
+            "can-bitwatch": 60,  # 1 minute for monitoring
+        }
+
+        return tool_timeouts.get(self.tool_id, default_timeout)
+
 
 class ExecutionEngine:
     """Engine for managing tool execution with async support."""
@@ -82,6 +120,12 @@ class ExecutionEngine:
         """
         self.registry = registry
         self.active_runs: Dict[str, RunContext] = {}
+
+        from .resource_management import ResourceManager
+        from .error_handling import RecoveryManager
+
+        self.resource_manager = ResourceManager()
+        self.recovery_manager = RecoveryManager()
 
     async def start_run(self, request: RunRequest) -> RunResponse:
         """Start tool execution in background.
@@ -133,7 +177,7 @@ class ExecutionEngine:
         return self.active_runs[run_id].to_response()
 
     async def execute_tool_async(self, run_context: RunContext) -> None:
-        """Execute tool in separate thread to avoid blocking API.
+        """Execute tool in separate thread with timeout and enhanced error handling.
 
         Args:
             run_context: Run context to execute
@@ -154,10 +198,42 @@ class ExecutionEngine:
                 run_context.run_id, "INFO", f"Starting {run_context.tool_id} execution"
             )
 
+            timeout_seconds = run_context.get_timeout_seconds()
+            logger.debug(f"Using timeout of {timeout_seconds}s for {run_context.tool_id}")
+
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, self._execute_tool_sync, run_context  # Use default ThreadPoolExecutor
-            )
+
+            try:
+                await asyncio.wait_for(
+                    loop.run_in_executor(None, self._execute_tool_sync, run_context),
+                    timeout=timeout_seconds,
+                )
+            except asyncio.TimeoutError:
+                timeout_error = f"Tool execution timed out after {timeout_seconds} seconds"
+                run_context.error_category = ErrorCategory.TOOL_ERROR
+                run_context.error_details = {
+                    "timeout_seconds": timeout_seconds,
+                    "execution_time": (datetime.utcnow() - run_context.started_at).total_seconds(),
+                }
+
+                error_response = self.recovery_manager.create_user_friendly_error(
+                    asyncio.TimeoutError(timeout_error),
+                    ErrorCategory.TOOL_ERROR,
+                    [
+                        "Try with a smaller input file",
+                        "Increase timeout setting if available",
+                        "Check system performance and resources",
+                    ],
+                )
+
+                run_context.error = error_response["error"]
+                run_context.error_details.update(error_response)
+
+                log_streamer.add_log_entry(
+                    run_context.run_id, "ERROR", f"Execution timed out: {timeout_error}"
+                )
+
+                raise asyncio.TimeoutError(timeout_error)
 
             artifacts = self._scan_for_artifacts(run_context)
             for artifact_path in artifacts:
@@ -181,8 +257,19 @@ class ExecutionEngine:
 
         except Exception as e:
             run_context.status = RunStatus.FAILED
-            run_context.error = str(e)
             run_context.completed_at = datetime.utcnow()
+
+            if run_context.error_category is None:
+                run_context.error_category = self.recovery_manager.categorize_error(e)
+
+            if not run_context.error_details:
+                error_response = self.recovery_manager.create_user_friendly_error(
+                    e, run_context.error_category
+                )
+                run_context.error = error_response["error"]
+                run_context.error_details = error_response
+            elif not run_context.error:
+                run_context.error = str(e)
 
             from .logs import get_log_streamer
 
@@ -195,6 +282,13 @@ class ExecutionEngine:
                 f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
             )
             logger.error(traceback.format_exc())
+
+        finally:
+            try:
+                await run_context.cleanup()
+                await self.resource_manager.cleanup_all(run_context.run_id)
+            except Exception as cleanup_error:
+                logger.error(f"Error during cleanup for run {run_context.run_id}: {cleanup_error}")
 
     def _execute_tool_sync(self, run_context: RunContext) -> None:
         """Synchronous tool execution - runs in thread.

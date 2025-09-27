@@ -73,6 +73,14 @@ class RunStatus(str, Enum):
     CANCELED = "canceled"
 
 
+class ErrorCategory(str, Enum):
+    """Error categorization for enhanced error handling."""
+
+    VALIDATION_ERROR = "validation_error"  # User input issues
+    SYSTEM_ERROR = "system_error"  # OS/environment issues
+    TOOL_ERROR = "tool_error"  # Tool execution failures
+
+
 class InputRef(BaseModel):
     """Input reference for tool execution."""
 

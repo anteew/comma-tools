@@ -50,6 +50,7 @@ api = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.6",
+    "tenacity>=8.2.0",
 ]
 test = [
     "pytest>=6.0",

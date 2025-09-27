@@ -45,6 +45,22 @@
 - **PR Requirements**: All PRs must include comprehensive descriptions, pass CI, and maintain documentation
 - **Code Review**: PRs are automatically reviewed for adherence to these standards
 
+### AI Agent Communication Protocol
+**All AI contributors must use GitHub Issues for questions, discussions, and architectural guidance:**
+
+- **New Conversations**: Create a new GitHub issue for net new topics, questions, or implementation discussions
+- **Existing Discussions**: Continue conversations in existing issues rather than creating duplicates
+- **Issue Naming**: Use descriptive titles like "Phase 4A Architectural Guidance: Error Handling Design Decisions"
+- **Structured Questions**: Organize questions with clear headings, code examples, and specific architectural decisions needed
+- **Cross-Reference**: Link related issues, PRs, and documentation for context
+- **Professional Tone**: Maintain professional communication standards in all issue discussions
+
+**Benefits of GitHub Issue Communication**:
+- **Searchable History**: All architectural decisions and guidance are preserved and searchable
+- **Team Visibility**: Other contributors can learn from discussions and avoid duplicate questions
+- **Documentation Integration**: Issues serve as living documentation of design decisions
+- **Accountability**: Clear record of who made what decisions and when
+
 ### Pre-Commit Checklist
 1. **Install Pre-commit Hooks**: `pip install pre-commit && pre-commit install` (one-time setup)
 2. **Run Pre-commit Checks**: `pre-commit run --all-files` (catches type/format errors locally)
