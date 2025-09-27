@@ -48,10 +48,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[test,client]"
 
-    - name: Test with pytest (core only)
+    - name: Test with pytest (core + api)
       run: |
         cd comma-tools
-        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov -k "not test_plotting"
+        pytest tests/unit/ tests/api/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov -k "not test_plotting"
 
     - name: Integration test with dependency bootstrap
       run: |
@@ -142,12 +142,12 @@ jobs:
         cd comma-tools
         mypy src/ --ignore-missing-imports
 
-    - name: Test with pytest (including visualization)
+    - name: Test with pytest (including visualization + api)
       env:
         MPLBACKEND: Agg
       run: |
         cd comma-tools
-        pytest tests/unit/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov
+        pytest tests/unit/ tests/api/ -v --cov=src/comma_tools --cov-report=xml --cov-report=html:htmlcov
 
     - name: Integration test with dependency bootstrap
       run: |

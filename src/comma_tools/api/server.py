@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import artifacts, capabilities, health, logs, runs
+from . import monitors
 from .config import Config
 
 
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     app.include_router(runs.router, prefix="/v1", tags=["runs"])
     app.include_router(artifacts.router, prefix="/v1", tags=["artifacts"])
     app.include_router(logs.router, prefix="/v1", tags=["logs"])
+    app.include_router(monitors.router, prefix="/v1", tags=["monitors"])
 
     return app
 

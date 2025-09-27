@@ -69,7 +69,7 @@ def stream_logs(
     http_client: HTTPClient, run_id: str, follow: bool = False, json_output: bool = False
 ) -> Iterator[str]:
     """Stream logs for a run with formatting."""
-    endpoint = f"/v1/runs/{run_id}/logs"
+    endpoint = f"/v1/runs/{run_id}/logs/stream"
     sse_stream = SSEStream(http_client, endpoint)
 
     for event in sse_stream.stream(follow=follow):

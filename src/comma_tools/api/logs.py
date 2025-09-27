@@ -6,8 +6,8 @@ import logging
 from datetime import datetime, timezone
 from typing import AsyncGenerator, Dict, List, Optional
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from .models import LogEntry, LogsResponse
 
@@ -143,18 +143,27 @@ async def get_run_logs_list(
 
 
 @router.get("/runs/{run_id}/logs")
+async def get_run_logs_overview(
+    run_id: str, request: Request, streamer: LogStreamer = Depends(get_log_streamer)
+):
+    """Return JSON overview for logs endpoint.
+
+    For streaming, use /v1/runs/{run_id}/logs/stream.
+    For JSON list, use /v1/runs/{run_id}/logs/list.
+    """
+    return JSONResponse(
+        {
+            "run_id": run_id,
+            "message": "Use /v1/runs/{run_id}/logs/list for JSON list or /v1/runs/{run_id}/logs/stream for SSE",
+        }
+    )
+
+
+@router.get("/runs/{run_id}/logs/stream")
 async def stream_run_logs(
     run_id: str, streamer: LogStreamer = Depends(get_log_streamer)
 ) -> StreamingResponse:
-    """Stream run logs using Server-Sent Events.
-
-    Args:
-        run_id: Run identifier
-        streamer: Log streamer dependency
-
-    Returns:
-        Streaming response with SSE content
-    """
+    """Stream run logs using Server-Sent Events."""
 
     async def generate():
         async for log_line in streamer.stream_logs(run_id):

@@ -1,0 +1,15 @@
+[Unit]
+Description=CTS-Lite API Service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/default/cts-lite
+ExecStart=/usr/bin/python3 -m comma_tools.api.server
+Restart=on-failure
+User=cts
+Group=cts
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,15 @@
+__pycache__
+.pytest_cache
+.mypy_cache
+htmlcov
+*.pyc
+*.pyo
+*.pyd
+.git
+venv
+*.zst
+*.csv
+*.log
+*.png
+*.pdf
+

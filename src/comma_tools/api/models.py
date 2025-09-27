@@ -73,6 +73,14 @@ class RunStatus(str, Enum):
     CANCELED = "canceled"
 
 
+class ErrorCategory(str, Enum):
+    """High-level error categories for executions."""
+
+    TOOL_ERROR = "tool_error"
+    VALIDATION_ERROR = "validation_error"
+    SYSTEM_ERROR = "system_error"
+
+
 class InputRef(BaseModel):
     """Input reference for tool execution."""
 
@@ -107,6 +115,12 @@ class RunResponse(BaseModel):
     progress: Optional[int] = Field(None, description="Progress percentage (0-100)")
     artifacts: List[str] = Field(default_factory=list, description="Generated artifact paths")
     error: Optional[str] = Field(None, description="Error message if failed")
+    error_category: Optional[ErrorCategory] = Field(
+        None, description="Categorized error type when failed"
+    )
+    error_details: Optional[Dict[str, Any]] = Field(
+        default=None, description="Structured error details for troubleshooting"
+    )
 
 
 class ArtifactMetadata(BaseModel):

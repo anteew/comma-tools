@@ -9,7 +9,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from .models import RunRequest, RunResponse, RunStatus
+from .config import Config
+from .metrics import get_metrics, time_block_seconds
+from .models import ErrorCategory, RunRequest, RunResponse, RunStatus
 from .registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,10 @@ class RunContext:
         self.completed_at: Optional[datetime] = None
         self.progress: Optional[int] = None
         self.error: Optional[str] = None
+        self.error_category: Optional[ErrorCategory] = None
+        self.error_details: Dict[str, Any] = {}
+        self.recovery_attempted: bool = False
+        self.timeout_seconds: int = Config.from_env().tool_timeout_seconds
         self.artifacts: List[str] = []
 
     def to_response(self) -> RunResponse:
@@ -68,6 +74,8 @@ class RunContext:
             progress=self.progress,
             artifacts=self.artifacts,
             error=self.error,
+            error_category=self.error_category,
+            error_details=self.error_details or None,
         )
 
 
@@ -82,6 +90,8 @@ class ExecutionEngine:
         """
         self.registry = registry
         self.active_runs: Dict[str, RunContext] = {}
+        self.config = Config.from_env()
+        self.metrics = get_metrics()
 
     async def start_run(self, request: RunRequest) -> RunResponse:
         """Start tool execution in background.
@@ -111,7 +121,9 @@ class ExecutionEngine:
 
         self.active_runs[run_context.run_id] = run_context
 
-        asyncio.create_task(self.execute_tool_async(run_context))
+        # Metrics and async execution
+        self.metrics.inc_runs_total(tool_id=request.tool_id)
+        asyncio.create_task(self.execute_tool_with_error_handling(run_context))
 
         return run_context.to_response()
 
@@ -132,12 +144,13 @@ class ExecutionEngine:
 
         return self.active_runs[run_id].to_response()
 
-    async def execute_tool_async(self, run_context: RunContext) -> None:
+    async def execute_tool_with_error_handling(self, run_context: RunContext) -> None:
         """Execute tool in separate thread to avoid blocking API.
 
         Args:
             run_context: Run context to execute
         """
+        start_wall, elapsed = time_block_seconds()
         try:
             run_context.status = RunStatus.RUNNING
             run_context.started_at = datetime.utcnow()
@@ -155,9 +168,21 @@ class ExecutionEngine:
             )
 
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, self._execute_tool_sync, run_context  # Use default ThreadPoolExecutor
-            )
+            # Enforce timeout for execution
+            try:
+                await asyncio.wait_for(
+                    loop.run_in_executor(
+                        None, self._execute_tool_sync, run_context  # default ThreadPoolExecutor
+                    ),
+                    timeout=run_context.timeout_seconds,
+                )
+            except asyncio.TimeoutError as te:
+                raise ToolExecutionError(
+                    "Execution timed out",
+                    stderr="",
+                    exit_code=None,
+                    duration=elapsed(),
+                ) from te
 
             artifacts = self._scan_for_artifacts(run_context)
             for artifact_path in artifacts:
@@ -179,9 +204,19 @@ class ExecutionEngine:
 
             logger.info(f"Completed execution of {run_context.tool_id} (run {run_context.run_id})")
 
-        except Exception as e:
+            # Metrics
+            self.metrics.mark_run_success(duration_seconds=elapsed())
+
+        except ToolExecutionError as e:
             run_context.status = RunStatus.FAILED
             run_context.error = str(e)
+            run_context.error_category = ErrorCategory.TOOL_ERROR
+            run_context.error_details = {
+                "tool_stderr": e.stderr,
+                "exit_code": e.exit_code,
+                "execution_time": e.duration,
+                "suggested_fix": self.suggest_fix(e),
+            }
             run_context.completed_at = datetime.utcnow()
 
             from .logs import get_log_streamer
@@ -189,12 +224,54 @@ class ExecutionEngine:
             log_streamer = get_log_streamer()
             log_streamer.add_log_entry(run_context.run_id, "ERROR", f"Execution failed: {str(e)}")
 
+            await self.cleanup_failed_run(run_context)
+
+            log_streamer.terminate_stream(run_context.run_id)
+            logger.error(
+                f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
+            )
+            logger.error(traceback.format_exc())
+            self.metrics.mark_run_failure(duration_seconds=elapsed())
+        except (OSError, PermissionError) as e:
+            run_context.status = RunStatus.FAILED
+            run_context.error = str(e)
+            run_context.error_category = ErrorCategory.SYSTEM_ERROR
+            run_context.error_details = {"system_error": str(e), "error_type": type(e).__name__}
+            run_context.completed_at = datetime.utcnow()
+
+            from .logs import get_log_streamer
+
+            log_streamer = get_log_streamer()
+            log_streamer.add_log_entry(run_context.run_id, "ERROR", f"System error: {str(e)}")
+            await self.cleanup_failed_run(run_context)
+            log_streamer.terminate_stream(run_context.run_id)
+            logger.error(
+                f"System error during execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
+            )
+            logger.error(traceback.format_exc())
+            self.metrics.mark_run_failure(duration_seconds=elapsed())
+        except Exception as e:
+            # Unknown error, categorize conservatively as tool error
+            run_context.status = RunStatus.FAILED
+            run_context.error = str(e)
+            run_context.error_category = ErrorCategory.TOOL_ERROR
+            run_context.error_details = {"error_type": type(e).__name__}
+            run_context.completed_at = datetime.utcnow()
+
+            from .logs import get_log_streamer
+
+            log_streamer = get_log_streamer()
+            log_streamer.add_log_entry(run_context.run_id, "ERROR", f"Execution failed: {str(e)}")
+
+            await self.cleanup_failed_run(run_context)
+
             log_streamer.terminate_stream(run_context.run_id)
 
             logger.error(
                 f"Failed execution of {run_context.tool_id} (run {run_context.run_id}): {e}"
             )
             logger.error(traceback.format_exc())
+            self.metrics.mark_run_failure(duration_seconds=elapsed())
 
     def _execute_tool_sync(self, run_context: RunContext) -> None:
         """Synchronous tool execution - runs in thread.
@@ -223,7 +300,7 @@ class ExecutionEngine:
 
                 success = analyzer.run_analysis(speed_min, speed_max)
                 if not success:
-                    raise RuntimeError("Analysis failed")
+                    raise ToolExecutionError("Analysis failed", stderr="", exit_code=1, duration=0.0)
 
             elif run_context.tool_id in ["rlog-to-csv", "can-bitwatch"]:
                 original_argv = sys.argv.copy()
@@ -250,7 +327,10 @@ class ExecutionEngine:
 
         except Exception as e:
             logger.error(f"Tool execution error: {e}")
-            raise
+            # Wrap generic exceptions for consistent handling
+            if isinstance(e, ToolExecutionError):
+                raise
+            raise ToolExecutionError(str(e), stderr="", exit_code=None, duration=0.0) from e
 
     def _validate_parameters(self, tool, params: Dict[str, Any], input_ref) -> None:
         """Validate parameters against tool schema.
@@ -357,3 +437,43 @@ class ExecutionEngine:
                                 artifacts.append(file_path)
 
         return artifacts
+
+    async def execute_tool_async(self, run_context: RunContext) -> None:
+        """Backward-compatible alias that delegates to enhanced handler."""
+        await self.execute_tool_with_error_handling(run_context)
+
+    async def cleanup_failed_run(self, run_context: RunContext) -> None:
+        """Cleanup resources after a failed run.
+
+        Current implementation is conservative; hooks are provided for
+        future cleanup of partial artifacts or temporary resources.
+        """
+        try:
+            # Placeholder for cleanup logic (remove temp files, etc.)
+            run_context.recovery_attempted = True
+        except Exception:
+            # Cleanup errors should not mask original failure
+            pass
+
+    def suggest_fix(self, error: Exception) -> str:
+        """Return a simple, actionable suggestion if possible."""
+        msg = str(error).lower()
+        if "timed out" in msg:
+            return "Increase timeout or reduce input size."
+        if "file not found" in msg or "no such file" in msg:
+            return "Verify input paths and permissions."
+        if "import" in msg or "dependency" in msg:
+            return "Install required dependencies or use --install-missing-deps."
+        return "Check tool parameters and logs for details."
+
+
+class ToolExecutionError(Exception):
+    """Raised when a tool fails during execution."""
+
+    def __init__(self, message: str, stderr: str = "", exit_code: int | None = None, duration: float = 0.0):
+        super().__init__(message)
+        self.stderr = stderr
+        self.exit_code = exit_code
+        self.duration = duration
+
+    

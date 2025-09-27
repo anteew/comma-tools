@@ -7,6 +7,17 @@ Debugging and analysis tools for the openpilot autonomous driving system.
 
 This repository contains a collection of debugging and analysis tools for the openpilot autonomous driving system. The tools are primarily focused on Controller Area Network (CAN) bus analysis, safety system monitoring, and vehicle behavior debugging.
 
+In addition to standalone tools, Phase 4 introduces CTS-Lite: a production-ready FastAPI service and `cts` CLI that unify analysis and monitoring with streaming logs, artifact management, and basic monitor WebSocket streams.
+
+Quickstart CTS-Lite:
+```
+pip install -e ".[api,client]"
+cts-lite  # starts the API on 127.0.0.1:8080
+cts ping  # health check via CLI
+cts cap   # list tools and monitors
+```
+See docs/API_REFERENCE.md and docs/DEPLOYMENT.md for details.
+
 ## Quick Start from Source
 
 **🚀 Run tools directly without pip installation!** comma-tools is designed to work seamlessly with custom openpilot forks without requiring system-wide package installation.
