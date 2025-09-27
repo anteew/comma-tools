@@ -2,9 +2,8 @@
 
 import asyncio
 import logging
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from .models import ErrorCategory
 
@@ -27,74 +26,11 @@ class ToolExecutionError(Exception):
         self.stderr = stderr
 
 
-class RetryableError(Exception):
-    """Errors that should trigger automatic retry."""
-
-    pass
-
-
-class RecoveryStrategy:
-    """Strategy enumeration for error recovery approaches."""
-
-    AUTOMATIC = "automatic"  # Auto-retry transient failures
-    PROMPT = "prompt"  # Ask user for permission
-    MANUAL = "manual"  # Require explicit user action
-
-
 class RecoveryManager:
-    """Manages error recovery and retry logic with tenacity."""
+    """Manages basic error categorization and user-friendly error responses."""
 
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-
-    def get_recovery_strategy(self, error_category: ErrorCategory, error: Exception) -> str:
-        """Determine recovery strategy based on error category and type.
-
-        Args:
-            error_category: Categorized error type
-            error: The actual exception
-
-        Returns:
-            Recovery strategy string
-        """
-        if error_category == ErrorCategory.VALIDATION_ERROR:
-            return RecoveryStrategy.MANUAL  # User must fix input
-
-        elif error_category == ErrorCategory.SYSTEM_ERROR:
-            if isinstance(error, (OSError, PermissionError)):
-                return RecoveryStrategy.PROMPT  # Ask before retrying
-            return RecoveryStrategy.AUTOMATIC  # Auto-retry transient issues
-
-        elif error_category == ErrorCategory.TOOL_ERROR:
-            if "memory" in str(error).lower():
-                return RecoveryStrategy.PROMPT  # Ask to retry with different params
-            return RecoveryStrategy.AUTOMATIC  # Auto-retry tool crashes
-
-        return RecoveryStrategy.MANUAL
-
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type(RetryableError),
-    )
-    async def execute_with_retry(self, execution_func: Callable[[], Awaitable[Any]]) -> Any:
-        """Execute function with automatic retry for transient failures.
-
-        Args:
-            execution_func: Async function to execute with retry logic
-
-        Returns:
-            Result of successful execution
-
-        Raises:
-            RetryableError: For transient failures that should be retried
-            Exception: For non-retryable errors
-        """
-        try:
-            return await execution_func()
-        except (OSError, asyncio.TimeoutError) as e:
-            self.logger.warning(f"Transient failure detected, will retry: {e}")
-            raise RetryableError(f"Transient failure: {e}") from e
 
     def categorize_error(self, error: Exception) -> ErrorCategory:
         """Categorize an error based on its type and message.
@@ -120,7 +56,7 @@ class RecoveryManager:
         category: ErrorCategory,
         suggested_actions: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Create user-friendly error response with actionable guidance.
+        """Create user-friendly error response with basic categorization.
 
         Args:
             error: Original exception
@@ -135,17 +71,10 @@ class RecoveryManager:
         if not suggested_actions:
             suggested_actions = self._get_default_suggestions(category, error)
 
-        recovery_strategy = self.get_recovery_strategy(category, error)
-
         return {
             "error": base_message,
             "error_category": category.value,
             "suggested_actions": suggested_actions,
-            "recovery_options": {
-                "can_retry": recovery_strategy
-                in [RecoveryStrategy.AUTOMATIC, RecoveryStrategy.PROMPT],
-                "retry_strategy": recovery_strategy,
-            },
             "technical_details": {
                 "exception_type": type(error).__name__,
                 "error_message": base_message,
