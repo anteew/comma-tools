@@ -215,7 +215,7 @@ class ExecutionEngine:
 
                 # Track the thread
                 for thread in threading.enumerate():
-                    if thread.name.startswith('asyncio_'):
+                    if thread.name.startswith("asyncio_"):
                         execution_thread = thread
                         break
 
@@ -226,7 +226,7 @@ class ExecutionEngine:
                     f"Tool {run_context.tool_id} execution timed out after {timeout_seconds}s. "
                     f"Background thread may still be running and cannot be forcibly terminated.",
                     RuntimeWarning,
-                    stacklevel=2
+                    stacklevel=2,
                 )
 
                 # Log thread status and set cancellation flag
@@ -244,7 +244,9 @@ class ExecutionEngine:
                 run_context.error_category = ErrorCategory.TOOL_ERROR
                 run_context.error_details = {
                     "timeout_seconds": timeout_seconds,
-                    "execution_time": (datetime.now(timezone.utc) - run_context.started_at).total_seconds(),
+                    "execution_time": (
+                        datetime.now(timezone.utc) - run_context.started_at
+                    ).total_seconds(),
                 }
 
                 error_response = self.recovery_manager.create_user_friendly_error(
