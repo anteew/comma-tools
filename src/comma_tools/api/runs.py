@@ -62,7 +62,7 @@ async def start_run(
             run_context = engine.active_runs.get(response.run_id)
             if run_context and run_context.error_category == ErrorCategory.VALIDATION_ERROR:
                 # Tool not found or validation errors should return 404/400
-                if "Tool not found" in response.error:
+                if response.error and "Tool not found" in response.error:
                     raise HTTPException(status_code=404, detail=response.error)
                 else:
                     raise HTTPException(status_code=400, detail=response.error)

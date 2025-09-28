@@ -121,7 +121,7 @@ def create_app() -> FastAPI:
             # Fallback for basic health status
             return {
                 "status": "healthy",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "checks": [],
                 "summary": {"total_checks": 0, "healthy_checks": 0, "failed_checks": 0},
             }
