@@ -326,7 +326,7 @@ class ExecutionEngine:
         except KeyError as e:
             # Tool not found
             run_context.status = RunStatus.FAILED
-            run_context.error_category = ErrorCategory.VALIDATION_ERROR
+            run_context.error_category = ErrorCategory.TOOL_NOT_FOUND
             run_context.error = f"Tool not found: {request.tool_id}"
             run_context.error_details = {
                 "validation_error": str(e),

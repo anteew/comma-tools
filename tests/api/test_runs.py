@@ -1,10 +1,12 @@
 """Tests for runs endpoints."""
 
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from comma_tools.api.models import ErrorCategory, RunResponse, RunStatus
 from comma_tools.api.runs import get_execution_engine
 from comma_tools.api.server import app
 
@@ -14,9 +16,6 @@ client = TestClient(app)
 @pytest.fixture
 def mock_engine():
     """Create mock execution engine."""
-    from datetime import datetime
-
-    from comma_tools.api.models import RunResponse, RunStatus
 
     engine = MagicMock()
 
@@ -77,10 +76,6 @@ def test_start_run_success(mock_engine):
 
 def test_start_run_tool_not_found(mock_engine):
     """Test run start with non-existent tool."""
-    from datetime import datetime, timezone
-
-    from comma_tools.api.models import RunResponse, RunStatus
-
     # Mock the execution engine to return a FAILED response instead of throwing exception
     failed_response = RunResponse(
         run_id="test-run-id",
@@ -92,10 +87,8 @@ def test_start_run_tool_not_found(mock_engine):
     mock_engine.start_run.return_value = failed_response
 
     # Mock active_runs to have the run context for error categorization
-    from comma_tools.api.models import ErrorCategory
-
     mock_run_context = MagicMock()
-    mock_run_context.error_category = ErrorCategory.VALIDATION_ERROR
+    mock_run_context.error_category = ErrorCategory.TOOL_NOT_FOUND
     mock_engine.active_runs = {"test-run-id": mock_run_context}
 
     with patch("comma_tools.api.runs.get_execution_engine", return_value=mock_engine):

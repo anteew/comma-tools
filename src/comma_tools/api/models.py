@@ -13,6 +13,7 @@ class ErrorCategory(str, Enum):
     TOOL_ERROR = "tool_error"  # Analyzer execution failed, including timeouts
     VALIDATION_ERROR = "validation_error"  # Invalid parameters/inputs
     SYSTEM_ERROR = "system_error"  # Infrastructure or resource issues
+    TOOL_NOT_FOUND = "tool_not_found"  # Tool identifier not found in registry
 
 
 class HealthResponse(BaseModel):
