@@ -1,5 +1,9 @@
 # CTS-Lite Service Architecture Implementation
 
+> **⚠️ ARCHIVE NOTICE**: This document is now OBSOLETE and archived for historical reference.  
+> **Current Status**: CTS-Lite is fully implemented and documented in the main README.md  
+> **See**: [README.md](../README.md) for current CTS-Lite usage and documentation
+
 This directory contains the architectural plans and implementation guides for the CTS-Lite HTTP API service.
 
 ## Documents
