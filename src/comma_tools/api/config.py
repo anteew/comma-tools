@@ -1,9 +1,12 @@
 """Service configuration management for CTS-Lite API."""
 
+import inspect
+import json
 import os
+import types
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional, Union, get_args, get_origin
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
@@ -181,15 +184,197 @@ class ConfigManager:
                 raise ValueError("Metrics must be enabled in production")
 
     def _load_from_file(self, config_file: str) -> Dict[str, Any]:
-        """Load configuration from file."""
-        # For now, return empty dict - can be extended for TOML/YAML support
+        """Load configuration overrides from JSON or TOML files.
+
+        Args:
+            config_file: Path to the configuration file provided by the user.
+
+        Returns:
+            Parsed key/value pairs that should override the base configuration.
+
+        Raises:
+            ValueError: If the file contents cannot be parsed as JSON or TOML.
+        """
+
+        config_path = Path(config_file)
+        self._config_file_path = str(config_path)
+
+        if not config_path.exists():
+            return {}
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as handle:
+                if config_path.suffix.lower() == ".json":
+                    return json.load(handle)
+
+                if config_path.suffix.lower() == ".toml":
+                    content = handle.read()
+                    return self._parse_toml_content(content, config_file)
+
+                content = handle.read()
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError:
+                    return self._parse_toml_content(content, config_file)
+
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON in config file {config_file}: {exc}") from exc
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError(f"Error reading config file {config_file}: {exc}") from exc
+
         return {}
 
+    def _parse_toml_content(self, content: str, config_file: str) -> Dict[str, Any]:
+        """Parse TOML configuration content with appropriate fallbacks.
+
+        Args:
+            content: Raw contents read from the candidate TOML file.
+            config_file: Path to the file currently being parsed, for messaging.
+
+        Returns:
+            Dictionary representation of the TOML document.
+
+        Raises:
+            ValueError: If TOML parsing fails or support libraries are unavailable.
+        """
+
+        try:
+            import tomllib
+
+            return tomllib.loads(content)
+        except ModuleNotFoundError:
+            pass
+        except Exception as exc:
+            raise ValueError(f"Invalid TOML in config file {config_file}: {exc}") from exc
+
+        try:
+            import tomli
+
+            return tomli.loads(content)
+        except ModuleNotFoundError as exc:
+            raise ValueError(
+                "TOML support requires Python 3.11+ or installing 'tomli'."
+            ) from exc
+        except Exception as exc:
+            raise ValueError(f"Invalid TOML in config file {config_file}: {exc}") from exc
+
     def _load_from_environment(self) -> Dict[str, Any]:
-        """Load configuration overrides from environment variables."""
-        # This would collect CTS_* environment variables
-        # For now, return empty dict as pydantic handles this
-        return {}
+        """Load configuration overrides from environment variables.
+
+        Returns:
+            Mapping of configuration field names to coerced values discovered in
+            the process environment. Supports both comma-separated and JSON
+            array formats for list fields.
+        """
+
+        env_overrides: Dict[str, Any] = {}
+
+        for key, value in os.environ.items():
+            if not key.startswith("CTS_") or key == "CTS_ENVIRONMENT":
+                continue
+
+            field_name = key[4:].lower()
+            if field_name not in ProductionConfig.model_fields:
+                continue
+
+            field_info = ProductionConfig.model_fields[field_name]
+            try:
+                env_overrides[field_name] = self._coerce_env_value(value, field_info.annotation)
+            except (ValueError, TypeError):
+                continue
+
+        return env_overrides
+
+    @staticmethod
+    def _coerce_env_value(raw_value: str, field_type: Any) -> Any:
+        """Coerce an environment variable string into the provided field type.
+
+        Args:
+            raw_value: Raw string obtained from the environment variable.
+            field_type: Target Python type extracted from the Pydantic model.
+
+        Returns:
+            The raw value converted into the requested type.
+
+        Raises:
+            ValueError: If the conversion to the requested Enum or numeric type
+                fails.
+            TypeError: If the target type is not compatible with the raw value.
+        """
+
+        target_type = ConfigManager._unwrap_type(field_type)
+        value = raw_value.strip()
+
+        origin = get_origin(target_type)
+        if origin in (list, List):
+            item_type = get_args(target_type)[0] if get_args(target_type) else str
+            return ConfigManager._parse_list_value(value, item_type)
+
+        if inspect.isclass(target_type):
+            if issubclass(target_type, bool):
+                return value.lower() in {"true", "1", "yes", "on"}
+            if issubclass(target_type, int) and not issubclass(target_type, bool):
+                return int(value)
+            if issubclass(target_type, float):
+                return float(value)
+            if issubclass(target_type, Enum):
+                return target_type(value)
+
+        return value
+
+    @staticmethod
+    def _parse_list_value(raw_value: str, item_type: Any) -> List[Any]:
+        """Parse list values from either JSON arrays or comma-separated strings.
+
+        Args:
+            raw_value: The environment-provided raw string representation.
+            item_type: Type expected for each item in the resulting list.
+
+        Returns:
+            List populated with items converted to the requested type.
+        """
+
+        values: Optional[List[Any]] = None
+        try:
+            parsed = json.loads(raw_value)
+            if isinstance(parsed, list):
+                values = parsed
+        except json.JSONDecodeError:
+            values = None
+
+        if values is None:
+            values = [item.strip() for item in raw_value.split(",") if item.strip()]
+
+        coerced: List[Any] = []
+        for item in values:
+            item_value = item if isinstance(item, str) else str(item)
+            coerced.append(ConfigManager._coerce_env_value(item_value, item_type))
+
+        return coerced
+
+    @staticmethod
+    def _unwrap_type(field_type: Any) -> Any:
+        """Unwrap typing constructs (Annotated/Union/Optional) to base type.
+
+        Args:
+            field_type: Possibly wrapped type annotation from the model field.
+
+        Returns:
+            Simplified type suitable for runtime inspection and conversions.
+        """
+
+        origin = get_origin(field_type)
+        if origin is Annotated:
+            return ConfigManager._unwrap_type(get_args(field_type)[0])
+
+        if origin in {Union, types.UnionType}:
+            args = [arg for arg in get_args(field_type) if arg is not type(None)]
+            if len(args) == 1:
+                return ConfigManager._unwrap_type(args[0])
+
+        return field_type
 
     def _merge_configs(self, base: ProductionConfig, overrides: Dict[str, Any]) -> ProductionConfig:
         """Merge configuration overrides into base configuration."""
