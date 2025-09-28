@@ -286,21 +286,25 @@ class ConfigManager:
         return env_overrides
 
     @staticmethod
-    def _coerce_env_value(raw_value: str, field_type: Any) -> Any:
+    def _coerce_env_value(raw_value: str, field_type: Any, _depth: int = 0) -> Any:
         """Coerce an environment variable string into the provided field type.
 
         Args:
             raw_value: Raw string obtained from the environment variable.
             field_type: Target Python type extracted from the Pydantic model.
+            _depth: Internal recursion depth counter to prevent infinite recursion.
 
         Returns:
             The raw value converted into the requested type.
 
         Raises:
             ValueError: If the conversion to the requested Enum or numeric type
-                fails.
+                fails, or if recursion depth is exceeded.
             TypeError: If the target type is not compatible with the raw value.
         """
+        # Prevent infinite recursion by limiting depth
+        if _depth > 10:  # Allow reasonable nesting but prevent infinite recursion
+            raise ValueError(f"Type coercion recursion depth exceeded: {field_type}")
 
         target_type = ConfigManager._unwrap_type(field_type)
         value = raw_value.strip()
@@ -308,7 +312,7 @@ class ConfigManager:
         origin = get_origin(target_type)
         if origin in (list, List):
             item_type = get_args(target_type)[0] if get_args(target_type) else str
-            return ConfigManager._parse_list_value(value, item_type)
+            return ConfigManager._parse_list_value(value, item_type, _depth + 1)
 
         if inspect.isclass(target_type):
             if issubclass(target_type, bool):
@@ -323,16 +327,23 @@ class ConfigManager:
         return value
 
     @staticmethod
-    def _parse_list_value(raw_value: str, item_type: Any) -> List[Any]:
+    def _parse_list_value(raw_value: str, item_type: Any, _depth: int = 0) -> List[Any]:
         """Parse list values from either JSON arrays or comma-separated strings.
 
         Args:
             raw_value: The environment-provided raw string representation.
             item_type: Type expected for each item in the resulting list.
+            _depth: Internal recursion depth counter to prevent infinite recursion.
 
         Returns:
             List populated with items converted to the requested type.
+
+        Raises:
+            ValueError: If recursion depth is exceeded.
         """
+        # Prevent infinite recursion by limiting depth
+        if _depth > 10:  # Allow reasonable nesting but prevent infinite recursion
+            raise ValueError(f"List parsing recursion depth exceeded: {item_type}")
 
         values: Optional[List[Any]] = None
         try:
@@ -347,8 +358,23 @@ class ConfigManager:
 
         coerced: List[Any] = []
         for item in values:
-            item_value = item if isinstance(item, str) else str(item)
-            coerced.append(ConfigManager._coerce_env_value(item_value, item_type))
+            # Check if the item is already the correct type for list items
+            from typing import get_origin, get_args
+
+            if get_origin(item_type) in (list, List) and isinstance(item, list):
+                # Item is already a list and we expect a list type - recursively coerce the list
+                inner_item_type = get_args(item_type)[0] if get_args(item_type) else str
+                coerced_inner = []
+                for inner_item in item:
+                    inner_value = inner_item if isinstance(inner_item, str) else str(inner_item)
+                    coerced_inner.append(
+                        ConfigManager._coerce_env_value(inner_value, inner_item_type, _depth)
+                    )
+                coerced.append(coerced_inner)
+            else:
+                # Normal case - convert to string and coerce
+                item_value = item if isinstance(item, str) else str(item)
+                coerced.append(ConfigManager._coerce_env_value(item_value, item_type, _depth))
 
         return coerced
 
