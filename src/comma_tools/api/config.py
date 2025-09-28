@@ -268,7 +268,7 @@ class ConfigManager:
         Returns:
             Dictionary of configuration overrides from environment
         """
-        env_overrides = {}
+        env_overrides: Dict[str, Any] = {}
 
         # Get all environment variables with CTS_ prefix
         for key, value in os.environ.items():
@@ -286,21 +286,28 @@ class ConfigManager:
                     field_type = field_info.annotation
 
                     # Coerce the string value to the appropriate type
+                    parsed_value: Any
                     if field_type == bool or str(field_type) == "<class 'bool'>":
                         # Handle various boolean representations
-                        env_overrides[field_name] = value.lower() in ("true", "1", "yes", "on")
+                        parsed_value = value.lower() in ("true", "1", "yes", "on")
                     elif field_type == int or str(field_type) == "<class 'int'>":
-                        env_overrides[field_name] = int(value)
+                        parsed_value = int(value)
                     elif field_type == float or str(field_type) == "<class 'float'>":
-                        env_overrides[field_name] = float(value)
-                    elif hasattr(field_type, "__origin__") and field_type.__origin__ is list:
+                        parsed_value = float(value)
+                    elif (
+                        hasattr(field_type, "__origin__")
+                        and field_type.__origin__ is not None
+                        and field_type.__origin__ is list
+                    ):
                         # Handle list types (like cors_allowed_origins)
-                        env_overrides[field_name] = [item.strip() for item in value.split(",")]
+                        parsed_value = [item.strip() for item in value.split(",")]
                     else:
                         # Default to string
-                        env_overrides[field_name] = value
+                        parsed_value = value
 
-                except (ValueError, TypeError, AttributeError) as e:
+                    env_overrides[field_name] = parsed_value
+
+                except (ValueError, TypeError, AttributeError):
                     # Skip invalid values but don't fail completely
                     continue
 
