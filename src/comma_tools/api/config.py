@@ -181,15 +181,109 @@ class ConfigManager:
                 raise ValueError("Metrics must be enabled in production")
 
     def _load_from_file(self, config_file: str) -> Dict[str, Any]:
-        """Load configuration from file."""
-        # For now, return empty dict - can be extended for TOML/YAML support
-        return {}
+        """Load configuration from file.
+        
+        Args:
+            config_file: Path to configuration file (JSON or TOML)
+            
+        Returns:
+            Dictionary of configuration overrides
+            
+        Raises:
+            ValueError: If file cannot be parsed or has invalid format
+        """
+        import json
+        
+        config_path = Path(config_file)
+        self._config_file_path = str(config_path)
+        
+        if not config_path.exists():
+            return {}
+            
+        try:
+            with open(config_path, 'r') as f:
+                if config_path.suffix.lower() == '.json':
+                    return json.load(f)
+                elif config_path.suffix.lower() == '.toml':
+                    try:
+                        import tomllib
+                    except ImportError:
+                        try:
+                            import tomli as tomllib
+                        except ImportError:
+                            raise ValueError("TOML support requires Python 3.11+ or tomli package")
+                    
+                    with open(config_path, 'rb') as toml_file:
+                        return tomllib.load(toml_file)
+                else:
+                    # Try JSON first, then TOML
+                    content = f.read()
+                    try:
+                        return json.loads(content)
+                    except json.JSONDecodeError:
+                        try:
+                            import tomllib
+                            return tomllib.loads(content)
+                        except ImportError:
+                            raise ValueError(f"Unsupported config file format: {config_path.suffix}")
+                        except Exception:
+                            raise ValueError(f"Could not parse config file as JSON or TOML: {config_file}")
+                            
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in config file {config_file}: {e}")
+        except Exception as e:
+            raise ValueError(f"Error reading config file {config_file}: {e}")
 
     def _load_from_environment(self) -> Dict[str, Any]:
-        """Load configuration overrides from environment variables."""
-        # This would collect CTS_* environment variables
-        # For now, return empty dict as pydantic handles this
-        return {}
+        """Load configuration overrides from environment variables.
+        
+        Collects all CTS_* environment variables (excluding CTS_ENVIRONMENT,
+        which is reserved for selecting the deployment environment) and
+        coerces them to ProductionConfig field types.
+        
+        Returns:
+            Dictionary of configuration overrides from environment
+        """
+        env_overrides = {}
+        
+        # Get all environment variables with CTS_ prefix
+        for key, value in os.environ.items():
+            if key.startswith("CTS_") and key != "CTS_ENVIRONMENT":
+                # Convert CTS_* to lowercase field names
+                field_name = key[4:].lower()  # Remove "CTS_" prefix
+                
+                # Skip if this isn't a known ProductionConfig field
+                if not hasattr(ProductionConfig, field_name):
+                    continue
+                    
+                # Get the field type from ProductionConfig
+                try:
+                    field_info = ProductionConfig.model_fields.get(field_name)
+                    if field_info is None:
+                        continue
+                        
+                    field_type = field_info.annotation
+                    
+                    # Coerce the string value to the appropriate type
+                    if field_type == bool or field_type == "bool":
+                        # Handle various boolean representations
+                        env_overrides[field_name] = value.lower() in ("true", "1", "yes", "on")
+                    elif field_type == int or field_type == "int":
+                        env_overrides[field_name] = int(value)
+                    elif field_type == float or field_type == "float":
+                        env_overrides[field_name] = float(value)
+                    elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:
+                        # Handle list types (like cors_allowed_origins)
+                        env_overrides[field_name] = [item.strip() for item in value.split(",")]
+                    else:
+                        # Default to string
+                        env_overrides[field_name] = value
+                        
+                except (ValueError, AttributeError) as e:
+                    # Skip invalid values but don't fail completely
+                    continue
+                    
+        return env_overrides
 
     def _merge_configs(self, base: ProductionConfig, overrides: Dict[str, Any]) -> ProductionConfig:
         """Merge configuration overrides into base configuration."""

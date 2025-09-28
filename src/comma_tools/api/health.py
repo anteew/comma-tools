@@ -126,12 +126,19 @@ class HealthCheckManager:
         return True
 
     def _check_tool_registry(self) -> bool:
-        """Check that tool registry is functioning."""
+        """Check that tool registry is functioning and has registered tools."""
         try:
             from .registry import ToolRegistry
 
             registry = ToolRegistry()
-            # For now, just check that registry can be instantiated
+            
+            # Check if the registry has any tools registered
+            # Use list_tools() method to get the current list of registered tools
+            tools = registry.list_tools()
+            
+            if not tools or len(tools) == 0:
+                raise Exception("No tools are currently registered in the tool registry")
+                
             return True
         except Exception as e:
             raise Exception(f"Tool registry check failed: {e}")
