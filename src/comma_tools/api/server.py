@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import FastAPI, Request, Response
@@ -61,11 +61,11 @@ def create_app() -> FastAPI:
     # Middleware for metrics collection
     @app.middleware("http")
     async def metrics_middleware(request: Request, call_next):
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         response = await call_next(request)
 
         # Record API metrics
-        duration = (datetime.utcnow() - start_time).total_seconds()
+        duration = (datetime.now(timezone.utc) - start_time).total_seconds()
         endpoint = f"{request.method} {request.url.path}"
         success = 200 <= response.status_code < 400
 

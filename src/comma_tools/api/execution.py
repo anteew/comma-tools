@@ -677,7 +677,7 @@ class ExecutionEngine:
             return False
 
         run_context.status = RunStatus.CANCELED
-        run_context.completed_at = datetime.utcnow()
+        run_context.completed_at = datetime.now(timezone.utc)
         run_context.error = "Cancelled by user"
 
         return True
