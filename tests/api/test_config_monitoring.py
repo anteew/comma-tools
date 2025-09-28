@@ -96,7 +96,7 @@ class TestConfigurationManagement:
         with patch.dict(
             os.environ,
             {
-                "CTS_CORS_ALLOWED_ORIGINS": "[\"https://example.com\", \"https://test.com\"]",
+                "CTS_CORS_ALLOWED_ORIGINS": '["https://example.com", "https://test.com"]',
             },
         ):
             overrides = manager._load_from_environment()

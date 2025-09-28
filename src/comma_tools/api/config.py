@@ -254,9 +254,7 @@ class ConfigManager:
 
             return tomli.loads(content)
         except ModuleNotFoundError as exc:
-            raise ValueError(
-                "TOML support requires Python 3.11+ or installing 'tomli'."
-            ) from exc
+            raise ValueError("TOML support requires Python 3.11+ or installing 'tomli'.") from exc
         except Exception as exc:
             raise ValueError(f"Invalid TOML in config file {config_file}: {exc}") from exc
 
