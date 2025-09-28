@@ -201,43 +201,62 @@ class ConfigManager:
             return {}
 
         try:
-            with open(config_path, "r") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 if config_path.suffix.lower() == ".json":
                     return json.load(f)
                 elif config_path.suffix.lower() == ".toml":
-                    try:
-                        import tomllib
-                    except ImportError:
-                        try:
-                            import tomli as tomllib
-                        except ImportError:
-                            raise ValueError("TOML support requires Python 3.11+ or tomli package")
-
-                    with open(config_path, "rb") as toml_file:
-                        return tomllib.load(toml_file)
+                    # Handle TOML parsing with proper fallbacks
+                    toml_content = f.read()
+                    return self._parse_toml_content(toml_content, config_file)
                 else:
-                    # Try JSON first, then TOML
+                    # Try JSON first, then TOML for unknown extensions
                     content = f.read()
                     try:
                         return json.loads(content)
                     except json.JSONDecodeError:
-                        try:
-                            import tomllib
-
-                            return tomllib.loads(content)
-                        except ImportError:
-                            raise ValueError(
-                                f"Unsupported config file format: {config_path.suffix}"
-                            )
-                        except Exception:
-                            raise ValueError(
-                                f"Could not parse config file as JSON or TOML: {config_file}"
-                            )
+                        # Try as TOML if JSON fails
+                        return self._parse_toml_content(content, config_file)
 
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON in config file {config_file}: {e}")
         except Exception as e:
             raise ValueError(f"Error reading config file {config_file}: {e}")
+
+    def _parse_toml_content(self, content: str, config_file: str) -> Dict[str, Any]:
+        """Parse TOML content with proper error handling and fallbacks.
+
+        Args:
+            content: TOML content string
+            config_file: Path to config file (for error messages)
+
+        Returns:
+            Dictionary of parsed TOML data
+
+        Raises:
+            ValueError: If TOML cannot be parsed or dependencies are missing
+        """
+        # Try Python 3.11+ built-in tomllib first
+        try:
+            import tomllib
+
+            return tomllib.loads(content)
+        except ImportError:
+            pass
+        except Exception as e:
+            raise ValueError(f"Invalid TOML in config file {config_file}: {e}")
+
+        # Fall back to tomli for older Python versions
+        try:
+            import tomli
+
+            return tomli.loads(content)
+        except ImportError:
+            raise ValueError(
+                f"TOML support requires Python 3.11+ or 'tomli' package. "
+                f"Install with: pip install tomli"
+            )
+        except Exception as e:
+            raise ValueError(f"Invalid TOML in config file {config_file}: {e}")
 
     def _load_from_environment(self) -> Dict[str, Any]:
         """Load configuration overrides from environment variables.
