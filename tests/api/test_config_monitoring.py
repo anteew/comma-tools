@@ -72,6 +72,40 @@ class TestConfigurationManagement:
                     config = manager.load_config()
                     assert config.environment == Environment.DEVELOPMENT
 
+    def test_environment_variable_list_parsing_comma(self):
+        """Test: Comma-separated list env vars are parsed correctly."""
+
+        manager = ConfigManager()
+
+        with patch.dict(
+            os.environ,
+            {"CTS_CORS_ALLOWED_ORIGINS": "https://example.com, https://test.com"},
+        ):
+            overrides = manager._load_from_environment()
+
+        assert overrides["cors_allowed_origins"] == [
+            "https://example.com",
+            "https://test.com",
+        ]
+
+    def test_environment_variable_list_parsing_json_array(self):
+        """Test: JSON array list env vars are parsed correctly."""
+
+        manager = ConfigManager()
+
+        with patch.dict(
+            os.environ,
+            {
+                "CTS_CORS_ALLOWED_ORIGINS": '["https://example.com", "https://test.com"]',
+            },
+        ):
+            overrides = manager._load_from_environment()
+
+        assert overrides["cors_allowed_origins"] == [
+            "https://example.com",
+            "https://test.com",
+        ]
+
     def test_config_validation(self):
         """Test: Invalid configurations raise appropriate errors."""
         manager = ConfigManager()
