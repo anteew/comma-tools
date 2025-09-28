@@ -2,6 +2,7 @@
 
 import inspect
 import json
+import logging
 import os
 import types
 from enum import Enum
@@ -10,6 +11,9 @@ from typing import Annotated, Any, Dict, List, Optional, Union, get_args, get_or
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
+
+# Module-level logger for configuration warnings
+logger = logging.getLogger(__name__)
 
 
 class Environment(str, Enum):
@@ -280,7 +284,16 @@ class ConfigManager:
             field_info = ProductionConfig.model_fields[field_name]
             try:
                 env_overrides[field_name] = self._coerce_env_value(value, field_info.annotation)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as exc:
+                # Log warning about ignored environment variable
+                logger.warning(
+                    "Environment variable '%s' with value '%s' could not be parsed as %s: %s. "
+                    "Using default value instead.",
+                    key,
+                    value,
+                    self._get_type_name(field_info.annotation),
+                    str(exc),
+                )
                 continue
 
         return env_overrides
@@ -351,6 +364,43 @@ class ConfigManager:
             coerced.append(ConfigManager._coerce_env_value(item_value, item_type))
 
         return coerced
+
+    @staticmethod
+    def _get_type_name(field_type: Any) -> str:
+        """Get a user-friendly name for a type annotation.
+
+        Args:
+            field_type: Type annotation from a Pydantic model field.
+
+        Returns:
+            Human-readable type name for error messages.
+        """
+        target_type = ConfigManager._unwrap_type(field_type)
+
+        # Handle common types
+        if target_type is bool:
+            return "boolean"
+        elif target_type is int:
+            return "integer"
+        elif target_type is float:
+            return "number"
+        elif target_type is str:
+            return "string"
+
+        # Handle generic types
+        origin = get_origin(target_type)
+        if origin in (list, List):
+            item_type = get_args(target_type)[0] if get_args(target_type) else str
+            item_type_name = ConfigManager._get_type_name(item_type)
+            return f"list of {item_type_name}"
+
+        # Handle enums
+        if inspect.isclass(target_type) and issubclass(target_type, Enum):
+            enum_values = [e.value for e in target_type]
+            return f"one of {enum_values}"
+
+        # Fallback to the type name
+        return getattr(target_type, "__name__", str(target_type))
 
     @staticmethod
     def _unwrap_type(field_type: Any) -> Any:

@@ -1,7 +1,9 @@
 """Tests for Phase 4B configuration management and monitoring systems."""
 
+import logging
 import os
 import tempfile
+from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -169,6 +171,76 @@ class TestConfigurationManagement:
         assert hasattr(config, "port")
         assert hasattr(config, "log_level")
         assert hasattr(config, "storage_dir")
+
+    def test_environment_variable_coercion_warnings(self):
+        """Test: Environment variable coercion failures generate appropriate warnings."""
+        manager = ConfigManager()
+
+        # Set up logging capture
+        log_capture = StringIO()
+        handler = logging.StreamHandler(log_capture)
+        handler.setLevel(logging.WARNING)
+
+        logger = logging.getLogger("comma_tools.api.config")
+        logger.setLevel(logging.WARNING)
+        logger.addHandler(handler)
+
+        try:
+            # Test invalid integer value
+            with patch.dict(os.environ, {"CTS_MAX_CONCURRENT_RUNS": "invalid_number"}):
+                overrides = manager._load_from_environment()
+
+                # Verify the invalid value was ignored
+                assert "max_concurrent_runs" not in overrides
+
+                # Check that warning was logged
+                log_output = log_capture.getvalue()
+                assert "CTS_MAX_CONCURRENT_RUNS" in log_output
+                assert "invalid_number" in log_output
+                assert "integer" in log_output
+                assert "Using default value instead" in log_output
+
+            # Clear log for next test
+            log_capture.seek(0)
+            log_capture.truncate(0)
+
+            # Test valid values produce no warnings
+            with patch.dict(os.environ, {"CTS_MAX_CONCURRENT_RUNS": "5", "CTS_DEBUG": "true"}):
+                overrides = manager._load_from_environment()
+
+                # Verify valid values were processed
+                assert overrides.get("max_concurrent_runs") == 5
+                assert overrides.get("debug") is True
+
+                # Check that no warning was logged
+                log_output = log_capture.getvalue()
+                assert log_output.strip() == ""
+
+        finally:
+            logger.removeHandler(handler)
+
+    def test_get_type_name_helper(self):
+        """Test: _get_type_name provides user-friendly type names."""
+        # Test basic types
+        assert ConfigManager._get_type_name(int) == "integer"
+        assert ConfigManager._get_type_name(bool) == "boolean"
+        assert ConfigManager._get_type_name(str) == "string"
+        assert ConfigManager._get_type_name(float) == "number"
+
+        # Test list types
+        from typing import List
+
+        assert ConfigManager._get_type_name(List[str]) == "list of string"
+        assert ConfigManager._get_type_name(List[int]) == "list of integer"
+
+        # Test enum types
+        from comma_tools.api.config import Environment
+
+        type_name = ConfigManager._get_type_name(Environment)
+        assert "one of" in type_name
+        assert "development" in type_name
+        assert "staging" in type_name
+        assert "production" in type_name
 
 
 class TestHealthChecks:
