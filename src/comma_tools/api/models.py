@@ -1,10 +1,18 @@
 """Pydantic request/response models for CTS-Lite API."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field
+
+
+class ErrorCategory(str, Enum):
+    """Error categorization for enhanced error handling."""
+
+    TOOL_ERROR = "tool_error"  # Analyzer execution failed, including timeouts
+    VALIDATION_ERROR = "validation_error"  # Invalid parameters/inputs
+    SYSTEM_ERROR = "system_error"  # Infrastructure or resource issues
 
 
 class HealthResponse(BaseModel):
@@ -56,11 +64,123 @@ class CapabilitiesResponse(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    """Error response model."""
+    """Enhanced error response model with actionable information."""
 
-    error: str = Field(..., description="Error message")
-    detail: Optional[str] = Field(None, description="Detailed error information")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Error timestamp")
+    error_category: ErrorCategory = Field(..., description="Error category for classification")
+    error_code: str = Field(..., description="Specific error code")
+    user_message: str = Field(..., description="User-friendly error message")
+    technical_details: Dict[str, Any] = Field(
+        default_factory=dict, description="Technical error details"
+    )
+    suggested_actions: List[str] = Field(
+        default_factory=list, description="Suggested actions to fix the error"
+    )
+    recovery_attempted: bool = Field(default=False, description="Whether recovery was attempted")
+    run_id: Optional[str] = Field(None, description="Associated run ID if applicable")
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Error timestamp"
+    )
+
+    @classmethod
+    def from_run_context(cls, run_context) -> "ErrorResponse":
+        """Create error response from failed run context.
+
+        Args:
+            run_context: Failed RunContext instance
+
+        Returns:
+            ErrorResponse with details from run context
+        """
+        from .execution import RunContext  # Import here to avoid circular import
+
+        return cls(
+            error_category=run_context.error_category or ErrorCategory.TOOL_ERROR,
+            error_code=cls._generate_error_code(run_context),
+            user_message=cls._generate_user_message(run_context),
+            technical_details=run_context.error_details,
+            suggested_actions=cls._generate_suggestions(run_context),
+            recovery_attempted=run_context.recovery_attempted,
+            run_id=run_context.run_id,
+            timestamp=datetime.now(timezone.utc),
+        )
+
+    @staticmethod
+    def _generate_error_code(run_context) -> str:
+        """Generate specific error code from run context.
+
+        Args:
+            run_context: RunContext instance
+
+        Returns:
+            Error code string
+        """
+        if run_context.error_category:
+            error_type = run_context.error_details.get("error_type", "unknown")
+            return f"{run_context.error_category.value}_{error_type}".upper()
+        return "UNKNOWN_ERROR"
+
+    @staticmethod
+    def _generate_user_message(run_context) -> str:
+        """Generate user-friendly error message.
+
+        Args:
+            run_context: RunContext instance
+
+        Returns:
+            User-friendly error message
+        """
+        if run_context.error_category == ErrorCategory.VALIDATION_ERROR:
+            return f"Invalid input for {run_context.tool_id}: {run_context.error}"
+        elif run_context.error_category == ErrorCategory.SYSTEM_ERROR:
+            return f"System error occurred while running {run_context.tool_id}: {run_context.error}"
+        elif run_context.error_category == ErrorCategory.TOOL_ERROR:
+            return f"Tool {run_context.tool_id} failed to execute: {run_context.error}"
+        else:
+            return f"Unknown error occurred: {run_context.error}"
+
+    @staticmethod
+    def _generate_suggestions(run_context) -> List[str]:
+        """Generate suggested actions from run context.
+
+        Args:
+            run_context: RunContext instance
+
+        Returns:
+            List of suggested actions
+        """
+        suggestions = []
+
+        # Add fix suggestion from error details
+        if "suggested_fix" in run_context.error_details:
+            suggestions.append(run_context.error_details["suggested_fix"])
+
+        # Add category-specific suggestions
+        if run_context.error_category == ErrorCategory.VALIDATION_ERROR:
+            suggestions.extend(
+                [
+                    "Verify all required parameters are provided",
+                    "Check parameter types and formats",
+                    "Review tool documentation for parameter requirements",
+                ]
+            )
+        elif run_context.error_category == ErrorCategory.SYSTEM_ERROR:
+            suggestions.extend(
+                [
+                    "Check system resources (disk space, memory)",
+                    "Verify file permissions",
+                    "Ensure all dependencies are installed",
+                ]
+            )
+        elif run_context.error_category == ErrorCategory.TOOL_ERROR:
+            suggestions.extend(
+                [
+                    "Try with different input parameters",
+                    "Check input file format and content",
+                    "Review tool logs for specific error details",
+                ]
+            )
+
+        return suggestions[:5]  # Limit to 5 suggestions
 
 
 class RunStatus(str, Enum):

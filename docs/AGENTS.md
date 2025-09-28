@@ -223,6 +223,58 @@ flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 **✅ Golden State**: All steps pass → Ready for development work
 **❌ Failure**: Any step fails → Environment issue, investigate before proceeding
 
+## 🔧 CI TROUBLESHOOTING
+
+### Common CI Failures & Solutions
+
+#### Integration Test Bootstrap Failure
+**Symptom**: CI fails with `FileNotFoundError: Could not find the openpilot checkout` during dependency bootstrap test.
+
+**Root Cause**: The GitHub Actions workflow structure places repositories as siblings:
+```
+$GITHUB_WORKSPACE/
+├── comma-tools/
+└── openpilot/
+```
+
+But the `find_repo_root()` function in `comma_tools.utils.openpilot_utils` expects to find the parent directory containing both repos.
+
+**Solution**: Always use explicit repo root in CI environments by passing `$GITHUB_WORKSPACE`:
+```python
+# ❌ WRONG: Auto-discovery fails in CI
+repo_root = find_repo_root()
+
+# ✅ CORRECT: Explicit path works in CI
+repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+```
+
+**Fixed in Workflow**: The test workflow has been updated to use the explicit workspace path to prevent this failure.
+
+#### Key Patterns for AI Contributors
+
+1. **Environment Detection**: Always check if code is running in CI and adapt accordingly
+2. **Explicit Paths**: When working with file system discovery, provide fallback paths for CI environments
+3. **Repository Structure**: Remember that CI checkout actions create sibling directories, not nested ones
+4. **Bootstrap Testing**: Integration tests that validate dependency management should account for CI directory structure
+
+### Debugging CI Locally
+
+To simulate CI environment locally:
+```bash
+# Create CI-like directory structure
+mkdir -p /tmp/ci-test/{comma-tools,openpilot}
+cd /tmp/ci-test/comma-tools
+
+# Test bootstrap with explicit workspace
+GITHUB_WORKSPACE=/tmp/ci-test python -c "
+import os, sys
+sys.path.insert(0, 'src')
+from comma_tools.utils import find_repo_root
+repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+print(f'Found repo root: {repo_root}')
+"
+```
+
 ## 🎓 AI CONTRIBUTOR EXPECTATIONS
 
 ### Professional Standards
