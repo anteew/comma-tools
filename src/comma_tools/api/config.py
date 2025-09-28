@@ -296,8 +296,8 @@ class ConfigManager:
                         parsed_value = float(value)
                     elif (
                         hasattr(field_type, "__origin__")
-                        and field_type.__origin__ is not None
-                        and field_type.__origin__ is list
+                        and getattr(field_type, "__origin__", None) is not None
+                        and getattr(field_type, "__origin__", None) is list
                     ):
                         # Handle list types (like cors_allowed_origins)
                         parsed_value = [item.strip() for item in value.split(",")]
