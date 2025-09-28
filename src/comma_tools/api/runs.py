@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from .execution import ExecutionEngine
-from .models import RunRequest, RunResponse
+from .models import ErrorCategory, RunRequest, RunResponse, RunStatus
 from .registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -55,12 +55,26 @@ async def start_run(
     """
     try:
         response = await engine.start_run(request)
+
+        # Check if the execution engine returned a failed response
+        if response.status == RunStatus.FAILED:
+            # Convert failed responses to appropriate HTTP error codes
+            run_context = engine.active_runs.get(response.run_id)
+            if run_context and run_context.error_category == ErrorCategory.VALIDATION_ERROR:
+                # Tool not found or validation errors should return 404/400
+                if "Tool not found" in response.error:
+                    raise HTTPException(status_code=404, detail=response.error)
+                else:
+                    raise HTTPException(status_code=400, detail=response.error)
+            else:
+                # Other errors are server errors
+                raise HTTPException(status_code=500, detail=response.error)
+
         logger.info(f"Started run {response.run_id} for tool {request.tool_id}")
         return response
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
         logger.error(f"Failed to start run: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
