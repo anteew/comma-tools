@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -34,5 +35,11 @@ jobs:
           if [[ $(git status --porcelain) ]]; then
             git add src/ tests/
             git commit -m "style: format code with black"
-            git push
+            # Ensure we're on a branch before pushing
+            if git symbolic-ref HEAD >/dev/null 2>&1; then
+              git push
+            else
+              echo "Error: Not on a branch, cannot push changes"
+              exit 1
+            fi
           fi
