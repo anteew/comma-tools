@@ -45,7 +45,7 @@ class HealthCheck:
 
     async def run(self) -> Dict[str, Any]:
         """Execute the health check."""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         try:
             # Handle both sync and async check functions
@@ -71,7 +71,7 @@ class HealthCheck:
             status_detail = f"Check failed: {e}"
 
         self.last_check = start_time
-        duration_ms = (datetime.utcnow() - start_time).total_seconds() * 1000
+        duration_ms = (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
 
         return {
             "name": self.name,
@@ -197,7 +197,7 @@ class HealthCheckManager:
 
         return {
             "status": overall_status,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "checks": check_results,
             "summary": {
                 "total_checks": total_checks,
@@ -255,4 +255,4 @@ async def detailed_health_check() -> Dict[str, Any]:
 @router.get("/health/simple")
 async def simple_health_check() -> Dict[str, Any]:
     """Simple health check for load balancers."""
-    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}

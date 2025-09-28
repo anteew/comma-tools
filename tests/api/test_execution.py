@@ -85,8 +85,11 @@ async def test_start_run_tool_not_found(execution_engine, mock_registry):
 
     request = RunRequest(tool_id="nonexistent-tool")
 
-    with pytest.raises(KeyError):
-        await execution_engine.start_run(request)
+    response = await execution_engine.start_run(request)
+
+    assert response.status == RunStatus.FAILED
+    assert response.tool_id == "nonexistent-tool"
+    assert "Tool not found" in response.error
 
 
 @pytest.mark.asyncio
@@ -94,8 +97,11 @@ async def test_start_run_validation_error(execution_engine, mock_registry):
     """Test run start with validation error."""
     request = RunRequest(tool_id="test-tool", params={})  # Missing required param1
 
-    with pytest.raises(ValueError, match="Required parameter 'param1' missing"):
-        await execution_engine.start_run(request)
+    response = await execution_engine.start_run(request)
+
+    assert response.status == RunStatus.FAILED
+    assert response.tool_id == "test-tool"
+    assert "Required parameter 'param1' missing" in response.error
 
 
 @pytest.mark.asyncio
