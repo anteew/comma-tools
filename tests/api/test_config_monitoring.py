@@ -131,13 +131,21 @@ class TestConfigurationManagement:
                 "CTS_MAX_CONCURRENT_RUNS": "5",
                 "CTS_DEBUG": "true", 
                 "CTS_ENABLE_METRICS": "false",
-                "CTS_CORS_ALLOWED_ORIGINS": "https://example.com,https://test.com"
+                # Test list format that Pydantic expects (JSON format)
+                "CTS_CORS_ALLOWED_ORIGINS": '["https://example.com","https://test.com"]'
             }):
                 with patch.object(
                     ProductionConfig, "get_environment_config", return_value=temp_config
                 ):
                     config = manager.load_config()
-                    # Environment overrides should be applied but we need to check the result
+                    # Environment overrides should be applied via Pydantic's built-in handling
+                    # Our custom _load_from_environment is used for additional processing
+                    
+                    # Test our custom environment parsing directly
+                    env_overrides = manager._load_from_environment()
+                    assert env_overrides["max_concurrent_runs"] == 5
+                    assert env_overrides["debug"] is True
+                    assert env_overrides["enable_metrics"] is False
 
     def test_config_validation(self):
         """Test: Invalid configurations raise appropriate errors."""

@@ -253,24 +253,21 @@ class ConfigManager:
                 field_name = key[4:].lower()  # Remove "CTS_" prefix
                 
                 # Skip if this isn't a known ProductionConfig field
-                if not hasattr(ProductionConfig, field_name):
+                if field_name not in ProductionConfig.model_fields:
                     continue
                     
                 # Get the field type from ProductionConfig
                 try:
-                    field_info = ProductionConfig.model_fields.get(field_name)
-                    if field_info is None:
-                        continue
-                        
+                    field_info = ProductionConfig.model_fields[field_name]
                     field_type = field_info.annotation
                     
                     # Coerce the string value to the appropriate type
-                    if field_type == bool or field_type == "bool":
+                    if field_type == bool or str(field_type) == "<class 'bool'>":
                         # Handle various boolean representations
                         env_overrides[field_name] = value.lower() in ("true", "1", "yes", "on")
-                    elif field_type == int or field_type == "int":
+                    elif field_type == int or str(field_type) == "<class 'int'>":
                         env_overrides[field_name] = int(value)
-                    elif field_type == float or field_type == "float":
+                    elif field_type == float or str(field_type) == "<class 'float'>":
                         env_overrides[field_name] = float(value)
                     elif hasattr(field_type, '__origin__') and field_type.__origin__ is list:
                         # Handle list types (like cors_allowed_origins)
@@ -279,7 +276,7 @@ class ConfigManager:
                         # Default to string
                         env_overrides[field_name] = value
                         
-                except (ValueError, AttributeError) as e:
+                except (ValueError, TypeError, AttributeError) as e:
                     # Skip invalid values but don't fail completely
                     continue
                     
