@@ -59,9 +59,11 @@ jobs:
         # Test that the analyzer can bootstrap its dependencies
         python -c "
         import sys
+        import os
         sys.path.insert(0, 'src')
         from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
-        repo_root = find_repo_root()
+        # In CI, use GITHUB_WORKSPACE as explicit repo root to find openpilot checkout
+        repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
         deps_dir = resolve_deps_dir(repo_root, None)
         prepare_environment(repo_root, deps_dir)
         print('✓ Environment bootstrap successful')
@@ -155,9 +157,11 @@ jobs:
         # Test that the analyzer can bootstrap its dependencies
         python -c "
         import sys
+        import os
         sys.path.insert(0, 'src')
         from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
-        repo_root = find_repo_root()
+        # In CI, use GITHUB_WORKSPACE as explicit repo root to find openpilot checkout
+        repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
         deps_dir = resolve_deps_dir(repo_root, None)
         prepare_environment(repo_root, deps_dir)
         print('✓ Environment bootstrap successful')

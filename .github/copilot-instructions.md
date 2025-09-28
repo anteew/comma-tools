@@ -78,6 +78,56 @@ black --check src/ tests/
 - [ ] Business logic stays in service components, not CLI/API layers
 - [ ] Automotive domain knowledge applied correctly
 
+## CI Troubleshooting for AI Contributors
+
+### Critical CI Issue: Bootstrap Test Failures
+
+**Common Failure**: GitHub Actions fails with `FileNotFoundError: Could not find the openpilot checkout` during integration tests.
+
+**Root Cause**: The CI environment structure differs from local development:
+```
+# CI Structure (GitHub Actions)
+$GITHUB_WORKSPACE/
+├── comma-tools/    # Checked out with: path: comma-tools
+└── openpilot/      # Checked out with: path: openpilot
+
+# Local Development Structure  
+parent-directory/
+├── comma-tools/    # This repository
+└── openpilot/      # Clone from commaai/openpilot
+```
+
+**Solution Pattern**: When writing integration tests or bootstrap code, always provide explicit workspace path for CI:
+
+```python
+# ❌ WRONG: Will fail in CI
+from comma_tools.utils import find_repo_root
+repo_root = find_repo_root()  # Can't find parent in CI
+
+# ✅ CORRECT: Works in both local and CI environments
+import os
+from comma_tools.utils import find_repo_root
+repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+```
+
+**Workflow Pattern**: CI workflows should pass workspace explicitly:
+```bash
+# In .github/workflows/test.yml
+python -c "
+import os, sys
+sys.path.insert(0, 'src')
+from comma_tools.utils import find_repo_root
+repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+# ... rest of bootstrap test
+"
+```
+
+**Key Rules for AI Contributors**:
+1. Never assume local development directory structure in CI tests
+2. Always provide fallback environment detection for CI scenarios  
+3. Use `$GITHUB_WORKSPACE` environment variable for CI workspace root
+4. Test bootstrap code locally by simulating CI directory structure
+
 ## Domain-Specific Guidelines
 
 ### Automotive Systems Knowledge
