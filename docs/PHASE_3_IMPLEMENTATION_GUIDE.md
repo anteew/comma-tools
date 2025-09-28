@@ -1,5 +1,10 @@
 # Phase 3 Implementation Guide: Artifact Management & Log Streaming
 
+> **⚠️ PARTIAL IMPLEMENTATION**: This phase is largely complete but may need final validation.  
+> **Status**: 🔄 MOSTLY IMPLEMENTED - Core functionality working, needs integration testing  
+> **Implementation Date**: December 2024  
+> **See**: `src/comma_tools/api/artifacts.py`, `logs.py` for current implementation
+
 **Assigned to**: Devin (AI Coding Agent)  
 **Estimated Time**: 8-12 hours  
 **Priority**: HIGH - Critical for MVP completion  

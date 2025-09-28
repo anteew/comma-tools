@@ -72,3 +72,64 @@ Visualization
    :members:
    :undoc-members:
    :show-inheritance:
+
+CTS-Lite API Service
+-------------------
+
+.. automodule:: comma_tools.api.server
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.capabilities
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.health
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.execution
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.runs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.artifacts
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.logs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.models
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: comma_tools.api.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+CTS CLI Client
+-------------
+
+.. automodule:: cts_cli.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
