@@ -232,9 +232,14 @@ flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
 **Root Cause**: GitHub Actions checkout defaults to checking out the PR merge commit, which puts the repository in detached HEAD state. When the workflow tries to push black formatting changes, git fails because you cannot push from detached HEAD.
 
-**Solution**: The workflow has been fixed to check out the actual PR branch using `ref: ${{ github.head_ref }}` and includes a safety check to verify we're on a branch before pushing.
+**Solution**: The workflow has been updated with comprehensive fixes:
+- **Proper checkout**: Uses `ref: ${{ github.event.pull_request.head.ref || github.ref }}` to checkout the actual branch
+- **Full history**: Uses `fetch-depth: 0` for complete git operations 
+- **Conditional logic**: Only attempts commits/pushes in PR contexts
+- **Safety checks**: Verifies changes before committing and pushing
+- **Better error handling**: Clear feedback when formatting changes are applied
 
-**Fixed**: The `.github/workflows/black-autoformat.yml` workflow now properly handles this case and will push formatting changes to the PR branch correctly.
+**Fixed**: The `.github/workflows/black-autoformat.yml` workflow now automatically applies Black formatting to PRs while providing proper CI validation feedback.
 
 #### Integration Test Bootstrap Failure
 **Symptom**: CI fails with `FileNotFoundError: Could not find the openpilot checkout` during dependency bootstrap test.
