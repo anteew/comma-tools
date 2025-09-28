@@ -60,13 +60,26 @@ jobs:
         python -c "
         import sys
         import os
+        from pathlib import Path
         sys.path.insert(0, 'src')
         from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
+        
+        # Debug information
+        print('Current working directory:', os.getcwd())
+        print('GITHUB_WORKSPACE env var:', os.environ.get('GITHUB_WORKSPACE', 'NOT SET'))
+        workspace_path = os.environ.get('GITHUB_WORKSPACE')
+        if workspace_path:
+            workspace = Path(workspace_path)
+            print(f'Workspace path exists: {workspace.exists()}')
+            if workspace.exists():
+                print(f'Workspace contents: {list(workspace.iterdir())}')
+                print(f'openpilot exists: {(workspace / \"openpilot\").exists()}')
+        
         # In CI, use GITHUB_WORKSPACE as explicit repo root to find openpilot checkout
-        repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+        repo_root = find_repo_root(workspace_path)
         deps_dir = resolve_deps_dir(repo_root, None)
         prepare_environment(repo_root, deps_dir)
-        print('✓ Environment bootstrap successful')
+        print('Environment bootstrap successful')
         "
 
     - name: Integration tests (real log fixture)
@@ -158,13 +171,26 @@ jobs:
         python -c "
         import sys
         import os
+        from pathlib import Path
         sys.path.insert(0, 'src')
         from comma_tools.utils import find_repo_root, prepare_environment, resolve_deps_dir
+        
+        # Debug information
+        print('Current working directory:', os.getcwd())
+        print('GITHUB_WORKSPACE env var:', os.environ.get('GITHUB_WORKSPACE', 'NOT SET'))
+        workspace_path = os.environ.get('GITHUB_WORKSPACE')
+        if workspace_path:
+            workspace = Path(workspace_path)
+            print(f'Workspace path exists: {workspace.exists()}')
+            if workspace.exists():
+                print(f'Workspace contents: {list(workspace.iterdir())}')
+                print(f'openpilot exists: {(workspace / \"openpilot\").exists()}')
+        
         # In CI, use GITHUB_WORKSPACE as explicit repo root to find openpilot checkout
-        repo_root = find_repo_root(os.environ.get('GITHUB_WORKSPACE'))
+        repo_root = find_repo_root(workspace_path)
         deps_dir = resolve_deps_dir(repo_root, None)
         prepare_environment(repo_root, deps_dir)
-        print('✓ Environment bootstrap successful')
+        print('Environment bootstrap successful')
         "
 
     - name: Integration tests (real log fixture)
