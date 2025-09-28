@@ -91,8 +91,7 @@ class ErrorResponse(BaseModel):
         Returns:
             ErrorResponse with details from run context
         """
-        from .execution import \
-            RunContext  # Import here to avoid circular import
+        from .execution import RunContext  # Import here to avoid circular import
 
         return cls(
             error_category=run_context.error_category or ErrorCategory.TOOL_ERROR,
