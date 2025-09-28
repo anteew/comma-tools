@@ -76,24 +76,18 @@ class TestConfigurationManagement:
     def test_config_file_override_json(self):
         """Test: JSON config file overrides are loaded correctly."""
         manager = ConfigManager()
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a test JSON config file
             config_file = Path(tmpdir) / "test_config.json"
-            config_data = {
-                "max_concurrent_runs": 10,
-                "debug": True,
-                "log_level": "DEBUG"
-            }
+            config_data = {"max_concurrent_runs": 10, "debug": True, "log_level": "DEBUG"}
             config_file.write_text(json.dumps(config_data))
-            
+
             temp_config = ProductionConfig(
                 base_storage_path=tmpdir, temp_directory=tmpdir, log_directory=tmpdir
             )
-            
-            with patch.object(
-                ProductionConfig, "get_environment_config", return_value=temp_config
-            ):
+
+            with patch.object(ProductionConfig, "get_environment_config", return_value=temp_config):
                 config = manager.load_config(str(config_file))
                 assert config.max_concurrent_runs == 10
                 assert config.debug is True
@@ -102,45 +96,46 @@ class TestConfigurationManagement:
     def test_config_file_override_invalid_json(self):
         """Test: Invalid JSON config file raises ValueError."""
         manager = ConfigManager()
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create invalid JSON file
             config_file = Path(tmpdir) / "invalid_config.json"
             config_file.write_text("{ invalid json }")
-            
+
             temp_config = ProductionConfig(
                 base_storage_path=tmpdir, temp_directory=tmpdir, log_directory=tmpdir
             )
-            
-            with patch.object(
-                ProductionConfig, "get_environment_config", return_value=temp_config
-            ):
+
+            with patch.object(ProductionConfig, "get_environment_config", return_value=temp_config):
                 with pytest.raises(ValueError, match="Invalid JSON"):
                     manager.load_config(str(config_file))
 
     def test_environment_variable_parsing(self):
         """Test: Environment variables are parsed to correct types."""
         manager = ConfigManager()
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             temp_config = ProductionConfig(
                 base_storage_path=tmpdir, temp_directory=tmpdir, log_directory=tmpdir
             )
-            
-            with patch.dict(os.environ, {
-                "CTS_MAX_CONCURRENT_RUNS": "5",
-                "CTS_DEBUG": "true", 
-                "CTS_ENABLE_METRICS": "false",
-                # Test list format that Pydantic expects (JSON format)
-                "CTS_CORS_ALLOWED_ORIGINS": '["https://example.com","https://test.com"]'
-            }):
+
+            with patch.dict(
+                os.environ,
+                {
+                    "CTS_MAX_CONCURRENT_RUNS": "5",
+                    "CTS_DEBUG": "true",
+                    "CTS_ENABLE_METRICS": "false",
+                    # Test list format that Pydantic expects (JSON format)
+                    "CTS_CORS_ALLOWED_ORIGINS": '["https://example.com","https://test.com"]',
+                },
+            ):
                 with patch.object(
                     ProductionConfig, "get_environment_config", return_value=temp_config
                 ):
                     config = manager.load_config()
                     # Environment overrides should be applied via Pydantic's built-in handling
                     # Our custom _load_from_environment is used for additional processing
-                    
+
                     # Test our custom environment parsing directly
                     env_overrides = manager._load_from_environment()
                     assert env_overrides["max_concurrent_runs"] == 5
@@ -293,13 +288,13 @@ class TestHealthChecks:
             config.log_directory = tmpdir
 
             manager = HealthCheckManager(config)
-            
+
             # Mock the ToolRegistry to return some tools
-            with patch('comma_tools.api.registry.ToolRegistry') as mock_registry_class:
+            with patch("comma_tools.api.registry.ToolRegistry") as mock_registry_class:
                 mock_registry = MagicMock()
                 mock_registry.list_tools.return_value = {"tool1": MagicMock(), "tool2": MagicMock()}
                 mock_registry_class.return_value = mock_registry
-                
+
                 result = manager._check_tool_registry()
                 assert result is True
 
@@ -313,13 +308,13 @@ class TestHealthChecks:
             config.log_directory = tmpdir
 
             manager = HealthCheckManager(config)
-            
+
             # Mock the ToolRegistry to return no tools
-            with patch('comma_tools.api.registry.ToolRegistry') as mock_registry_class:
+            with patch("comma_tools.api.registry.ToolRegistry") as mock_registry_class:
                 mock_registry = MagicMock()
                 mock_registry.list_tools.return_value = {}
                 mock_registry_class.return_value = mock_registry
-                
+
                 with pytest.raises(Exception, match="No tools are currently registered"):
                     manager._check_tool_registry()
 
@@ -451,23 +446,23 @@ class TestFastAPIIntegration:
         """Create test client with mocked dependencies."""
         from fastapi.testclient import TestClient
         from comma_tools.api.server import create_app
-        
+
         app = create_app()
         return TestClient(app)
 
     def test_metrics_endpoint(self, client):
         """Test /v1/metrics endpoint returns metrics data."""
         response = client.get("/v1/metrics")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check structure
         assert "execution_metrics" in data
         assert "api_metrics" in data
         assert "business_metrics" in data
         assert "system_metrics" in data
-        
+
         # Check specific metrics
         exec_metrics = data["execution_metrics"]
         assert "runs_total" in exec_metrics
@@ -476,10 +471,10 @@ class TestFastAPIIntegration:
     def test_config_status_endpoint(self, client):
         """Test /v1/config/status endpoint returns config info."""
         response = client.get("/v1/config/status")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Basic config fields should always be present
         assert "log_level" in data
         assert "host" in data
@@ -488,15 +483,15 @@ class TestFastAPIIntegration:
     def test_health_comprehensive_endpoint(self, client):
         """Test /v1/health/comprehensive endpoint returns health status."""
         response = client.get("/v1/health/comprehensive")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check health response structure
         assert "status" in data
         assert "timestamp" in data
         assert "summary" in data
-        
+
         # Status should be a valid health status
         assert data["status"] in ["healthy", "degraded", "unhealthy"]
 
@@ -505,17 +500,17 @@ class TestFastAPIIntegration:
         # The client fixture creates the app with default config
         # We can test that config values are accessible via the API
         response = client.get("/v1/config/status")
-        
+
         assert response.status_code == 200
         data = response.json()
-        
+
         # Verify that the config endpoint exposes expected values
         # This tests that the configuration system is properly integrated
         assert isinstance(data.get("log_level"), str)
         assert isinstance(data.get("host"), str)
         assert isinstance(data.get("port"), int)
 
-    @patch('comma_tools.api.server.ProductionConfig')
+    @patch("comma_tools.api.server.ProductionConfig")
     def test_production_config_in_responses(self, mock_production_config, client):
         """Test that production config fields appear in API responses."""
         # Create a mock production config instance
@@ -528,14 +523,14 @@ class TestFastAPIIntegration:
         mock_config.log_level = "WARNING"
         mock_config.host = "0.0.0.0"
         mock_config.port = 8080
-        
+
         # Replace the app's config
         client.app.state.config = mock_config
-        
+
         response = client.get("/v1/config/status")
         assert response.status_code == 200
         data = response.json()
-        
+
         # Check that production config fields are included
         assert data.get("environment") == "production"
         assert data.get("debug") is False
