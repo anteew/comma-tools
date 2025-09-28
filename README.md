@@ -43,4 +43,102 @@ For full details, see:
 
 This repository contains a collection of debugging and analysis tools for the openpilot autonomous driving system. The tools are primarily focused on Controller Area Network (CAN) bus analysis, safety monitoring, and log conversion utilities for research, troubleshooting, and development.
 
-... (rest of README unchanged)
+## CTS-Lite API Service
+
+**CTS-Lite** is the modern HTTP API service that provides unified access to all comma-tools analyzers and monitors. It replaces standalone CLI tools with a single, comprehensive interface.
+
+### Quick Start
+
+1. **Install with API support**:
+   ```bash
+   pip install -e ".[api,client]"
+   ```
+
+2. **Start the CTS-Lite service**:
+   ```bash
+   cts-lite
+   # Server starts at http://127.0.0.1:8080
+   ```
+
+3. **Use the unified CLI client**:
+   ```bash
+   # Discover available tools
+   cts cap
+   
+   # Run analysis
+   cts run cruise-control-analyzer --path your-log.zst --wait
+   
+   # Monitor CAN bus
+   cts mon start can_bus_check -p bus=0
+   ```
+
+### Available Tools
+
+- **cruise-control-analyzer**: Deep analysis of recorded driving logs with focus on Subaru vehicle cruise control systems
+- **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis  
+- **can-bitwatch**: Swiss-army analyzer for CSV dumps of CAN frames with segment labels
+
+### Available Monitors
+
+- **hybrid_rx_trace**: Trace which CAN signals cause panda safety to flag RX invalid
+- **can_bus_check**: General CAN message frequency analysis
+- **can_hybrid_rx_check**: Subaru hybrid-specific signal monitoring
+
+## Legacy CLI Tools
+
+For backward compatibility, individual CLI tools are still available:
+
+```bash
+cruise-control-analyzer your-log.zst
+rlog-to-csv your-log.zst
+can-bitwatch your-data.csv
+comma-connect-dl --help
+```
+
+## Development
+
+### Setup Development Environment
+
+```bash
+# Clone and install with development dependencies
+git clone https://github.com/anteew/comma-tools.git
+cd comma-tools
+pip install -e ".[dev]"
+
+# Install pre-commit hooks (required)
+pre-commit install
+
+# Verify setup
+pre-commit run --all-files
+```
+
+### Run Tests
+
+```bash
+pytest tests/
+```
+
+### Build Documentation
+
+```bash
+cd docs/
+make html
+# Open docs/_build/html/index.html
+```
+
+## Architecture
+
+The repository follows a service-first architecture:
+
+- **Core Logic**: Service components in `src/comma_tools/analyzers/` and `src/comma_tools/monitors/`
+- **API Layer**: FastAPI service in `src/comma_tools/api/`
+- **CLI Client**: Modern client in `src/cts_cli/`
+- **Legacy Tools**: Backward-compatible CLI tools with individual entry points
+
+## Contributing
+
+All contributions must follow the code formatting rules above and pass pre-commit hooks. See [docs/AGENTS.md](docs/AGENTS.md) for detailed development guidelines.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
