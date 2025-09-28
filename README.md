@@ -68,8 +68,8 @@ This repository contains a collection of debugging and analysis tools for the op
    # Run analysis
    cts run cruise-control-analyzer --path your-log.zst --wait
    
-   # Monitor CAN bus
-   cts mon start can_bus_check -p bus=0
+   # Note: Monitor support is still in development
+   # Monitor functionality will be available in future releases
    ```
 
 ### Available Tools
@@ -78,11 +78,15 @@ This repository contains a collection of debugging and analysis tools for the op
 - **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis  
 - **can-bitwatch**: Swiss-army analyzer for CSV dumps of CAN frames with segment labels
 
-### Available Monitors
+### Available Monitors (In Development)
+
+Monitor support is currently in development. The following monitors are planned:
 
 - **hybrid_rx_trace**: Trace which CAN signals cause panda safety to flag RX invalid
-- **can_bus_check**: General CAN message frequency analysis
+- **can_bus_check**: General CAN message frequency analysis  
 - **can_hybrid_rx_check**: Subaru hybrid-specific signal monitoring
+
+*Note: Monitor API endpoints are not yet available in the current CTS-Lite implementation.*
 
 ## Legacy CLI Tools
 

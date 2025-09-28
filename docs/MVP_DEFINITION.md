@@ -28,7 +28,7 @@ A user should be able to:
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Service Foundation | ✅ DONE | Health & capabilities endpoints working |
-| Tool Discovery | ✅ DONE | `cts cap` lists 3 analyzers + 3 monitors with parameters |
+| Tool Discovery | ✅ DONE | `cts cap` lists 3 analyzers + 3 monitors with parameters (monitors planned) |
 | Configuration | ✅ DONE | Environment variables, .env support, production config |
 | **Tool Execution** | ✅ DONE | `cts run` command functional end-to-end |
 | **Run Management** | ✅ DONE | POST /v1/runs, GET /v1/runs/{id} endpoints |
@@ -138,17 +138,17 @@ cts run cruise-control-analyzer --path nonexistent.zst  # File not found error
 
 ### **Phase 4: Production Polish**
 **Timeline**: 1 week  
-**Scope**: Error handling, logging, monitoring integration  
+**Scope**: Error handling, logging, monitoring integration (planned)  
 **Deliverables**:
 - Comprehensive error handling and reporting
 - Log streaming (SSE) for real-time feedback
-- Monitor tool integration (hybrid_rx_trace, etc.)
+- Monitor tool integration (hybrid_rx_trace, etc.) - planned for future release
 - Production deployment documentation
 
 **Success Criteria**:
 - `cts logs <run_id> --follow` streams real-time output
 - Error scenarios handled gracefully
-- Basic monitoring tools work through API
+- Basic monitoring tools integration planned (not in current MVP)
 
 ---
 

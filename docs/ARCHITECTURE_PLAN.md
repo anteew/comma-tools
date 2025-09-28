@@ -90,8 +90,9 @@ This document outlines the architectural plan and current implementation status 
 - 🔄 File upload system (planned)
 
 **API Endpoints Available**:
-- ✅ `GET /v1/artifacts` - List available artifacts
-- ✅ `GET /v1/artifacts/{id}/download` - Download artifacts
+- ✅ `GET /runs/{run_id}/artifacts` - List artifacts for a specific run
+- ✅ `GET /artifacts/{artifact_id}` - Get artifact metadata
+- ✅ `GET /artifacts/{artifact_id}/download` - Download artifacts
 - 🔄 `POST /v1/uploads` - File upload (not fully tested)
 
 **Current Capabilities**:
@@ -116,8 +117,9 @@ This document outlines the architectural plan and current implementation status 
 **Scope**: File upload/download and artifact management
 **API Endpoints to Add**:
 - `POST /v1/uploads` - File upload
-- `GET /v1/artifacts` - List artifacts
-- `GET /v1/artifacts/{id}/download` - Download artifact
+- `GET /runs/{run_id}/artifacts` - List artifacts for run ✅ IMPLEMENTED
+- `GET /artifacts/{artifact_id}` - Get artifact metadata ✅ IMPLEMENTED  
+- `GET /artifacts/{artifact_id}/download` - Download artifact ✅ IMPLEMENTED
 
 ### Phase 4: Monitor Integration  
 **Scope**: Real-time monitoring capabilities
