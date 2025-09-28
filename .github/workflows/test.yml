@@ -150,7 +150,7 @@ jobs:
     - name: Format check with black
       run: |
         cd comma-tools
-        black --check src/ tests/
+        black --check src/ tests/ --line-length=100
 
     - name: Type check with mypy
       run: |

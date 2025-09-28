@@ -227,6 +227,20 @@ flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
 
 ### Common CI Failures & Solutions
 
+#### Black Autoformat Workflow Failure
+**Symptom**: Black autoformat workflow fails with `fatal: You are not currently on a branch.` when trying to push formatting changes.
+
+**Root Cause**: GitHub Actions checkout defaults to checking out the PR merge commit, which puts the repository in detached HEAD state. When the workflow tries to push black formatting changes, git fails because you cannot push from detached HEAD.
+
+**Solution**: The workflow has been updated with comprehensive fixes:
+- **Proper checkout**: Uses `ref: ${{ github.event.pull_request.head.ref || github.ref }}` to checkout the actual branch
+- **Full history**: Uses `fetch-depth: 0` for complete git operations 
+- **Conditional logic**: Only attempts commits/pushes in PR contexts
+- **Safety checks**: Verifies changes before committing and pushing
+- **Better error handling**: Clear feedback when formatting changes are applied
+
+**Fixed**: The `.github/workflows/black-autoformat.yml` workflow now automatically applies Black formatting to PRs while providing proper CI validation feedback.
+
 #### Integration Test Bootstrap Failure
 **Symptom**: CI fails with `FileNotFoundError: Could not find the openpilot checkout` during dependency bootstrap test.
 
