@@ -143,6 +143,8 @@ The repository follows a service-first architecture:
 
 All contributions must follow the code formatting rules above and pass pre-commit hooks. See [docs/AGENTS.md](docs/AGENTS.md) for detailed development guidelines.
 
+For questions about PR #84 configuration changes, please refer to the PR discussion.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
