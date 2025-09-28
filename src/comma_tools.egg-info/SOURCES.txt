@@ -21,6 +21,7 @@ src/comma_tools/api/config.py
 src/comma_tools/api/execution.py
 src/comma_tools/api/health.py
 src/comma_tools/api/logs.py
+src/comma_tools/api/metrics.py
 src/comma_tools/api/models.py
 src/comma_tools/api/registry.py
 src/comma_tools/api/runs.py
