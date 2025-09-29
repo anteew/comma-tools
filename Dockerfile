@@ -18,8 +18,9 @@ RUN git clone --no-checkout --filter=blob:none --depth=1 \
         https://github.com/commaai/openpilot /tmp/openpilot && \
     cd /tmp/openpilot && \
     git sparse-checkout init --cone && \
-    git sparse-checkout set tools/lib cereal && \
-    git checkout ${OPENPILOT_COMMIT}
+    git sparse-checkout set tools/lib cereal common system && \
+    git checkout ${OPENPILOT_COMMIT} && \
+    git submodule update --init --depth=1 opendbc_repo
 
 # Stage 2: Main application build
 FROM python:3.12-slim
@@ -36,12 +37,22 @@ WORKDIR /comma-tools
 # Copy entire tools/lib directory as logreader might have dependencies
 COPY --from=vendor-fetch /tmp/openpilot/tools/lib /comma-tools/vendor/openpilot/tools/lib/
 COPY --from=vendor-fetch /tmp/openpilot/cereal /comma-tools/vendor/openpilot/cereal/
+COPY --from=vendor-fetch /tmp/openpilot/common /comma-tools/vendor/openpilot/common/
+COPY --from=vendor-fetch /tmp/openpilot/system /comma-tools/vendor/openpilot/system/
+COPY --from=vendor-fetch /tmp/openpilot/opendbc_repo /comma-tools/vendor/openpilot/opendbc_repo/
 
-# Create __init__.py files for proper Python module structure
+# Create __init__.py files for proper Python module structure and ensure cereal is available at top level
 RUN touch /comma-tools/vendor/__init__.py && \
     touch /comma-tools/vendor/openpilot/__init__.py && \
     touch /comma-tools/vendor/openpilot/tools/__init__.py && \
-    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py
+    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py && \
+    touch /comma-tools/vendor/openpilot/common/__init__.py && \
+    touch /comma-tools/vendor/openpilot/system/__init__.py && \
+    touch /comma-tools/vendor/openpilot/opendbc_repo/__init__.py && \
+    touch /comma-tools/vendor/openpilot/opendbc_repo/opendbc/__init__.py && \
+    touch /comma-tools/vendor/openpilot/opendbc_repo/opendbc/car/__init__.py && \
+    cp -r /comma-tools/vendor/openpilot/cereal /comma-tools/vendor/cereal && \
+    cp -r /comma-tools/vendor/openpilot/opendbc_repo /comma-tools/vendor/opendbc_repo
 
 # Copy application code
 COPY . /comma-tools
