@@ -8,7 +8,7 @@ from typing import Any, Dict
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import artifacts, capabilities, health, logs, runs
+from . import artifacts, capabilities, health, logs, runs, version
 from .config import Config, ConfigManager, ProductionConfig
 from .health import HealthCheckManager
 from .metrics import MetricsCollector
@@ -74,6 +74,7 @@ def create_app() -> FastAPI:
         return response
 
     # Include routers
+    app.include_router(version.router, prefix="/v1", tags=["version"])
     app.include_router(health.router, prefix="/v1", tags=["health"])
     app.include_router(capabilities.router, prefix="/v1", tags=["capabilities"])
     app.include_router(runs.router, prefix="/v1", tags=["runs"])

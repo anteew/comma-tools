@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional
 import typer
 from typing_extensions import Annotated
 
+from . import __version__ as CLIENT_VERSION
+
 from .commands.artifacts import get_artifact_command, list_artifacts_command
 from .commands.cap import capabilities_command, ping_command
 from .commands.logs import logs_command
@@ -60,6 +62,52 @@ def get_renderer() -> Renderer:
     return _renderer
 
 
+def check_version_compatibility(http_client: HTTPClient, renderer: Renderer) -> None:
+    """
+    Check if client version is compatible with server API version.
+
+    Exits with error if client is too old.
+    """
+    try:
+        # Try to get version info from server
+        version_info = http_client.get_json("/v1/version")
+
+        min_client_version = version_info.get("min_client_version")
+        api_version = version_info.get("api_version")
+
+        if not min_client_version:
+            return  # Server doesn't specify minimum version
+
+        # Parse versions for comparison
+        from packaging import version
+
+        client_ver = version.parse(CLIENT_VERSION)
+        min_ver = version.parse(min_client_version)
+
+        if client_ver < min_ver:
+            renderer.print_error(
+                f"Client version {CLIENT_VERSION} is too old.\n"
+                f"Server requires client version {min_client_version} or higher.\n"
+                f"Please upgrade: pip install --upgrade comma-tools"
+            )
+            raise typer.Exit(1)
+
+        # Check for deprecated features (informational only)
+        deprecated = version_info.get("deprecated_features", [])
+        if deprecated:
+            renderer.print(
+                f"[yellow]Warning: The following API features are deprecated: "
+                f"{', '.join(deprecated)}[/yellow]"
+            )
+
+    except typer.Exit:
+        raise  # Re-raise exit exceptions
+    except Exception:
+        # Silently continue if version check fails (e.g., old server without endpoint)
+        # This ensures backward compatibility with servers that don't have /v1/version yet
+        pass
+
+
 @app.callback()
 def main(
     url: Annotated[Optional[str], typer.Option("--url", "-u", help="Base URL")] = None,
@@ -77,6 +125,9 @@ def main(
     _config = Config(url=url, api_key=api_key, timeout=timeout, no_verify=no_verify)
     _http_client = HTTPClient(_config)
     _renderer = Renderer(json_output=json_output, quiet=quiet)
+
+    # Check version compatibility with server
+    check_version_compatibility(_http_client, _renderer)
 
 
 @app.command()
