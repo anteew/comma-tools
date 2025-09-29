@@ -31,6 +31,20 @@
 - **Monitoring Tools**: Real-time safety state monitoring in `src/comma_tools/monitors/`
 - **Documentation**: Professional Sphinx-generated docs deployed to GitHub Pages
 
+### CTS-Lite API & Version Compatibility
+- **API Versioning**: CTS-Lite API uses `/v1/version` endpoint for client-server compatibility checks
+- **Version Enforcement**: CLI checks server version on startup, exits if client is too old
+- **Semantic Versioning**: Uses `packaging` library for proper version comparison
+- **Backward Compatibility**: Version check silently fails on old servers (graceful degradation)
+- **MCP Server Ready**: Version system designed to support future MCP server implementations
+
+**For AI Agents Building MCP Servers or Clients:**
+- Always call `GET /v1/version` before using API features
+- Compare client version with `min_client_version` from response
+- Show clear error messages if version is incompatible
+- Support `deprecated_features` list for warnings
+- Handle missing endpoint gracefully (old servers)
+
 ### Environment & Dependencies
 - **Python Version**: Python 3.12 required (CI and tools only support 3.12)
 - **Dependency Management**: Tools bootstrap their own environment, cache deps in `<repo-root>/comma-depends`

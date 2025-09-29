@@ -142,11 +142,51 @@
 **Rationale**: Clients can dynamically discover what's available
 **Impact**: Future clients automatically inherit new tools without updates
 
+### 2025-09-29 - API Version Checking System ✅ COMPLETED
+**Status**: Version compatibility system implemented and merged
+
+**What Was Done**:
+- ✅ Created `/v1/version` endpoint in CTS-Lite API (src/comma_tools/api/version.py)
+- ✅ Added client-side version checking on CLI startup (src/cts_cli/main.py)
+- ✅ Implemented semantic version comparison using `packaging` library
+- ✅ Added comprehensive tests for version endpoint
+- ✅ Updated CLI version to match project version (0.8.0)
+- ✅ Documented system in README, AGENTS.md, and DEVELOPMENT.md
+
+**Architecture Decision**: API/Client Version Compatibility System
+- **Problem**: No mechanism to detect when API changes incompatibly with older clients
+- **Solution**: Version endpoint with min_client_version enforcement
+- **Benefits**:
+  - Clear user feedback when upgrade needed
+  - Foundation for future MCP server development
+  - Prevents hard-to-debug compatibility issues
+  - Graceful degradation with old servers
+
+**Implementation Details**:
+- API version: 0.1.0
+- Min client version: 0.8.0
+- Check happens transparently on every CLI invocation
+- Fails fast with clear error message if incompatible
+- Silently continues if endpoint doesn't exist (backward compatibility)
+
+**Pull Request**: #111 - https://github.com/anteew/comma-tools/pull/111
+
+## Architecture Decisions Log
+
+### Decision 4: API Version Compatibility System ✅
+**Decision**: Add `/v1/version` endpoint and automatic client version checking
+**Rationale**: Prevent incompatible client/server combinations, enable safe API evolution
+**Impact**:
+- Clear user feedback when upgrades needed
+- Foundation for MCP server support
+- Safe API evolution without breaking existing clients
+**Date**: 2025-09-29
+
 ## Review Log
 *This section will track my reviews of coding agent PRs*
 
 ## Next Expected Interactions
 1. Dan merges architecture plan PR
-2. Dan assigns coding agent to implement CTS-Lite service skeleton  
+2. Dan assigns coding agent to implement CTS-Lite service skeleton
 3. I review coding agent's implementation PR for architectural compliance
 4. Plan subsequent implementation phases
