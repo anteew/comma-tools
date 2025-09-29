@@ -1,7 +1,5 @@
 """Version information and compatibility checking for CTS-Lite API."""
 
-from typing import Optional
-
 from fastapi import APIRouter
 from pydantic import BaseModel
 

@@ -9,7 +9,9 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import httpx
 import typer
+from packaging import version
 from typing_extensions import Annotated
 
 from . import __version__ as CLIENT_VERSION
@@ -70,17 +72,19 @@ def check_version_compatibility(http_client: HTTPClient, renderer: Renderer) -> 
     """
     try:
         # Try to get version info from server
-        version_info = http_client.get_json("/v1/version")
+        response = http_client.get_json("/v1/version")
 
-        min_client_version = version_info.get("min_client_version")
-        api_version = version_info.get("api_version")
+        # Ensure response is a dict before using .get()
+        if not isinstance(response, dict):
+            return  # Unexpected response format, skip check
+
+        min_client_version = response.get("min_client_version")
+        api_version = response.get("api_version")
 
         if not min_client_version:
             return  # Server doesn't specify minimum version
 
         # Parse versions for comparison
-        from packaging import version
-
         client_ver = version.parse(CLIENT_VERSION)
         min_ver = version.parse(min_client_version)
 
@@ -93,8 +97,8 @@ def check_version_compatibility(http_client: HTTPClient, renderer: Renderer) -> 
             raise typer.Exit(1)
 
         # Check for deprecated features (informational only)
-        deprecated = version_info.get("deprecated_features", [])
-        if deprecated:
+        deprecated = response.get("deprecated_features", [])
+        if deprecated and isinstance(deprecated, list):
             renderer.print(
                 f"[yellow]Warning: The following API features are deprecated: "
                 f"{', '.join(deprecated)}[/yellow]"
@@ -102,7 +106,7 @@ def check_version_compatibility(http_client: HTTPClient, renderer: Renderer) -> 
 
     except typer.Exit:
         raise  # Re-raise exit exceptions
-    except Exception:
+    except (httpx.HTTPError, httpx.RequestError, ValueError):
         # Silently continue if version check fails (e.g., old server without endpoint)
         # This ensures backward compatibility with servers that don't have /v1/version yet
         pass
