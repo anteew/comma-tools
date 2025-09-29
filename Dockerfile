@@ -33,8 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certifi
 WORKDIR /comma-tools
 
 # Copy vendored OpenPilot dependencies from fetch stage
-# Only copy the specific files we need to keep image size minimal
-COPY --from=vendor-fetch /tmp/openpilot/tools/lib/logreader.py /comma-tools/vendor/openpilot/tools/lib/
+# Copy entire tools/lib directory as logreader might have dependencies
+COPY --from=vendor-fetch /tmp/openpilot/tools/lib /comma-tools/vendor/openpilot/tools/lib/
 COPY --from=vendor-fetch /tmp/openpilot/cereal /comma-tools/vendor/openpilot/cereal/
 
 # Create __init__.py files for proper Python module structure

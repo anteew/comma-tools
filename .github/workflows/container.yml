@@ -72,25 +72,50 @@ jobs:
       - name: Test vendor dependencies (PR)
         if: github.event_name == 'pull_request'
         run: |
-          echo "Testing vendor dependencies in built image..."
-          docker run --rm ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} python3 -c "
+          echo "Testing vendor dependencies using actual startup script..."
+
+          # Create a test script that will be run through the startup mechanism
+          cat > test_vendor.py << 'TESTSCRIPT'
+#!/usr/bin/env python3
 import sys
-sys.path.insert(0, '/comma-tools/vendor/openpilot')
-sys.path.insert(0, '/comma-tools/vendor/openpilot/tools')
+import os
+
+# This script will be run AFTER the startup script has injected paths
+# so we're testing the real-world scenario
+
+print("Python path after startup injection:")
+for p in sys.path:
+    if 'vendor' in p:
+        print(f"  - {p}")
+
 try:
     from tools.lib.logreader import LogReader
     print('✓ LogReader import successful')
 except ImportError as e:
     print(f'✗ LogReader import failed: {e}')
-    exit(1)
+    sys.exit(1)
+
 try:
     import cereal
     print('✓ cereal import successful')
 except ImportError as e:
     print(f'✗ cereal import failed: {e}')
-    exit(1)
-print('All vendor dependencies verified!')
-"
+    sys.exit(1)
+
+print('✓ All vendor dependencies verified using startup script!')
+TESTSCRIPT
+
+          # Test using the cli mode which uses the actual startup script
+          docker run --rm -v $(pwd)/test_vendor.py:/test_vendor.py:ro \
+            ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} \
+            cli python3 /test_vendor.py
+
+          # Also test that regular CLI commands work
+          echo "Testing CLI mode functionality..."
+          docker run --rm ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} cli cts ping
+
+          # Clean up test script
+          rm test_vendor.py
 
       - name: Save image to tar (PR)
         if: github.event_name == 'pull_request'
