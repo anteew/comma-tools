@@ -125,7 +125,7 @@ def list_runs(status: Optional[str] = None, limit: int = 10) -> List[Dict[str, A
     Returns:
         List of run dictionaries with id, tool_id, status, and timestamps
     """
-    params = {"limit": limit}
+    params: Dict[str, Any] = {"limit": limit}
     if status:
         params["status"] = status
 
