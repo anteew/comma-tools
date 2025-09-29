@@ -40,7 +40,9 @@ def main():
     # Check for expected subdirectories
     expected_dirs = {
         "tools/lib": "OpenPilot tools library",
-        "cereal": "OpenPilot cereal messaging"
+        "cereal": "OpenPilot cereal messaging",
+        "common": "OpenPilot common utilities",
+        "system": "OpenPilot system/hardware modules"
     }
 
     for subdir, description in expected_dirs.items():
@@ -52,7 +54,9 @@ def main():
 
     # Add vendor paths to Python path (mimics startup.py behavior)
     print("\n2. Adding vendor paths to Python path:")
+    vendor_parent = vendor_root.parent  # /comma-tools/vendor
     vendor_paths = [
+        str(vendor_parent),  # For "import openpilot.X" to work
         str(vendor_root),
         str(vendor_root / "tools"),
         str(vendor_root / "cereal")

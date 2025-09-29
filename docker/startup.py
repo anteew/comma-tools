@@ -9,6 +9,9 @@ VENDOR_ROOT = "/comma-tools/vendor/openpilot"
 
 def inject_vendor_paths():
     """Inject vendor paths if they exist, with helpful diagnostics."""
+    # The key insight: LogReader expects imports like "from openpilot.tools.lib..."
+    # So we need to add the PARENT of the openpilot directory to sys.path
+    vendor_parent = "/comma-tools/vendor"  # Parent containing "openpilot" subdir
     tools_dir = os.path.join(VENDOR_ROOT, "tools")
     cereal_dir = os.path.join(VENDOR_ROOT, "cereal")
 
@@ -18,7 +21,8 @@ def inject_vendor_paths():
         print(f"Warning: Vendor dependencies not found at {VENDOR_ROOT}", file=sys.stderr)
         print("OpenPilot-dependent analyzers may not work properly.", file=sys.stderr)
 
-    for p in (VENDOR_ROOT, tools_dir, cereal_dir):
+    # Add vendor parent FIRST so "import openpilot.X" works
+    for p in (vendor_parent, VENDOR_ROOT, tools_dir, cereal_dir):
         if os.path.isdir(p) and p not in sys.path:
             sys.path.insert(0, p)
 

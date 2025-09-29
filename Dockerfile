@@ -20,7 +20,7 @@ RUN git clone --no-checkout --filter=blob:none \
         https://github.com/commaai/openpilot /tmp/openpilot && \
     cd /tmp/openpilot && \
     git sparse-checkout init --cone && \
-    git sparse-checkout set tools/lib cereal common && \
+    git sparse-checkout set tools/lib cereal common system && \
     git checkout ${OPENPILOT_COMMIT} && \
     git submodule update --init --depth=1 opendbc_repo
 
@@ -40,13 +40,17 @@ WORKDIR /comma-tools
 COPY --from=vendor-fetch /tmp/openpilot/tools/lib /comma-tools/vendor/openpilot/tools/lib/
 COPY --from=vendor-fetch /tmp/openpilot/cereal /comma-tools/vendor/openpilot/cereal/
 COPY --from=vendor-fetch /tmp/openpilot/common /comma-tools/vendor/openpilot/common/
+COPY --from=vendor-fetch /tmp/openpilot/system /comma-tools/vendor/openpilot/system/
 COPY --from=vendor-fetch /tmp/openpilot/opendbc_repo /comma-tools/vendor/openpilot/opendbc_repo/
 
 # Create __init__.py files for proper Python module structure
 RUN touch /comma-tools/vendor/__init__.py && \
     touch /comma-tools/vendor/openpilot/__init__.py && \
     touch /comma-tools/vendor/openpilot/tools/__init__.py && \
-    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py
+    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py && \
+    touch /comma-tools/vendor/openpilot/common/__init__.py && \
+    touch /comma-tools/vendor/openpilot/system/__init__.py && \
+    touch /comma-tools/vendor/openpilot/system/hardware/__init__.py
 
 # Copy application code
 COPY . /comma-tools
