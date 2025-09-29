@@ -48,6 +48,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OPENPILOT_VERSION=v0.10.0
+            OPENPILOT_COMMIT=c085b8af19438956c1559
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -60,8 +63,34 @@ jobs:
           load: true
           tags: ghcr.io/anteew/comma-tools:pr-${{ github.event.number }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            OPENPILOT_VERSION=v0.10.0
+            OPENPILOT_COMMIT=c085b8af19438956c1559
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Test vendor dependencies (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Testing vendor dependencies in built image..."
+          docker run --rm ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} python3 -c "
+import sys
+sys.path.insert(0, '/comma-tools/vendor/openpilot')
+sys.path.insert(0, '/comma-tools/vendor/openpilot/tools')
+try:
+    from tools.lib.logreader import LogReader
+    print('✓ LogReader import successful')
+except ImportError as e:
+    print(f'✗ LogReader import failed: {e}')
+    exit(1)
+try:
+    import cereal
+    print('✓ cereal import successful')
+except ImportError as e:
+    print(f'✗ cereal import failed: {e}')
+    exit(1)
+print('All vendor dependencies verified!')
+"
 
       - name: Save image to tar (PR)
         if: github.event_name == 'pull_request'
