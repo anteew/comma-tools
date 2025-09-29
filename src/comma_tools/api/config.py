@@ -334,20 +334,25 @@ class ConfigManager:
             List populated with items converted to the requested type.
         """
 
-        values: Optional[List[Any]] = None
+        origin = get_origin(ConfigManager._unwrap_type(item_type))
+
         try:
             parsed = json.loads(raw_value)
-            if isinstance(parsed, list):
-                values = parsed
         except json.JSONDecodeError:
-            values = None
+            parsed = None
 
-        if values is None:
-            values = [item.strip() for item in raw_value.split(",") if item.strip()]
+        if parsed is None:
+            if origin in (list, List):
+                raise ValueError("Nested list environment values must be provided as JSON arrays")
+
+            parsed = [item.strip() for item in raw_value.split(",") if item.strip()]
+
+        if not isinstance(parsed, list):
+            raise TypeError("List environment variables must decode to a list")
 
         coerced: List[Any] = []
-        for item in values:
-            item_value = item if isinstance(item, str) else str(item)
+        for item in parsed:
+            item_value = item if isinstance(item, str) else json.dumps(item)
             coerced.append(ConfigManager._coerce_env_value(item_value, item_type))
 
         return coerced
