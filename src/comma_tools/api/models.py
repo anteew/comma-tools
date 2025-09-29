@@ -265,3 +265,48 @@ class LogsResponse(BaseModel):
     run_id: str = Field(..., description="Run identifier")
     logs: List[LogEntry] = Field(default_factory=list, description="Log entries")
     has_more: bool = Field(default=False, description="More logs available")
+
+
+class DownloadRequest(BaseModel):
+    """Request model for downloading logs from comma connect."""
+
+    route: str = Field(..., description="Canonical route name or connect URL")
+    dest_root: str = Field(..., description="Root destination directory for downloads")
+    file_types: Dict[str, bool] = Field(
+        default_factory=lambda: {"logs": True},
+        description="File types to download (logs, qlogs, cameras, dcameras, ecameras, qcameras)",
+    )
+    search_days: int = Field(
+        default=7,
+        description="Days to search backwards when resolving connect URLs",
+        ge=1,
+        le=30,
+    )
+    resume: bool = Field(default=True, description="Resume partial downloads")
+    parallel: int = Field(default=4, description="Number of parallel downloads", ge=1, le=16)
+
+
+class DownloadStatus(str, Enum):
+    """Download operation status enumeration."""
+
+    QUEUED = "queued"
+    RESOLVING = "resolving"
+    DOWNLOADING = "downloading"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class DownloadResponse(BaseModel):
+    """Response model for download operation."""
+
+    download_id: str = Field(..., description="Unique download identifier")
+    status: DownloadStatus = Field(..., description="Current download status")
+    canonical_route: Optional[str] = Field(None, description="Resolved canonical route name")
+    dest_root: str = Field(..., description="Root destination directory")
+    downloaded_files: int = Field(default=0, description="Number of files downloaded")
+    skipped_files: int = Field(default=0, description="Number of files skipped")
+    failed_files: int = Field(default=0, description="Number of files failed")
+    total_bytes: int = Field(default=0, description="Total bytes downloaded")
+    error: Optional[str] = Field(None, description="Error message if failed")
+    created_at: datetime = Field(..., description="Download creation timestamp")
+    completed_at: Optional[datetime] = Field(None, description="Download completion timestamp")

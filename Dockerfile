@@ -55,9 +55,8 @@ RUN touch /comma-tools/vendor/__init__.py && \
 # Copy application code
 COPY . /comma-tools
 
-# Install application and additional dependencies needed by OpenPilot vendor code
-RUN pip install --no-cache-dir -e ".[api,client]" && \
-    pip install --no-cache-dir requests urllib3
+# Install application and all optional dependency groups
+RUN pip install --no-cache-dir -e ".[api,client,connect]"
 
 RUN install -m 0755 docker/startup.py /usr/local/bin/comma-tools-startup
 
