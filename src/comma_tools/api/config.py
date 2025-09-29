@@ -292,11 +292,16 @@ class ConfigManager:
                     "on",
                 }
                 if warn_on_bad_env:
+                    annotation = getattr(field_info, "annotation", type(value))
+                    try:
+                        expected_type = getattr(annotation, "__name__", None) or str(annotation)
+                    except Exception:
+                        expected_type = str(annotation)
                     logger.warning(
                         "Ignoring env var %s: failed to coerce value %r to type %s (%s)",
                         key,
                         value,
-                        getattr(field_info, "annotation", type(value)),
+                        expected_type,
                         exc,
                     )
                 continue

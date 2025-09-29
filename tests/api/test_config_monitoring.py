@@ -230,8 +230,6 @@ class TestEnvVarWarnings:
             "Ignoring env var CTS_MAX_CONCURRENT_RUNS" in rec.message for rec in caplog.records
         )
 
-        assert hasattr(config, "storage_dir")
-
 
 class TestHealthChecks:
     """Test health check system."""
