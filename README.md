@@ -98,6 +98,37 @@ CTS-Lite includes automatic version compatibility checking to ensure the CLI cli
 
 The version check happens transparently - you'll only see a message if there's an incompatibility.
 
+### MCP Server for AI Assistants
+
+The comma-tools MCP (Model Context Protocol) server enables AI assistants like Claude to directly interact with the CTS-Lite API for log analysis and debugging.
+
+**Installation**:
+```bash
+pip install -e ".[mcp]"
+```
+
+**Usage with Claude Desktop**:
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "comma-tools": {
+      "command": "cts-mcp",
+      "env": {
+        "CTS_LITE_URL": "http://127.0.0.1:8080"
+      }
+    }
+  }
+}
+```
+
+Then ask Claude things like:
+- "Check if CTS-Lite is healthy"
+- "Analyze this log file using rlog-to-csv"
+- "Show me the status of my recent runs"
+
+See [MCP Server Documentation](src/comma_tools_mcp/README.md) for details.
+
 ## Legacy CLI Tools
 
 For backward compatibility, individual CLI tools are still available:

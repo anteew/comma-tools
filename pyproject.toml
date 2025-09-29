@@ -76,12 +76,17 @@ dev = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "python-multipart>=0.0.6",
+    "mcp[cli]>=1.0.0",
 ]
 docs = [
     "sphinx>=4.0",
     "sphinx-autodoc-typehints",
     "furo",
     "myst-parser",
+]
+mcp = [
+    "mcp[cli]>=1.0.0",
+    "httpx>=0.24.0",
 ]
 
 [project.scripts]
@@ -90,6 +95,7 @@ can-bitwatch = "comma_tools.analyzers.can_bitwatch:main"
 comma-connect-dl = "comma_tools.sources.connect.cli:main"
 cts = "cts_cli.main:cli_main"
 cts-lite = "comma_tools.api.server:main"
+cts-mcp = "comma_tools_mcp.server:mcp.run"
 
 [tool.setuptools.packages.find]
 where = ["src"]
