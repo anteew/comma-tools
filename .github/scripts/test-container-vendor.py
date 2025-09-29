@@ -14,12 +14,16 @@ Exit codes:
 """
 
 import sys
-import os
 from pathlib import Path
 
 
 def main():
-    """Run vendor dependency verification tests."""
+    """
+    Run vendor dependency verification tests.
+
+    Returns:
+        int: 0 if all tests pass (success), 1 if any test fails (failure).
+    """
     print("=" * 60)
     print("Container Vendor Dependencies Test")
     print("=" * 60)
