@@ -39,13 +39,40 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
-      - name: Build and push
+      - name: Build multi-arch and push (main/tags)
+        if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build single-arch and load (PR)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ghcr.io/anteew/comma-tools:pr-${{ github.event.number }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Save image to tar (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker image inspect ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} >/dev/null 2>&1
+          docker save ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} -o comma-tools-pr-${{ github.event.number }}.tar
+
+      - name: Upload image artifact (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: comma-tools-image-pr-${{ github.event.number }}
+          path: comma-tools-pr-${{ github.event.number }}.tar
+          if-no-files-found: error
