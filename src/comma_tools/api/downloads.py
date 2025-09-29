@@ -31,24 +31,31 @@ def _validate_dest_path(dest_root: str) -> Path:
         Validated Path object
 
     Raises:
-        ValueError: If path contains traversal attempts or is unsafe
+        ValueError: If path is unsafe or invalid
     """
-    try:
-        dest_path = Path(dest_root).resolve()
-    except (ValueError, OSError) as e:
-        raise ValueError(f"Invalid destination path: {e}") from e
+    if not dest_root or not isinstance(dest_root, str):
+        raise ValueError("Destination path must be a non-empty string")
 
-    if "\0" in str(dest_path):
-        raise ValueError("Destination path contains null bytes")
+    if "\0" in dest_root:
+        raise ValueError("Invalid path format")
+
+    if len(dest_root) > 4096:
+        raise ValueError("Path too long")
+
+    try:
+        dest_path = Path(dest_root).resolve(strict=False)
+    except (ValueError, OSError, RuntimeError):
+        raise ValueError("Invalid path format")
+
+    path_str = str(dest_path)
 
     if not dest_path.is_absolute():
-        raise ValueError("Destination path must be absolute")
+        raise ValueError("Path must be absolute")
 
-    sensitive_prefixes = ["/etc", "/sys", "/proc", "/dev", "/boot"]
-    path_str = str(dest_path)
+    sensitive_prefixes = ("/etc/", "/sys/", "/proc/", "/dev/", "/boot/")
     for prefix in sensitive_prefixes:
         if path_str.startswith(prefix):
-            raise ValueError(f"Destination path cannot be under {prefix}")
+            raise ValueError("Access to system directories not allowed")
 
     return dest_path
 
