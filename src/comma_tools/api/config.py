@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional, Union, get_args, get_origin
 
 from pydantic import Field, field_validator
+import logging
+
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Environment(str, Enum):
@@ -280,7 +284,26 @@ class ConfigManager:
             field_info = ProductionConfig.model_fields[field_name]
             try:
                 env_overrides[field_name] = self._coerce_env_value(value, field_info.annotation)
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as exc:
+                warn_on_bad_env = os.environ.get("CTS_CONFIG_WARN_ON_BAD_ENV", "true").lower() in {
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
+                }
+                if warn_on_bad_env:
+                    annotation = getattr(field_info, "annotation", type(value))
+                    try:
+                        expected_type = getattr(annotation, "__name__", None) or str(annotation)
+                    except Exception:
+                        expected_type = str(annotation)
+                    logger.warning(
+                        "Ignoring env var %s: failed to coerce value %r to type %s (%s)",
+                        key,
+                        value,
+                        expected_type,
+                        exc,
+                    )
                 continue
 
         return env_overrides

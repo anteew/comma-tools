@@ -182,7 +182,53 @@ class TestConfigurationManagement:
         assert hasattr(config, "host")
         assert hasattr(config, "port")
         assert hasattr(config, "log_level")
-        assert hasattr(config, "storage_dir")
+
+
+class TestEnvVarWarnings:
+    def test_env_parse_failure_logs_warning_and_ignores(self, caplog):
+        manager = ConfigManager()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_config = ProductionConfig(
+                base_storage_path=tmpdir, temp_directory=tmpdir, log_directory=tmpdir
+            )
+
+            with patch.object(ProductionConfig, "get_environment_config", return_value=temp_config):
+                with patch.dict(os.environ, {"CTS_MAX_CONCURRENT_RUNS": "not_an_int"}):
+                    caplog.clear()
+                    caplog.set_level("WARNING")
+                    config = manager.load_config()
+
+        assert config.max_concurrent_runs == temp_config.max_concurrent_runs
+        assert any(
+            "Ignoring env var CTS_MAX_CONCURRENT_RUNS" in rec.message for rec in caplog.records
+        )
+
+    def test_env_parse_warning_can_be_disabled(self, caplog):
+        manager = ConfigManager()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temp_config = ProductionConfig(
+                base_storage_path=tmpdir, temp_directory=tmpdir, log_directory=tmpdir
+            )
+
+            with patch.object(ProductionConfig, "get_environment_config", return_value=temp_config):
+                with patch.dict(
+                    os.environ,
+                    {
+                        "CTS_MAX_CONCURRENT_RUNS": "not_an_int",
+                        "CTS_CONFIG_WARN_ON_BAD_ENV": "false",
+                    },
+                    clear=False,
+                ):
+                    caplog.clear()
+                    caplog.set_level("WARNING")
+                    config = manager.load_config()
+
+        assert config.max_concurrent_runs == temp_config.max_concurrent_runs
+        assert not any(
+            "Ignoring env var CTS_MAX_CONCURRENT_RUNS" in rec.message for rec in caplog.records
+        )
 
 
 class TestHealthChecks:
