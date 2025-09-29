@@ -292,6 +292,121 @@ def test_version_incompatibility():
     # Verify client shows upgrade error
 ```
 
+### MCP Server Development
+
+The comma-tools MCP (Model Context Protocol) server enables AI assistants to programmatically access the CTS-Lite API. This section covers development and testing for developers working on the MCP server itself.
+
+> **Note**: This section is for developers working on the MCP server. If you are an AI assistant wanting to use the MCP server, see [src/comma_tools_mcp/README.md](../src/comma_tools_mcp/README.md) instead.
+
+**Installation**:
+```bash
+pip install -e ".[mcp]"
+```
+
+**Architecture**:
+- **Location**: `src/comma_tools_mcp/`
+- **Framework**: FastMCP (MCP Python SDK)
+- **Transport**: stdio (standard input/output)
+- **Entry Point**: `cts-mcp` command
+- **Communication**: MCP server ↔ CTS-Lite API (HTTP)
+
+**Available Tools** (10 total):
+- Health & Discovery: `check_health()`, `get_version()`, `list_capabilities()`
+- Analysis: `run_analysis()`, `get_run_status()`, `list_runs()`
+- Artifacts: `list_artifacts()`, `get_artifact_content()`, `download_artifact()`
+
+**Available Resources** (2 total):
+- `cts://config` - Server configuration
+- `cts://capabilities` - Available tools summary
+
+**Adding New Tools**:
+```python
+from mcp import types
+
+@mcp.tool()
+def my_new_tool(param: str) -> Dict[str, Any]:
+    """
+    Description for AI assistants to understand when to use this tool.
+
+    Args:
+        param: Parameter description
+
+    Returns:
+        Return value description
+    """
+    return make_request("GET", f"/v1/my-endpoint/{param}")
+```
+
+**Testing the MCP Server**:
+
+1. **Start CTS-Lite API**:
+   ```bash
+   cts-lite &
+   ```
+
+2. **Test tools directly** (Python):
+   ```bash
+   python test_mcp_workflow.py
+   ```
+
+3. **Test with MCP Inspector** (interactive):
+   ```bash
+   pip install mcp-inspector
+   mcp dev src/comma_tools_mcp/server.py
+   ```
+
+4. **Test AI registration** (Claude Code):
+   ```bash
+   # Find cts-mcp command
+   find . -name cts-mcp -path "*/venv/bin/*" | head -1
+
+   # Register to Claude Code
+   claude mcp add comma-tools --scope user \
+     -e CTS_LITE_URL=http://127.0.0.1:8080 \
+     -- /path/to/venv/bin/cts-mcp
+
+   # Verify
+   claude mcp list
+   ```
+
+**Type Safety for MCP Tools**:
+```python
+# ✅ GOOD: Proper typing for MCP tool functions
+from typing import Dict, Any, Optional, List
+
+@mcp.tool()
+def typed_tool(
+    required_param: str,
+    optional_param: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Tool with proper type hints."""
+    payload: Dict[str, Any] = {"param": required_param}
+    if optional_param is not None:
+        payload["optional"] = optional_param
+    return make_request("POST", "/v1/endpoint", json=payload)
+```
+
+**Common MCP Development Patterns**:
+
+1. **Always test with CTS-Lite running**: MCP server proxies to API
+2. **Use `make_request()` helper**: Handles HTTP client, error handling, base URL
+3. **Match API payload format**: Check `src/comma_tools/api/models.py` for exact schemas
+4. **Provide clear tool descriptions**: AI assistants use docstrings to understand when to call tools
+5. **Return structured data**: Always return `Dict[str, Any]` for JSON-serializable responses
+
+**Debugging Tips**:
+
+- **MCP Inspector**: Best for interactive testing of individual tools
+- **test_mcp_workflow.py**: End-to-end validation of full workflow
+- **Logs**: MCP server logs to stderr, CTS-Lite logs to stdout
+- **API Docs**: Check `/docs` endpoint on CTS-Lite for API schema
+
+**Documentation Locations**:
+- **Developer docs**: This file (DEVELOPMENT.md)
+- **AI usage docs**: `src/comma_tools_mcp/README.md` (self-registration instructions)
+- **Human usage docs**: `README.md` (clarifies MCP is for AIs)
+- **Agent docs**: `docs/AGENTS.md` (AI contributor guidelines)
+
 ### Error Handling
 
 ```python

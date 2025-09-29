@@ -100,34 +100,39 @@ The version check happens transparently - you'll only see a message if there's a
 
 ### MCP Server for AI Assistants
 
-The comma-tools MCP (Model Context Protocol) server enables AI assistants like Claude to directly interact with the CTS-Lite API for log analysis and debugging.
+> **⚠️ FOR AI ASSISTANTS ONLY** - If you are a **human user**, you don't need the MCP server. Use `cts` CLI or `cts-lite` API directly (see Quick Start above). The MCP server is a bridge that lets AI assistants use comma-tools on your behalf.
 
-**Installation**:
+The comma-tools MCP (Model Context Protocol) server enables AI assistants like Claude, ChatGPT, and others to programmatically interact with the CTS-Lite API for log analysis and debugging.
+
+**For AI Assistants (like Claude Code)**:
 ```bash
-pip install -e ".[mcp]"
+# 1. Find the cts-mcp command
+find . -name cts-mcp -path "*/venv/bin/*" | head -1
+
+# 2. Register yourself to use comma-tools
+claude mcp add comma-tools --scope user \
+  -e CTS_LITE_URL=http://127.0.0.1:8080 \
+  -- /path/to/venv/bin/cts-mcp
+
+# 3. Verify connection
+claude mcp list
+# Should show: comma-tools: ... - ✓ Connected
 ```
 
-**Usage with Claude Desktop**:
+**For Claude Desktop App (Human Setup)**:
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
     "comma-tools": {
       "command": "cts-mcp",
-      "env": {
-        "CTS_LITE_URL": "http://127.0.0.1:8080"
-      }
+      "env": {"CTS_LITE_URL": "http://127.0.0.1:8080"}
     }
   }
 }
 ```
 
-Then ask Claude things like:
-- "Check if CTS-Lite is healthy"
-- "Analyze this log file using rlog-to-csv"
-- "Show me the status of my recent runs"
-
-See [MCP Server Documentation](src/comma_tools_mcp/README.md) for details.
+See [MCP Server Documentation](src/comma_tools_mcp/README.md) for complete AI assistant integration guide.
 
 ## Legacy CLI Tools
 
