@@ -8,12 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certifi
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /comma-tools
-COPY . /comma-tools
 
-RUN pip install --no-cache-dir -e ".[api,client]"
+COPY pyproject.toml README.md ./
+RUN pip install --no-cache-dir ".[api,client]"
 
-COPY docker/startup.py /usr/local/bin/comma-tools-startup
-RUN chmod +x /usr/local/bin/comma-tools-startup
+COPY . .
+
+RUN install -m 0755 docker/startup.py /usr/local/bin/comma-tools-startup
 
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/comma-tools-startup"]
