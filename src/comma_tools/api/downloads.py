@@ -5,6 +5,7 @@ Provides REST API for downloading logs from comma.ai directly into
 the CTS-Lite working directory for subsequent analysis.
 """
 
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,39 @@ from .models import DownloadRequest, DownloadResponse, DownloadStatus
 router = APIRouter(prefix="/v1/downloads", tags=["downloads"])
 
 _active_downloads: Dict[str, DownloadResponse] = {}
+
+
+def _validate_dest_path(dest_root: str) -> Path:
+    """
+    Validate and normalize destination path to prevent path traversal attacks.
+
+    Args:
+        dest_root: User-provided destination root directory
+
+    Returns:
+        Validated Path object
+
+    Raises:
+        ValueError: If path contains traversal attempts or is unsafe
+    """
+    try:
+        dest_path = Path(dest_root).resolve()
+    except (ValueError, OSError) as e:
+        raise ValueError(f"Invalid destination path: {e}") from e
+
+    if "\0" in str(dest_path):
+        raise ValueError("Destination path contains null bytes")
+
+    if not dest_path.is_absolute():
+        raise ValueError("Destination path must be absolute")
+
+    sensitive_prefixes = ["/etc", "/sys", "/proc", "/dev", "/boot"]
+    path_str = str(dest_path)
+    for prefix in sensitive_prefixes:
+        if path_str.startswith(prefix):
+            raise ValueError(f"Destination path cannot be under {prefix}")
+
+    return dest_path
 
 
 @router.post("", response_model=DownloadResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -53,6 +87,14 @@ async def create_download(request: DownloadRequest) -> DownloadResponse:
         completed_at=None,
     )
 
+    try:
+        dest_path = _validate_dest_path(request.dest_root)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid destination path: {e}",
+        ) from e
+
     _active_downloads[download_id] = response
 
     try:
@@ -69,7 +111,6 @@ async def create_download(request: DownloadRequest) -> DownloadResponse:
 
         response.status = DownloadStatus.DOWNLOADING
         downloader = LogDownloader(client, parallel=request.parallel)
-        dest_path = Path(request.dest_root)
 
         report = downloader.download_route(
             canonical_route, dest_path, request.file_types, resume=request.resume

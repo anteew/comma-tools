@@ -274,3 +274,55 @@ def test_download_default_file_types():
     response = client.post("/v1/downloads", json=request_data)
 
     assert response.status_code in [202, 400, 500]
+
+
+def test_download_path_traversal_protection(temp_dest_dir):
+    """Test that path traversal attacks are blocked."""
+    traversal_paths = [
+        "/etc/shadow",
+        "/sys/kernel",
+        "/proc/self",
+        "/dev/null",
+    ]
+
+    for malicious_path in traversal_paths:
+        request_data = {
+            "route": "test_dongle|2024-01-01--12-00-00",
+            "dest_root": malicious_path,
+        }
+
+        response = client.post("/v1/downloads", json=request_data)
+
+        assert response.status_code == 400, f"Path {malicious_path} should be rejected"
+        assert (
+            "destination path" in response.json()["detail"].lower()
+            or "invalid destination" in response.json()["detail"].lower()
+        )
+
+
+def test_download_relative_path_rejection(temp_dest_dir):
+    """Test that relative paths with traversal are rejected."""
+    request_data = {
+        "route": "test_dongle|2024-01-01--12-00-00",
+        "dest_root": "../../sensitive",
+    }
+
+    response = client.post("/v1/downloads", json=request_data)
+
+    assert response.status_code == 400
+
+
+def test_download_null_byte_injection(temp_dest_dir):
+    """Test that null byte injection is blocked."""
+    request_data = {
+        "route": "test_dongle|2024-01-01--12-00-00",
+        "dest_root": f"{temp_dest_dir}\x00malicious",
+    }
+
+    response = client.post("/v1/downloads", json=request_data)
+
+    assert response.status_code == 400
+    assert (
+        "null" in response.json()["detail"].lower()
+        or "invalid" in response.json()["detail"].lower()
+    )
