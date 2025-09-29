@@ -170,9 +170,7 @@ def get_artifact_content(artifact_id: str, max_size: int = 1000000) -> str:
             # Check size
             content_length = int(response.headers.get("content-length", 0))
             if content_length > max_size:
-                raise ValueError(
-                    f"Artifact too large ({content_length} bytes > {max_size} limit)"
-                )
+                raise ValueError(f"Artifact too large ({content_length} bytes > {max_size} limit)")
 
             return response.text
     except httpx.HTTPError as e:
