@@ -3,6 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -105,6 +106,19 @@ class TestConfigurationManagement:
             "https://example.com",
             "https://test.com",
         ]
+
+    def test_environment_variable_nested_list_requires_json(self):
+        """Test: Nested list environment values must be JSON arrays."""
+
+        with pytest.raises(ValueError):
+            ConfigManager._parse_list_value("[1,2],[3,4]", List[List[int]])
+
+    def test_environment_variable_nested_list_json(self):
+        """Test: Nested list environment values parse correctly from JSON arrays."""
+
+        result = ConfigManager._coerce_env_value('[ ["a", "b"], ["c"] ]', List[List[str]])
+
+        assert result == [["a", "b"], ["c"]]
 
     def test_config_validation(self):
         """Test: Invalid configurations raise appropriate errors."""
