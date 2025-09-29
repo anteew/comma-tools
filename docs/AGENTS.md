@@ -58,10 +58,10 @@ curl http://127.0.0.1:8080/v1/health
 # 2. Find the cts-mcp command
 find . -name cts-mcp -path "*/venv/bin/*" | head -1
 
-# 3. Register the MCP server to yourself
+# 3. Register the MCP server to yourself (automatically finds cts-mcp path)
 claude mcp add comma-tools --scope user \
   -e CTS_LITE_URL=http://127.0.0.1:8080 \
-  -- /path/to/venv/bin/cts-mcp
+  -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
 
 # 4. Verify connection
 claude mcp list

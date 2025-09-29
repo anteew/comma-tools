@@ -360,10 +360,10 @@ def my_new_tool(param: str) -> Dict[str, Any]:
    # Find cts-mcp command
    find . -name cts-mcp -path "*/venv/bin/*" | head -1
 
-   # Register to Claude Code
+   # Register to Claude Code (automatically finds cts-mcp path)
    claude mcp add comma-tools --scope user \
      -e CTS_LITE_URL=http://127.0.0.1:8080 \
-     -- /path/to/venv/bin/cts-mcp
+     -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
 
    # Verify
    claude mcp list

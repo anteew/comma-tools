@@ -32,10 +32,10 @@ If not running, the human user needs to start it: `cts-lite`
 
 2. **Register the MCP server to yourself:**
    ```bash
-   # Use the full path you found above
+   # Automatically finds and uses the cts-mcp path
    claude mcp add comma-tools --scope user \
      -e CTS_LITE_URL=http://127.0.0.1:8080 \
-     -- /path/to/comma-tools/venv/bin/cts-mcp
+     -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
    ```
 
 3. **Verify connection:**

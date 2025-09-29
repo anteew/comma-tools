@@ -109,10 +109,10 @@ The comma-tools MCP (Model Context Protocol) server enables AI assistants like C
 # 1. Find the cts-mcp command
 find . -name cts-mcp -path "*/venv/bin/*" | head -1
 
-# 2. Register yourself to use comma-tools
+# 2. Register yourself to use comma-tools (automatically finds cts-mcp path)
 claude mcp add comma-tools --scope user \
   -e CTS_LITE_URL=http://127.0.0.1:8080 \
-  -- /path/to/venv/bin/cts-mcp
+  -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
 
 # 3. Verify connection
 claude mcp list
