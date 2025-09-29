@@ -15,12 +15,14 @@ RUN apt-get update && \
 # Use sparse checkout to fetch only required OpenPilot components
 # Note: Cannot use --depth=1 because we need to checkout a specific commit
 # The filter=blob:none still minimizes download by skipping file contents until checkout
+# Include common for shared utilities and initialize opendbc_repo for car.capnp
 RUN git clone --no-checkout --filter=blob:none \
         https://github.com/commaai/openpilot /tmp/openpilot && \
     cd /tmp/openpilot && \
     git sparse-checkout init --cone && \
-    git sparse-checkout set tools/lib cereal && \
-    git checkout ${OPENPILOT_COMMIT}
+    git sparse-checkout set tools/lib cereal common system && \
+    git checkout ${OPENPILOT_COMMIT} && \
+    git submodule update --init --depth=1 opendbc_repo
 
 # Stage 2: Main application build
 FROM python:3.12-slim
@@ -37,17 +39,25 @@ WORKDIR /comma-tools
 # Copy entire tools/lib directory as logreader might have dependencies
 COPY --from=vendor-fetch /tmp/openpilot/tools/lib /comma-tools/vendor/openpilot/tools/lib/
 COPY --from=vendor-fetch /tmp/openpilot/cereal /comma-tools/vendor/openpilot/cereal/
+COPY --from=vendor-fetch /tmp/openpilot/common /comma-tools/vendor/openpilot/common/
+COPY --from=vendor-fetch /tmp/openpilot/system /comma-tools/vendor/openpilot/system/
+COPY --from=vendor-fetch /tmp/openpilot/opendbc_repo /comma-tools/vendor/openpilot/opendbc_repo/
 
 # Create __init__.py files for proper Python module structure
 RUN touch /comma-tools/vendor/__init__.py && \
     touch /comma-tools/vendor/openpilot/__init__.py && \
     touch /comma-tools/vendor/openpilot/tools/__init__.py && \
-    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py
+    touch /comma-tools/vendor/openpilot/tools/lib/__init__.py && \
+    touch /comma-tools/vendor/openpilot/common/__init__.py && \
+    touch /comma-tools/vendor/openpilot/system/__init__.py && \
+    touch /comma-tools/vendor/openpilot/system/hardware/__init__.py
 
 # Copy application code
 COPY . /comma-tools
 
-RUN pip install --no-cache-dir -e ".[api,client]"
+# Install application and additional dependencies needed by OpenPilot vendor code
+RUN pip install --no-cache-dir -e ".[api,client]" && \
+    pip install --no-cache-dir requests urllib3
 
 RUN install -m 0755 docker/startup.py /usr/local/bin/comma-tools-startup
 

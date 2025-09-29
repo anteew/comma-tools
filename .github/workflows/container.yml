@@ -74,26 +74,11 @@ jobs:
         run: |
           echo "Testing vendor dependencies in built image..."
 
-          # Test that vendor dependencies are present and importable
-          docker run --rm ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} cli python3 -c "
-import sys
-sys.path.insert(0, '/comma-tools/vendor/openpilot')
-sys.path.insert(0, '/comma-tools/vendor/openpilot/tools')
-print('Testing vendor dependencies...')
-try:
-    from tools.lib.logreader import LogReader
-    print('✓ LogReader import successful')
-except ImportError as e:
-    print(f'✗ LogReader import failed: {e}')
-    exit(1)
-try:
-    import cereal
-    print('✓ cereal import successful')
-except ImportError as e:
-    print(f'✗ cereal import failed: {e}')
-    exit(1)
-print('✓ All vendor dependencies verified!')
-          "
+          # Copy test script into container and run it
+          docker run --rm \
+            -v ${{ github.workspace }}/.github/scripts/test-container-vendor.py:/test-vendor.py:ro \
+            ghcr.io/anteew/comma-tools:pr-${{ github.event.number }} \
+            cli python3 /test-vendor.py
 
           # Test that CLI mode works
           echo "Testing CLI mode functionality..."
