@@ -66,7 +66,7 @@ This repository contains a collection of debugging and analysis tools for the op
    cts cap
    
    # Run analysis
-   cts run cruise-control-analyzer --path your-log.zst --wait
+   cts run rlog-to-csv --path your-log.zst --wait
    
    # Note: Monitor support is still in development
    # Monitor functionality will be available in future releases
@@ -74,8 +74,7 @@ This repository contains a collection of debugging and analysis tools for the op
 
 ### Available Tools
 
-- **cruise-control-analyzer**: Deep analysis of recorded driving logs with focus on Subaru vehicle cruise control systems
-- **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis  
+- **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis
 - **can-bitwatch**: Swiss-army analyzer for CSV dumps of CAN frames with segment labels
 
 ### Available Monitors (In Development)
@@ -93,7 +92,6 @@ Monitor support is currently in development. The following monitors are planned:
 For backward compatibility, individual CLI tools are still available:
 
 ```bash
-cruise-control-analyzer your-log.zst
 rlog-to-csv your-log.zst
 can-bitwatch your-data.csv
 comma-connect-dl --help

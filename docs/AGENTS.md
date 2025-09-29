@@ -26,7 +26,7 @@
 ## 🏗️ REPOSITORY ARCHITECTURE
 
 ### Core Systems
-- **Primary Tool**: `cruise_control_analyzer.py` - main analysis engine with self-contained dependency management
+- **Primary Tool**: ~~`cruise_control_analyzer.py`~~ (DEPRECATED - functionality moved to CTS-Lite API)
 - **CAN Analysis**: Specialized decoders for Subaru and other vehicle platforms in `src/comma_tools/can/`
 - **Monitoring Tools**: Real-time safety state monitoring in `src/comma_tools/monitors/`
 - **Documentation**: Professional Sphinx-generated docs deployed to GitHub Pages
