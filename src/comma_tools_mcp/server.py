@@ -70,37 +70,31 @@ def list_capabilities() -> Dict[str, Any]:
 @mcp.tool()
 def run_analysis(
     tool_id: str,
-    file_path: Optional[str] = None,
-    upload_id: Optional[str] = None,
-    parameters: Optional[Dict[str, Any]] = None,
+    parameters: Dict[str, Any],
+    name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Start an analysis run with the specified tool.
 
     Args:
         tool_id: ID of the tool to run (e.g., "rlog-to-csv", "can-bitwatch")
-        file_path: Local file path to analyze (alternative to upload_id)
-        upload_id: ID of previously uploaded file (alternative to file_path)
-        parameters: Optional dictionary of tool-specific parameters
+        parameters: Dictionary of tool-specific parameters (e.g., {"rlog": "/path/to/file.zst", "out": "/tmp/output.csv"})
+        name: Optional name for this run
 
     Returns:
         Dictionary with run_id, status, and other run information
 
     Examples:
-        >>> run_analysis("rlog-to-csv", file_path="/path/to/log.zst")
-        >>> run_analysis("can-bitwatch", upload_id="abc123", parameters={"threshold": 5})
+        >>> run_analysis("rlog-to-csv", parameters={"rlog": "/path/to/log.zst", "out": "/tmp/output.csv"})
+        >>> run_analysis("can-bitwatch", parameters={"csv": "/path/to/data.csv", "output_prefix": "analysis"})
     """
-    payload: Dict[str, Any] = {"tool_id": tool_id}
+    payload: Dict[str, Any] = {
+        "tool_id": tool_id,
+        "params": parameters,
+    }
 
-    if file_path:
-        payload["file_path"] = file_path
-    elif upload_id:
-        payload["upload_id"] = upload_id
-    else:
-        raise ValueError("Must provide either file_path or upload_id")
-
-    if parameters:
-        payload["parameters"] = parameters
+    if name:
+        payload["name"] = name
 
     return make_request("POST", "/v1/runs", json=payload)
 
