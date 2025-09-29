@@ -45,6 +45,69 @@
 - Support `deprecated_features` list for warnings
 - Handle missing endpoint gracefully (old servers)
 
+### MCP Server for AI Assistants - Self-Registration Guide
+
+**If you are an AI assistant (like Claude Code, ChatGPT, etc.)**, comma-tools provides an MCP server that gives you direct access to openpilot log analysis capabilities.
+
+#### Quick Self-Registration (Claude Code)
+
+```bash
+# 1. Verify CTS-Lite API is running
+curl http://127.0.0.1:8080/v1/health
+
+# 2. Find the cts-mcp command
+find . -name cts-mcp -path "*/venv/bin/*" | head -1
+
+# 3. Register the MCP server to yourself (automatically finds cts-mcp path)
+claude mcp add comma-tools --scope user \
+  -e CTS_LITE_URL=http://127.0.0.1:8080 \
+  -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
+
+# 4. Verify connection
+claude mcp list
+# Expected: comma-tools: /path/to/cts-mcp - ✓ Connected
+```
+
+#### Available MCP Tools
+
+Once registered, you have access to:
+- `check_health()` - Verify CTS-Lite is running
+- `get_version()` - Check API version compatibility
+- `list_capabilities()` - Discover available analysis tools
+- `run_analysis(tool_id, parameters)` - Start log analysis
+- `get_run_status(run_id)` - Monitor analysis progress
+- `list_runs(status, limit)` - View recent runs
+- `list_artifacts(run_id)` - List generated files
+- `get_artifact_content(artifact_id)` - Read text artifacts
+- `download_artifact(artifact_id, path)` - Save artifacts
+
+#### Example Workflow
+
+```python
+# User asks: "Analyze this log file"
+result = run_analysis("rlog-to-csv", {
+    "rlog": "/path/to/log.zst",
+    "out": "/tmp/output.csv"
+})
+
+# Monitor until complete
+status = get_run_status(result["run_id"])
+
+# Get generated artifacts
+artifacts = list_artifacts(result["run_id"])
+content = get_artifact_content(artifacts[0]["id"])
+```
+
+#### For Other AI Assistants
+
+**Claude Desktop**: Human user adds config to `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+**ChatGPT**: Use MCP client library for programmatic connection
+
+**Custom Integration**: Use MCP Python SDK with stdio transport
+
+See [MCP Server Documentation](../src/comma_tools_mcp/README.md) for complete integration guide.
+
 ### Environment & Dependencies
 - **Python Version**: Python 3.12 required (CI and tools only support 3.12)
 - **Dependency Management**: Tools bootstrap their own environment, cache deps in `<repo-root>/comma-depends`
