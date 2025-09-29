@@ -73,14 +73,10 @@ docker run --rm comma-tools-local cli cts ping
 
 ## Known Issues
 
-### 1. Missing OpenPilot Vendor Dependencies (Critical)
-**Issue:** The container references vendor directories that don't exist:
-- `/comma-tools/vendor/openpilot/tools`
-- `/comma-tools/vendor/openpilot/cereal`
+### 1. ~~Missing OpenPilot Vendor Dependencies~~ (FIXED)
+**Previously:** The container was missing OpenPilot vendor dependencies.
 
-**Impact:** OpenPilot-dependent analyzers (like `cruise-control-analyzer`) will fail with import errors.
-
-**Status:** Tracked in [Issue #103](https://github.com/anteew/comma-tools/issues/103)
+**Status:** Fixed via multi-stage Docker build that fetches OpenPilot v0.10.0 dependencies during build time. See [Issue #103](https://github.com/anteew/comma-tools/issues/103) for history.
 
 ### 2. Daemon Mode Host Binding
 **Issue:** The `--host 0.0.0.0` command-line argument in `startup.py` is not processed by the server.
@@ -128,7 +124,7 @@ docker exec -it <container-name> /bin/bash
 - Exposed port: 8080
 - Working directory: `/comma-tools`
 - Entry point: `/usr/local/bin/comma-tools-startup`
-- OpenPilot version: v0.10.0 (commit c085b8af19438956c1559) - currently not included
+- OpenPilot version: v0.10.0 (commit c085b8af19438956c1559) - included via multi-stage build
 
 ## Caching
 Subsequent builds are faster due to Docker layer caching and GitHub Actions cache. Avoid changing pyproject.toml unnecessarily to maximize cache hits.
