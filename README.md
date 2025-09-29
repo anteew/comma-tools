@@ -82,10 +82,21 @@ This repository contains a collection of debugging and analysis tools for the op
 Monitor support is currently in development. The following monitors are planned:
 
 - **hybrid_rx_trace**: Trace which CAN signals cause panda safety to flag RX invalid
-- **can_bus_check**: General CAN message frequency analysis  
+- **can_bus_check**: General CAN message frequency analysis
 - **can_hybrid_rx_check**: Subaru hybrid-specific signal monitoring
 
 *Note: Monitor API endpoints are not yet available in the current CTS-Lite implementation.*
+
+### API Version Compatibility
+
+CTS-Lite includes automatic version compatibility checking to ensure the CLI client and API server work together correctly:
+
+- **Automatic Check**: The CLI checks compatibility with the server on startup
+- **Clear Errors**: Shows a helpful upgrade message if your client is too old
+- **Graceful Fallback**: Works with older servers that don't have the version endpoint
+- **MCP Server Ready**: Version system designed to support future MCP server integrations
+
+The version check happens transparently - you'll only see a message if there's an incompatibility.
 
 ## Legacy CLI Tools
 

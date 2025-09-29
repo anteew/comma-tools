@@ -43,6 +43,7 @@ client = [
     "typer>=0.9.0",
     "rich>=13.0.0",
     "websockets>=11.0.0",
+    "packaging>=20.0",
 ]
 api = [
     "fastapi>=0.100.0",

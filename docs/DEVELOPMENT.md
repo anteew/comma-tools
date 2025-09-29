@@ -261,6 +261,37 @@ When working on this codebase:
 3. **Handle None values explicitly** with Optional types
 4. **Use TypedDict** for structured data when appropriate
 
+### API Version Compatibility
+
+The CTS-Lite API implements version compatibility checking:
+
+**Server Side** (`src/comma_tools/api/version.py`):
+```python
+# When making breaking API changes, update these constants
+API_VERSION = "0.1.0"          # Current API version
+MIN_CLIENT_VERSION = "0.8.0"   # Minimum required client version
+```
+
+**Client Side** (`src/cts_cli/main.py`):
+- Automatically checks `/v1/version` on startup
+- Compares client version with server's `min_client_version`
+- Shows clear error if client is too old
+- Silently continues if endpoint doesn't exist (backward compatibility)
+
+**When to Update Versions**:
+1. **Breaking API changes**: Increment `MIN_CLIENT_VERSION` in `version.py`
+2. **New API features**: Increment `API_VERSION`, keep `MIN_CLIENT_VERSION` unchanged
+3. **Client updates**: Keep `__version__` in `src/cts_cli/__init__.py` in sync with project version
+
+**Testing Version Compatibility**:
+```python
+# Test with mismatched versions
+def test_version_incompatibility():
+    # Start server with MIN_CLIENT_VERSION = "2.0.0"
+    # Run client with version "0.8.0"
+    # Verify client shows upgrade error
+```
+
 ### Error Handling
 
 ```python
