@@ -13,8 +13,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Use sparse checkout to fetch only required OpenPilot components
-# This minimizes download size and build time
-RUN git clone --no-checkout --filter=blob:none --depth=1 \
+# Note: Cannot use --depth=1 because we need to checkout a specific commit
+# The filter=blob:none still minimizes download by skipping file contents until checkout
+RUN git clone --no-checkout --filter=blob:none \
         https://github.com/commaai/openpilot /tmp/openpilot && \
     cd /tmp/openpilot && \
     git sparse-checkout init --cone && \
