@@ -9,10 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certifi
 
 WORKDIR /comma-tools
 
-COPY pyproject.toml README.md ./
-RUN pip install --no-cache-dir ".[api,client]"
+COPY . /comma-tools
 
-COPY . .
+RUN pip install --no-cache-dir -e ".[api,client]"
 
 RUN install -m 0755 docker/startup.py /usr/local/bin/comma-tools-startup
 
