@@ -12,7 +12,6 @@ def test_registry_initialization():
     registry = ToolRegistry()
 
     assert len(registry.tools) > 0
-    assert "cruise-control-analyzer" in registry.tools
     assert "rlog-to-csv" in registry.tools
     assert "can-bitwatch" in registry.tools
 
@@ -21,11 +20,10 @@ def test_get_tool_success():
     """Test getting existing tool."""
     registry = ToolRegistry()
 
-    tool = registry.get_tool("cruise-control-analyzer")
-    assert tool.id == "cruise-control-analyzer"
-    assert tool.name == "Cruise Control Analyzer"
+    tool = registry.get_tool("rlog-to-csv")
+    assert tool.id == "rlog-to-csv"
+    assert tool.name == "RLog to CSV Converter"
     assert tool.category == "analyzer"
-    assert "log_file" in tool.parameters
 
 
 def test_get_tool_not_found():
@@ -36,27 +34,7 @@ def test_get_tool_not_found():
         registry.get_tool("nonexistent")
 
 
-def test_create_tool_instance_cruise_control():
-    """Test creating cruise control analyzer instance."""
-    registry = ToolRegistry()
-
-    with patch("comma_tools.api.registry.ToolRegistry._initialize_cruise_control_environment"):
-        instance = registry.create_tool_instance(
-            "cruise-control-analyzer", log_file="/path/to/test.zst"
-        )
-
-        from comma_tools.analyzers.cruise_control_analyzer import CruiseControlAnalyzer
-
-        assert isinstance(instance, CruiseControlAnalyzer)
-
-
-def test_create_tool_instance_missing_params():
-    """Test creating tool instance with missing required params."""
-    registry = ToolRegistry()
-
-    with patch("comma_tools.api.registry.ToolRegistry._initialize_cruise_control_environment"):
-        with pytest.raises(ValueError, match="log_file parameter required"):
-            registry.create_tool_instance("cruise-control-analyzer")
+# cruise-control-analyzer tests removed - tool has been deprecated
 
 
 def test_create_tool_instance_rlog_to_csv():
@@ -92,8 +70,7 @@ def test_list_tools():
     tools = registry.list_tools()
 
     assert isinstance(tools, dict)
-    assert len(tools) >= 3
-    assert "cruise-control-analyzer" in tools
+    assert len(tools) >= 2
     assert "rlog-to-csv" in tools
     assert "can-bitwatch" in tools
 

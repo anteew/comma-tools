@@ -64,12 +64,7 @@ def integration_env():
     except Exception:
         pass
 
+    # cruise_control_analyzer has been deprecated and removed
+    # Dependencies are now handled within individual analyzer services
     modules = load_external_modules()
-    import comma_tools.analyzers.cruise_control_analyzer as analyzer_module
-
-    analyzer_module.np = modules["np"]
-    analyzer_module.plt = modules["plt"]
-    analyzer_module.LogReader = modules["LogReader"]
-    analyzer_module.messaging = modules["messaging"]
-
     return True
