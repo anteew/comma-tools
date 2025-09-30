@@ -114,7 +114,7 @@ def check_version_compatibility(http_client: HTTPClient, renderer: Renderer) -> 
 
 @app.callback()
 def main(
-    url: Annotated[Optional[str], typer.Option("--url", "-u", help="Base URL")] = None,
+    url: Annotated[Optional[str], typer.Option("--url", "-u", help="Base URL [default: http://127.0.0.1:8080]")] = None,
     api_key: Annotated[Optional[str], typer.Option("--api-key", "-k", help="Bearer token")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Machine-output mode")] = False,
     timeout: Annotated[int, typer.Option("--timeout", help="Request timeout")] = 30,
@@ -123,7 +123,18 @@ def main(
         bool, typer.Option("--quiet", "-q", help="Suppress non-essential logs")
     ] = False,
 ):
-    """CTS CLI - Command-line interface for CTS-Lite HTTP API."""
+    """
+    CTS CLI - Command-line interface for CTS-Lite HTTP API.
+    
+    Examples:
+      cts cap
+      
+      cts run cruise-control-analyzer -p log_file=/path/to/file.rlog.zst --follow
+      
+      cts runs list
+      
+      cts art list <run_id>
+    """
     global _config, _http_client, _renderer
 
     _config = Config(url=url, api_key=api_key, timeout=timeout, no_verify=no_verify)
@@ -143,32 +154,51 @@ def ping():
 
 @app.command()
 def cap():
-    """GET /v1/capabilities."""
+    """GET /v1/capabilities - List all available tools and monitors."""
+    exit_code = capabilities_command(get_http_client(), get_renderer())
+    raise typer.Exit(exit_code)
+
+
+@app.command()
+def capabilities():
+    """Alias for 'cap' - List all available tools and monitors."""
     exit_code = capabilities_command(get_http_client(), get_renderer())
     raise typer.Exit(exit_code)
 
 
 @app.command()
 def run(
-    tool_id: Annotated[str, typer.Argument(help="Tool ID to run")],
+    tool_id: Annotated[str, typer.Argument(help="Tool ID to run (use 'cts cap' to see available tools)")],
     params: Annotated[
-        Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")
+        Optional[List[str]], typer.Option("-p", help="Tool parameters in name=value format (repeatable). Use 'cts cap' to see parameter names for each tool.")
     ] = None,
-    path: Annotated[Optional[str], typer.Option("--path", help="Use local path")] = None,
-    upload: Annotated[Optional[str], typer.Option("--upload", help="Upload then reference")] = None,
+    path: Annotated[Optional[str], typer.Option("--path", help="Reference a local file path (server must have access to this path)")] = None,
+    upload: Annotated[Optional[str], typer.Option("--upload", help="Upload a local file to server first, then use it in the run (use when server can't access your files)")] = None,
     wait: Annotated[
-        bool, typer.Option("--wait", help="Stream logs and exit with job status")
+        bool, typer.Option("--wait", help="Block until run completes and exit with run status")
     ] = False,
-    follow: Annotated[bool, typer.Option("--follow", help="Implies --wait, tail SSE logs")] = False,
+    follow: Annotated[bool, typer.Option("--follow", help="Like --wait but with real-time log tailing (Server-Sent Events)")] = False,
     out_dir: Annotated[
-        Optional[str], typer.Option("--out-dir", help="Download artifacts after success")
+        Optional[str], typer.Option("--out-dir", help="Download artifacts after successful completion")
     ] = None,
     open_html: Annotated[
-        bool, typer.Option("--open", help="Open HTML artifacts after download")
+        bool, typer.Option("--open", help="Open HTML artifacts in browser after download")
     ] = False,
-    name: Annotated[Optional[str], typer.Option("--name", help="Run name")] = None,
+    name: Annotated[Optional[str], typer.Option("--name", help="Human-readable name for this run")] = None,
 ):
-    """Run a tool with specified parameters."""
+    """
+    Run a tool with specified parameters.
+    
+    Examples:
+      cts run cruise-control-analyzer \\
+        -p log_file=/path/to/file.rlog.zst \\
+        -p speed_min=55.0 \\
+        --follow
+      
+      cts run rlog-to-csv \\
+        --upload /path/to/local/file.rlog.zst \\
+        -p out=/tmp/output.csv
+    """
     if params is None:
         params = []
 
@@ -196,10 +226,15 @@ def run(
 
 @app.command()
 def logs(
-    run_id: Annotated[str, typer.Argument(help="Run ID")],
-    follow: Annotated[bool, typer.Option("--follow", help="Follow logs")] = False,
+    run_id: Annotated[str, typer.Argument(help="Run ID (returned by 'cts run' or found with 'cts runs list')")],
+    follow: Annotated[bool, typer.Option("--follow", help="Stream logs in real-time")] = False,
 ):
-    """Stream logs for a run."""
+    """
+    Stream logs for a run.
+    
+    The RUN_ID is returned when you start a run with 'cts run'.
+    You can also find run IDs with 'cts runs list'.
+    """
     exit_code = logs_command(
         run_id=run_id, follow=follow, http_client=get_http_client(), renderer=get_renderer()
     )
@@ -263,9 +298,13 @@ def runs_list(
 
 @runs_app.command("get")
 def runs_get(
-    run_id: Annotated[str, typer.Argument(help="Run ID")],
+    run_id: Annotated[str, typer.Argument(help="Run ID (from 'cts run' or 'cts runs list')")],
 ):
-    """Show run summary JSON."""
+    """
+    Show run summary JSON.
+    
+    See also: 'cts art list <run_id>' to list output artifacts.
+    """
     try:
         run_info = get_http_client().get_json(f"/v1/runs/{run_id}")
         get_renderer().print_json(run_info)
@@ -278,9 +317,14 @@ def runs_get(
 
 @art_app.command("list")
 def art_list(
-    run_id: Annotated[str, typer.Argument(help="Run ID")],
+    run_id: Annotated[str, typer.Argument(help="Run ID (from 'cts run' or 'cts runs list')")],
 ):
-    """List artifacts for a run."""
+    """
+    List artifacts for a run.
+    
+    After a run completes, use this to see what output files were generated.
+    Then use 'cts art get <artifact_id>' to download them.
+    """
     exit_code = list_artifacts_command(
         run_id=run_id, http_client=get_http_client(), renderer=get_renderer()
     )
@@ -289,12 +333,19 @@ def art_list(
 
 @art_app.command("get")
 def art_get(
-    artifact_id: Annotated[str, typer.Argument(help="Artifact ID")],
-    download: Annotated[Optional[str], typer.Option("--download", help="Download to path")] = None,
-    stdout: Annotated[bool, typer.Option("--stdout", help="Output to stdout")] = False,
-    force: Annotated[bool, typer.Option("--force", help="Force overwrite")] = False,
+    artifact_id: Annotated[str, typer.Argument(help="Artifact ID (from 'cts art list <run_id>')")],
+    download: Annotated[Optional[str], typer.Option("--download", help="Download to file path")] = None,
+    stdout: Annotated[bool, typer.Option("--stdout", help="Print content to stdout")] = False,
+    force: Annotated[bool, typer.Option("--force", help="Overwrite existing file")] = False,
 ):
-    """Get artifact content or download to file."""
+    """
+    Get artifact content or download to file.
+    
+    Get artifact IDs with: cts art list <run_id>
+    
+    Example:
+      cts art get abc123 --download output.csv
+    """
     exit_code = get_artifact_command(
         artifact_id=artifact_id,
         download=download,
@@ -308,12 +359,16 @@ def art_get(
 
 @mon_app.command("start")
 def mon_start(
-    tool_id: Annotated[str, typer.Argument(help="Tool ID")],
+    tool_id: Annotated[str, typer.Argument(help="Monitor ID to start (use 'cts cap' to see available monitors)")],
     params: Annotated[
-        Optional[List[str]], typer.Option("-p", help="Parameters (name=value)")
+        Optional[List[str]], typer.Option("-p", help="Monitor parameters in name=value format (repeatable)")
     ] = None,
 ):
-    """Start a monitor."""
+    """
+    Start a monitor.
+    
+    To see available monitors, run: cts cap
+    """
     if params is None:
         params = []
 
@@ -325,11 +380,15 @@ def mon_start(
 
 @mon_app.command("stream")
 def mon_stream(
-    monitor_id: Annotated[str, typer.Argument(help="Monitor ID")],
-    raw: Annotated[bool, typer.Option("--raw", help="Raw frame output")] = False,
-    ndjson: Annotated[bool, typer.Option("--ndjson", help="NDJSON output")] = False,
+    monitor_id: Annotated[str, typer.Argument(help="Monitor ID (returned by 'cts mon start' or found with 'cts mon ls')")],
+    raw: Annotated[bool, typer.Option("--raw", help="Output raw WebSocket frames")] = False,
+    ndjson: Annotated[bool, typer.Option("--ndjson", help="Output newline-delimited JSON")] = False,
 ):
-    """Stream data from a monitor."""
+    """
+    Stream data from a monitor.
+    
+    Start a monitor first with: cts mon start <monitor_id>
+    """
     exit_code = stream_monitor_command(
         monitor_id=monitor_id,
         raw=raw,
@@ -342,9 +401,13 @@ def mon_stream(
 
 @mon_app.command("stop")
 def mon_stop(
-    monitor_id: Annotated[str, typer.Argument(help="Monitor ID")],
+    monitor_id: Annotated[str, typer.Argument(help="Monitor ID (from 'cts mon start' or 'cts mon ls')")],
 ):
-    """Stop a monitor."""
+    """
+    Stop a monitor.
+    
+    Find running monitors with: cts mon ls
+    """
     exit_code = stop_monitor_command(
         monitor_id=monitor_id, http_client=get_http_client(), renderer=get_renderer()
     )
