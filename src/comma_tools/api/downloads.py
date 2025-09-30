@@ -20,18 +20,19 @@ router = APIRouter(prefix="/v1/downloads", tags=["downloads"])
 _active_downloads: Dict[str, DownloadResponse] = {}
 
 
-def _validate_dest_path(dest_root: str) -> Path:
+def _validate_dest_path(dest_root: str, base_path: Path) -> Path:
     """
     Validate and normalize destination path to prevent path traversal attacks.
 
     Args:
         dest_root: User-provided destination root directory
+        base_path: Configured base path for downloads
 
     Returns:
-        Validated Path object
+        Validated Path object under base_path
 
     Raises:
-        ValueError: If path is unsafe or invalid
+        ValueError: If path is unsafe or escapes base_path
     """
     if not dest_root or not isinstance(dest_root, str):
         raise ValueError("Destination path must be a non-empty string")
@@ -44,18 +45,14 @@ def _validate_dest_path(dest_root: str) -> Path:
 
     try:
         dest_path = Path(dest_root).resolve(strict=False)
+        base_resolved = base_path.resolve(strict=False)
     except (ValueError, OSError, RuntimeError):
         raise ValueError("Invalid path format")
 
-    path_str = str(dest_path)
-
-    if not dest_path.is_absolute():
-        raise ValueError("Path must be absolute")
-
-    sensitive_prefixes = ("/etc/", "/sys/", "/proc/", "/dev/", "/boot/")
-    for prefix in sensitive_prefixes:
-        if path_str.startswith(prefix):
-            raise ValueError("Access to system directories not allowed")
+    try:
+        dest_path.relative_to(base_resolved)
+    except ValueError:
+        raise ValueError("Destination must be under configured download directory")
 
     return dest_path
 
@@ -94,8 +91,10 @@ async def create_download(request: DownloadRequest) -> DownloadResponse:
         completed_at=None,
     )
 
+    base_path = Path(os.getenv("CTS_DOWNLOAD_BASE_PATH", "/var/lib/cts/downloads"))
+
     try:
-        dest_path = _validate_dest_path(request.dest_root)
+        dest_path = _validate_dest_path(request.dest_root, base_path)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -1,5 +1,6 @@
 """Tests for downloads endpoint."""
 
+import os
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -16,7 +17,10 @@ client = TestClient(app)
 def temp_dest_dir():
     """Create temporary destination directory for download tests."""
     with tempfile.TemporaryDirectory() as tmpdir:
+        os.environ["CTS_DOWNLOAD_BASE_PATH"] = tmpdir
         yield tmpdir
+        if "CTS_DOWNLOAD_BASE_PATH" in os.environ:
+            del os.environ["CTS_DOWNLOAD_BASE_PATH"]
 
 
 @pytest.fixture

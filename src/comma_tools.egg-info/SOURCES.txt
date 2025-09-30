@@ -9,7 +9,6 @@ src/comma_tools.egg-info/requires.txt
 src/comma_tools.egg-info/top_level.txt
 src/comma_tools/analyzers/__init__.py
 src/comma_tools/analyzers/can_bitwatch.py
-src/comma_tools/analyzers/cruise_control_analyzer.py
 src/comma_tools/analyzers/event_detection.py
 src/comma_tools/analyzers/marker_detection.py
 src/comma_tools/analyzers/rlog_to_csv.py
@@ -17,6 +16,7 @@ src/comma_tools/api/__init__.py
 src/comma_tools/api/artifacts.py
 src/comma_tools/api/capabilities.py
 src/comma_tools/api/config.py
+src/comma_tools/api/downloads.py
 src/comma_tools/api/execution.py
 src/comma_tools/api/health.py
 src/comma_tools/api/logs.py
@@ -25,6 +25,7 @@ src/comma_tools/api/models.py
 src/comma_tools/api/registry.py
 src/comma_tools/api/runs.py
 src/comma_tools/api/server.py
+src/comma_tools/api/version.py
 src/comma_tools/api/middleware/__init__.py
 src/comma_tools/can/__init__.py
 src/comma_tools/can/bit_analysis.py
@@ -46,6 +47,8 @@ src/comma_tools/utils/openpilot_utils.py
 src/comma_tools/utils/simple-panda.py
 src/comma_tools/visualization/__init__.py
 src/comma_tools/visualization/plotting.py
+src/comma_tools_mcp/__init__.py
+src/comma_tools_mcp/server.py
 src/cts_cli/__init__.py
 src/cts_cli/config.py
 src/cts_cli/http.py
