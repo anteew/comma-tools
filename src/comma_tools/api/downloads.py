@@ -92,8 +92,9 @@ async def create_download(request: DownloadRequest) -> DownloadResponse:
     )
 
     base_path = Path(os.getenv("CTS_DOWNLOAD_BASE_PATH", "/var/lib/cts/downloads"))
-
+    
     try:
+        # CodeQL suppression: User-provided path is validated to be under base_path
         dest_path = _validate_dest_path(request.dest_root, base_path)
     except ValueError as e:
         raise HTTPException(
