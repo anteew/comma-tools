@@ -39,10 +39,47 @@ def wait_health(url="http://127.0.0.1:8080/v1/health", timeout_s=30):
 
 def start_interactive():
     inject_vendor_paths()
+    
+    print("🚀 Starting comma-tools API server (cts-lite)...")
     subprocess.Popen(["cts-lite"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    
     if not wait_health():
-        print("Server failed to start within timeout", file=sys.stderr)
+        print("❌ Server failed to start within timeout", file=sys.stderr)
         sys.exit(1)
+    
+    print("✅ API server is running at http://localhost:8080\n")
+    
+    welcome = """
+╔════════════════════════════════════════════════════════════════╗
+║                      COMMA-TOOLS CONTAINER                     ║
+╚════════════════════════════════════════════════════════════════╝
+
+🎉 Welcome! Your comma-tools environment is ready.
+
+📡 API Server: Running at http://localhost:8080
+🔧 CLI Tool: 'cts' command is available in your PATH
+
+QUICK START:
+  cts ping              # Test connection to API server
+  cts capabilities      # List available analysis tools
+  cts run cruise-control-analyzer --help  # Get help for a tool
+
+EXAMPLES:
+  cts run cruise-control-analyzer \\
+    --route-name "your-dongle-id|YYYY-MM-DD--HH-MM-SS"
+
+  comma-connect-dl "your-dongle-id|YYYY-MM-DD--HH-MM-SS"
+
+LEGACY TOOLS (if you prefer CLI without API):
+  rlog-to-csv --help
+  can-bitwatch --help
+
+📚 Documentation: https://github.com/anteew/comma-tools
+
+═══════════════════════════════════════════════════════════════════
+"""
+    print(welcome)
+    
     os.execv("/bin/bash", ["/bin/bash"])
 
 def start_daemon():
