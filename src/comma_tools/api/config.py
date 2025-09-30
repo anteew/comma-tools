@@ -86,6 +86,7 @@ class ProductionConfig(BaseSettings):
     temp_directory: str = "/tmp/cts"
     log_directory: str = "/var/log/cts"
     storage_dir: str = "/var/lib/cts-lite"  # Backward compatibility
+    download_base_path: str = "/var/lib/cts/downloads"  # Base path for downloaded logs
 
     model_config = {"env_file": ".env", "env_prefix": "CTS_", "case_sensitive": False}
 
@@ -172,7 +173,12 @@ class ConfigManager:
     def _validate_config(self, config: ProductionConfig) -> None:
         """Validate configuration for consistency and requirements."""
         # Ensure directories exist
-        for dir_path in [config.base_storage_path, config.temp_directory, config.log_directory]:
+        for dir_path in [
+            config.base_storage_path,
+            config.temp_directory,
+            config.log_directory,
+            config.download_base_path,
+        ]:
             Path(dir_path).mkdir(parents=True, exist_ok=True)
 
         # Validate resource limits

@@ -1,2 +1,3 @@
 comma_tools
+comma_tools_mcp
 cts_cli

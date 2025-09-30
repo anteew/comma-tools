@@ -79,8 +79,6 @@ class ToolRegistry:
             ("zstandard", "zstandard"),
             ("zmq", "pyzmq"),
             ("smbus2", "smbus2"),
-            ("urllib3", "urllib3"),
-            ("requests", "requests"),
         ]
         ensure_python_packages(requirements, deps_dir_path, install_missing_deps)
 

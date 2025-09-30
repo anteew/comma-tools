@@ -29,6 +29,7 @@ Requires-Dist: httpx>=0.24.0; extra == "client"
 Requires-Dist: typer>=0.9.0; extra == "client"
 Requires-Dist: rich>=13.0.0; extra == "client"
 Requires-Dist: websockets>=11.0.0; extra == "client"
+Requires-Dist: packaging>=20.0; extra == "client"
 Provides-Extra: api
 Requires-Dist: fastapi>=0.100.0; extra == "api"
 Requires-Dist: uvicorn[standard]>=0.20.0; extra == "api"
@@ -38,10 +39,12 @@ Requires-Dist: python-multipart>=0.0.6; extra == "api"
 Provides-Extra: test
 Requires-Dist: pytest>=6.0; extra == "test"
 Requires-Dist: pytest-cov; extra == "test"
+Requires-Dist: pytest-asyncio>=0.23; extra == "test"
 Requires-Dist: httpx>=0.24.0; extra == "test"
 Provides-Extra: dev
 Requires-Dist: pytest>=6.0; extra == "dev"
 Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
 Requires-Dist: httpx>=0.24.0; extra == "dev"
 Requires-Dist: black; extra == "dev"
 Requires-Dist: flake8; extra == "dev"
@@ -56,11 +59,15 @@ Requires-Dist: uvicorn[standard]>=0.20.0; extra == "dev"
 Requires-Dist: pydantic>=2.0.0; extra == "dev"
 Requires-Dist: pydantic-settings>=2.0.0; extra == "dev"
 Requires-Dist: python-multipart>=0.0.6; extra == "dev"
+Requires-Dist: mcp[cli]>=1.0.0; extra == "dev"
 Provides-Extra: docs
 Requires-Dist: sphinx>=4.0; extra == "docs"
 Requires-Dist: sphinx-autodoc-typehints; extra == "docs"
 Requires-Dist: furo; extra == "docs"
 Requires-Dist: myst-parser; extra == "docs"
+Provides-Extra: mcp
+Requires-Dist: mcp[cli]>=1.0.0; extra == "mcp"
+Requires-Dist: httpx>=0.24.0; extra == "mcp"
 
 # Comma Tools
 [![Test Suite](https://github.com/anteew/comma-tools/actions/workflows/test.yml/badge.svg)](https://github.com/anteew/comma-tools/actions/workflows/test.yml)
@@ -130,7 +137,7 @@ This repository contains a collection of debugging and analysis tools for the op
    cts cap
    
    # Run analysis
-   cts run cruise-control-analyzer --path your-log.zst --wait
+   cts run rlog-to-csv --path your-log.zst --wait
    
    # Note: Monitor support is still in development
    # Monitor functionality will be available in future releases
@@ -138,8 +145,7 @@ This repository contains a collection of debugging and analysis tools for the op
 
 ### Available Tools
 
-- **cruise-control-analyzer**: Deep analysis of recorded driving logs with focus on Subaru vehicle cruise control systems
-- **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis  
+- **rlog-to-csv**: Convert openpilot rlog.zst files into CSV format for analysis
 - **can-bitwatch**: Swiss-army analyzer for CSV dumps of CAN frames with segment labels
 
 ### Available Monitors (In Development)
@@ -147,17 +153,63 @@ This repository contains a collection of debugging and analysis tools for the op
 Monitor support is currently in development. The following monitors are planned:
 
 - **hybrid_rx_trace**: Trace which CAN signals cause panda safety to flag RX invalid
-- **can_bus_check**: General CAN message frequency analysis  
+- **can_bus_check**: General CAN message frequency analysis
 - **can_hybrid_rx_check**: Subaru hybrid-specific signal monitoring
 
 *Note: Monitor API endpoints are not yet available in the current CTS-Lite implementation.*
+
+### API Version Compatibility
+
+CTS-Lite includes automatic version compatibility checking to ensure the CLI client and API server work together correctly:
+
+- **Automatic Check**: The CLI checks compatibility with the server on startup
+- **Clear Errors**: Shows a helpful upgrade message if your client is too old
+- **Graceful Fallback**: Works with older servers that don't have the version endpoint
+- **MCP Server Ready**: Version system designed to support future MCP server integrations
+
+The version check happens transparently - you'll only see a message if there's an incompatibility.
+
+### MCP Server for AI Assistants
+
+> **⚠️ FOR AI ASSISTANTS ONLY** - If you are a **human user**, you don't need the MCP server. Use `cts` CLI or `cts-lite` API directly (see Quick Start above). The MCP server is a bridge that lets AI assistants use comma-tools on your behalf.
+
+The comma-tools MCP (Model Context Protocol) server enables AI assistants like Claude, ChatGPT, and others to programmatically interact with the CTS-Lite API for log analysis and debugging.
+
+**For AI Assistants (like Claude Code)**:
+```bash
+# 1. Find the cts-mcp command
+find . -name cts-mcp -path "*/venv/bin/*" | head -1
+
+# 2. Register yourself to use comma-tools (automatically finds cts-mcp path)
+claude mcp add comma-tools --scope user \
+  -e CTS_LITE_URL=http://127.0.0.1:8080 \
+  -- $(find . -name cts-mcp -path "*/venv/bin/*" | head -1)
+
+# 3. Verify connection
+claude mcp list
+# Should show: comma-tools: ... - ✓ Connected
+```
+
+**For Claude Desktop App (Human Setup)**:
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "comma-tools": {
+      "command": "cts-mcp",
+      "env": {"CTS_LITE_URL": "http://127.0.0.1:8080"}
+    }
+  }
+}
+```
+
+See [MCP Server Documentation](src/comma_tools_mcp/README.md) for complete AI assistant integration guide.
 
 ## Legacy CLI Tools
 
 For backward compatibility, individual CLI tools are still available:
 
 ```bash
-cruise-control-analyzer your-log.zst
 rlog-to-csv your-log.zst
 can-bitwatch your-data.csv
 comma-connect-dl --help

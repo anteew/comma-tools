@@ -17,6 +17,7 @@ httpx>=0.24.0
 typer>=0.9.0
 rich>=13.0.0
 websockets>=11.0.0
+packaging>=20.0
 
 [connect]
 requests>=2.25.0
@@ -24,6 +25,7 @@ requests>=2.25.0
 [dev]
 pytest>=6.0
 pytest-cov
+pytest-asyncio>=0.23
 httpx>=0.24.0
 black
 flake8
@@ -38,6 +40,7 @@ uvicorn[standard]>=0.20.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-multipart>=0.0.6
+mcp[cli]>=1.0.0
 
 [docs]
 sphinx>=4.0
@@ -45,10 +48,15 @@ sphinx-autodoc-typehints
 furo
 myst-parser
 
+[mcp]
+mcp[cli]>=1.0.0
+httpx>=0.24.0
+
 [plot]
 matplotlib>=3.5.0
 
 [test]
 pytest>=6.0
 pytest-cov
+pytest-asyncio>=0.23
 httpx>=0.24.0
