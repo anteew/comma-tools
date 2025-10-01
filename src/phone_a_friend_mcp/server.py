@@ -288,6 +288,134 @@ async def get_usage_stats(session_id: Optional[str] = None) -> Dict[str, Any]:
 
 
 @mcp.tool()
+async def get_model_capabilities() -> Dict[str, Any]:
+    """
+    Get matrix of available OpenAI models and their supported capabilities.
+
+    Use this to understand which models support reasoning_effort, code_interpreter,
+    file_search, and other features before starting a session.
+
+    Returns:
+        Dictionary with model capabilities matrix and feature descriptions
+
+    Example:
+        >>> capabilities = get_model_capabilities()
+        >>> # Check if o1-preview supports reasoning_effort
+        >>> capabilities["models"]["o1-preview"]["supports_reasoning_effort"]
+    """
+    config, session_manager, rate_limiter = _get_globals()
+
+    models = {
+        "gpt-4o": {
+            "description": "Most capable GPT-4 model, multimodal",
+            "context_window": 128000,
+            "supports_reasoning_effort": False,
+            "supports_code_interpreter": True,
+            "supports_file_search": True,
+            "supports_function_calling": True,
+            "use_cases": ["General intelligence", "Complex problem solving", "Code generation"],
+        },
+        "gpt-4o-mini": {
+            "description": "Faster, more affordable GPT-4o",
+            "context_window": 128000,
+            "supports_reasoning_effort": False,
+            "supports_code_interpreter": True,
+            "supports_file_search": True,
+            "supports_function_calling": True,
+            "use_cases": ["Faster responses", "Cost optimization"],
+        },
+        "gpt-4-turbo": {
+            "description": "Previous generation GPT-4 Turbo",
+            "context_window": 128000,
+            "supports_reasoning_effort": False,
+            "supports_code_interpreter": True,
+            "supports_file_search": True,
+            "supports_function_calling": True,
+            "use_cases": ["Legacy applications", "Proven reliability"],
+        },
+        "o1-preview": {
+            "description": "Advanced reasoning model with extended thinking",
+            "context_window": 128000,
+            "supports_reasoning_effort": True,
+            "supports_code_interpreter": True,
+            "supports_file_search": False,
+            "supports_function_calling": False,
+            "reasoning_effort_levels": ["low", "medium", "high"],
+            "use_cases": ["Complex reasoning", "Math/science", "Code analysis"],
+        },
+        "o1-mini": {
+            "description": "Faster reasoning model, optimized for STEM",
+            "context_window": 128000,
+            "supports_reasoning_effort": True,
+            "supports_code_interpreter": True,
+            "supports_file_search": False,
+            "supports_function_calling": False,
+            "reasoning_effort_levels": ["low", "medium", "high"],
+            "use_cases": ["STEM reasoning", "Faster than o1-preview", "Cost-effective reasoning"],
+        },
+    }
+
+    features = {
+        "reasoning_effort": {
+            "description": "Control depth of reasoning for o1 models",
+            "levels": {
+                "low": "Faster response, less thorough reasoning",
+                "medium": "Balanced reasoning depth (default)",
+                "high": "Maximum reasoning depth, slower but most thorough",
+            },
+            "supported_models": ["o1-preview", "o1-mini"],
+        },
+        "code_interpreter": {
+            "description": "Execute Python code for calculations and data analysis",
+            "capabilities": [
+                "Run Python code in sandboxed environment",
+                "Data analysis and visualization",
+                "File processing and manipulation",
+            ],
+            "supported_models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "o1-preview", "o1-mini"],
+        },
+        "file_search": {
+            "description": "Search through uploaded documents and files",
+            "capabilities": [
+                "Semantic search across documents",
+                "Extract information from files",
+                "Cite sources from documents",
+            ],
+            "supported_models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"],
+        },
+    }
+
+    available_models = []
+    try:
+        from openai import AsyncOpenAI
+
+        client = AsyncOpenAI(api_key=config.get_api_key())
+        models_response = await client.models.list()
+        available_models = [
+            m.id
+            for m in models_response.data
+            if any(known in m.id for known in ["gpt-4", "gpt-3.5", "o1"])
+        ]
+    except Exception:
+        available_models = list(models.keys())
+
+    return {
+        "status": "success",
+        "models": models,
+        "features": features,
+        "available_models": available_models,
+        "default_model": config.model_name,
+        "recommendations": {
+            "general_use": "gpt-4o - Best balance of capability and speed",
+            "complex_reasoning": "o1-preview with reasoning_effort='high' - Maximum thinking depth",
+            "fast_reasoning": "o1-mini with reasoning_effort='medium' - Fast STEM reasoning",
+            "cost_effective": "gpt-4o-mini - Cheaper, still very capable",
+            "can_bus_analysis": "o1-preview or gpt-4o with code_interpreter enabled",
+        },
+    }
+
+
+@mcp.tool()
 def check_health() -> Dict[str, Any]:
     """
     Check if phone-a-friend server is healthy.
