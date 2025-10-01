@@ -141,7 +141,7 @@ class SessionManager:
             if enable_file_search:
                 tools.append("file_search")
 
-            agent_kwargs = {
+            agent_kwargs: Dict[str, Any] = {
                 "name": "GPT5Expert",
                 "instructions": instructions,
                 "model": model,
