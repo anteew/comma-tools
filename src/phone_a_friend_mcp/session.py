@@ -105,6 +105,9 @@ class SessionManager:
         instructions: str,
         metadata: Optional[Dict[str, Any]] = None,
         model: str = "gpt-4o",
+        reasoning_effort: Optional[str] = None,
+        enable_code_interpreter: bool = False,
+        enable_file_search: bool = False,
     ) -> Session:
         """
         Create a new GPT-5 agent session.
@@ -113,6 +116,9 @@ class SessionManager:
             instructions: System instructions for the agent
             metadata: Optional session metadata
             model: OpenAI model to use
+            reasoning_effort: Reasoning effort for o1 models ("low", "medium", "high")
+            enable_code_interpreter: Enable Python code execution
+            enable_file_search: Enable file search capabilities
 
         Returns:
             Created session
@@ -129,11 +135,25 @@ class SessionManager:
                     f"End existing sessions before creating new ones."
                 )
 
-            agent = Agent(
-                name="GPT5Expert",
-                instructions=instructions,
-                model=model,
-            )
+            tools = []
+            if enable_code_interpreter:
+                tools.append("code_interpreter")
+            if enable_file_search:
+                tools.append("file_search")
+
+            agent_kwargs = {
+                "name": "GPT5Expert",
+                "instructions": instructions,
+                "model": model,
+            }
+
+            if tools:
+                agent_kwargs["tools"] = tools
+
+            if reasoning_effort and model and ("o1" in model.lower()):
+                agent_kwargs["model_settings"] = {"reasoning_effort": reasoning_effort}
+
+            agent = Agent(**agent_kwargs)
 
             session = Session(
                 agent=agent,

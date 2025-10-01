@@ -65,6 +65,10 @@ initialize_server()
 async def start_gpt5_session(
     instructions: str,
     context: Optional[Dict[str, Any]] = None,
+    model: Optional[str] = None,
+    reasoning_effort: Optional[str] = None,
+    enable_code_interpreter: bool = False,
+    enable_file_search: bool = False,
 ) -> Dict[str, Any]:
     """
     Start a new GPT-5 agent session for collaboration.
@@ -76,6 +80,12 @@ async def start_gpt5_session(
         instructions: System instructions for GPT-5 (describe the problem domain,
                      vehicle context, and what kind of expertise is needed)
         context: Optional context dict with vehicle info, log paths, or analysis goals
+        model: OpenAI model to use (e.g., "gpt-4o", "o1-preview", "o1-mini").
+               Defaults to configured model (gpt-4o)
+        reasoning_effort: Reasoning effort for o1 models - "low", "medium", or "high".
+                         Only applies to o1-preview and o1-mini models
+        enable_code_interpreter: Enable Python code execution for data analysis
+        enable_file_search: Enable file search capabilities for document analysis
 
     Returns:
         Dictionary with session_id and status
@@ -83,8 +93,10 @@ async def start_gpt5_session(
     Example:
         >>> start_gpt5_session(
         ...     instructions="You are an expert in automotive CAN bus analysis. "
-        ...                  "Help debug a Subaru cruise control issue where the set "
-        ...                  "button isn't being detected properly.",
+        ...                  "Help debug a Subaru cruise control issue.",
+        ...     model="o1-preview",
+        ...     reasoning_effort="high",
+        ...     enable_code_interpreter=True,
         ...     context={"vehicle": "2019 Subaru Outback", "issue": "cruise_control"}
         ... )
     """
@@ -102,13 +114,21 @@ async def start_gpt5_session(
         session = await session_manager.create_session(
             instructions=instructions,
             metadata=context or {},
-            model=config.model_name,
+            model=model or config.model_name,
+            reasoning_effort=reasoning_effort,
+            enable_code_interpreter=enable_code_interpreter,
+            enable_file_search=enable_file_search,
         )
 
         return {
             "status": "success",
             "session_id": session.session_id,
             "message": "GPT-5 session started. Use send_message() to interact.",
+            "model": session.agent.model if session.agent else model or config.model_name,
+            "tools_enabled": {
+                "code_interpreter": enable_code_interpreter,
+                "file_search": enable_file_search,
+            },
             "usage": rate_limiter.get_usage_summary(session.session_id),
         }
     except Exception as e:
