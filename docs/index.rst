@@ -11,6 +11,7 @@ Debugging and analysis tools for the openpilot autonomous driving system.
    api_reference
    examples
    knowledge_base
+   PHONE_A_FRIEND_MCP_PLAN
 
 Getting Started
 ===============
