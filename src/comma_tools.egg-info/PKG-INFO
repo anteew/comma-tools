@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: comma-tools
-Version: 0.8.0
+Version: 0.8.2
 Summary: Debugging and analysis tools for openpilot autonomous driving system
 Author-email: Dan Mann <dan.b.mann@gmail.com>
 Classifier: Development Status :: 3 - Alpha
@@ -68,6 +68,11 @@ Requires-Dist: myst-parser; extra == "docs"
 Provides-Extra: mcp
 Requires-Dist: mcp[cli]>=1.0.0; extra == "mcp"
 Requires-Dist: httpx>=0.24.0; extra == "mcp"
+Provides-Extra: phone-a-friend
+Requires-Dist: openai-agents>=0.3.0; extra == "phone-a-friend"
+Requires-Dist: mcp[cli]>=1.0.0; extra == "phone-a-friend"
+Requires-Dist: pydantic>=2.0.0; extra == "phone-a-friend"
+Requires-Dist: pydantic-settings>=2.0.0; extra == "phone-a-friend"
 
 # Comma Tools
 [![Test Suite](https://github.com/anteew/comma-tools/actions/workflows/test.yml/badge.svg)](https://github.com/anteew/comma-tools/actions/workflows/test.yml)

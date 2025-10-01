@@ -4,4 +4,5 @@ comma-connect-dl = comma_tools.sources.connect.cli:main
 cts = cts_cli.main:cli_main
 cts-lite = comma_tools.api.server:main
 cts-mcp = comma_tools_mcp.server:mcp.run
+phone-a-friend-mcp = phone_a_friend_mcp.server:mcp.run
 rlog-to-csv = comma_tools.analyzers.rlog_to_csv:main
